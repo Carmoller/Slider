@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/" />
+  <Project Path="PDBGenerator/PDBGenerator.csproj" Id="c3ba74ac-0453-4ad1-819e-0db7070dcdbc" />
   <Project Path="Slider/Slider.csproj" />
   <Project Path="UnitTest/UnitTest.csproj" Id="2ddbc1ca-f500-4d3b-ba7b-4c6d3a12cb97" />
 </Solution>

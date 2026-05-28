@@ -27,33 +27,6 @@ namespace Slider.Heuristics
             }
         }
 
-        public int GetHeuristic(byte[,] board)
-        {
-            return 0;
-            //byte gridSize = (byte)Math.Sqrt(board.Length);
-            //byte[,] boardArray = new byte[gridSize, gridSize];
-            //(byte row, byte col)[] goalPositions = new (byte, byte)[gridSize * gridSize];
-            //for (byte row = 0; row < gridSize; row++)
-            //{
-            //    for (byte col = 0; col < gridSize; col++)
-            //    {
-            //        // Set up initial board
-            //        byte index = (byte)(row * gridSize + col);
-            //        boardArray[board[index].Row, board[index].Column] = (byte)board[index].Value;
-            //        // Set up goal board, and goal positions
-            //        if (row == gridSize - 1 && col == gridSize - 1)
-            //        {
-            //            goalPositions[0] = (row, col);
-            //        }
-            //        else
-            //        {
-            //            goalPositions[index + 1] = (row, col);
-            //        }
-            //    }
-            //}
-            //return GetHeuristic(boardArray, goalPositions, gridSize);
-        }
-
         public int GetHeuristic(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
         {
             int distance = ManhattanDistance(board, goalPositions, gridSize);

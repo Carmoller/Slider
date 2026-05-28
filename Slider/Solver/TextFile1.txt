@@ -1,0 +1,288 @@
+﻿1. Add an enum for goal scope (at the class level)
+After the class declaration, add:
+
+public enum GoalScope
+{
+    FullPuzzle,
+    TopRowOnly,
+    LeftColumnOnly,
+    TopRowAndLeftColumn
+}
+2. Add a private field to track the current goal scope
+Add near the top with other field declarations:
+
+private GoalScope _goalScope = GoalScope.FullPuzzle;
+
+3. Create scoped goal board generation method
+Add this new private method:
+
+private void SetupGoalBoardForScope(
+    byte[,] goalBoard,
+    (byte, byte)[] goalPositions,
+    GoalScope scope)
+{
+    // Initialize all positions
+    for (byte row = 0; row < _gridSize; row++)
+    {
+        for (byte col = 0; col < _gridSize; col++)
+        {
+            byte index = (byte)(row * _gridSize + col);
+            if (row == _gridSize - 1 && col == _gridSize - 1)
+            {
+                goalPositions[0] = (row, col);
+            }
+            else
+            {
+                goalPositions[index + 1] = (row, col);
+            }
+        }
+    }
+
+    // Populate goal board based on scope
+    switch (scope)
+    {
+        case GoalScope.TopRowOnly:
+            SetupTopRowGoal(goalBoard, goalPositions);
+            break;
+        case GoalScope.LeftColumnOnly:
+            SetupLeftColumnGoal(goalBoard, goalPositions);
+            break;
+        case GoalScope.TopRowAndLeftColumn:
+            SetupTopRowAndLeftColumnGoal(goalBoard, goalPositions);
+            break;
+        case GoalScope.FullPuzzle:
+        default:
+            SetupFullPuzzleGoal(goalBoard, goalPositions);
+            break;
+    }
+}
+
+4. Add scoped goal setup methods
+Add these private helper methods:
+
+private void SetupFullPuzzleGoal(byte[,] goalBoard, (byte, byte)[] goalPositions)
+{
+    for (byte row = 0; row < _gridSize; row++)
+    {
+        for (byte col = 0; col < _gridSize; col++)
+        {
+            byte index = (byte)(row * _gridSize + col);
+            if (row == _gridSize - 1 && col == _gridSize - 1)
+            {
+                goalBoard[row, col] = 0;
+            }
+            else
+            {
+                goalBoard[row, col] = (byte)(index + 1);
+            }
+        }
+    }
+}
+
+private void SetupTopRowGoal(byte[,] goalBoard, (byte, byte)[] goalPositions)
+{
+    // Copy current board state - we only care about top row being correct
+    // Leave other positions unchanged
+    for (byte col = 0; col < _gridSize; col++)
+    {
+        byte expectedValue = (byte)(col + 1);
+        goalBoard[0, col] = expectedValue;
+        goalPositions[expectedValue] = (0, col);
+    }
+}
+
+private void SetupLeftColumnGoal(byte[,] goalBoard, (byte, byte)[] goalPositions)
+{
+    // Only left column needs to be correct
+    for (byte row = 0; row < _gridSize; row++)
+    {
+        byte expectedValue = (byte)(row * _gridSize + 1);
+        goalBoard[row, 0] = expectedValue;
+        goalPositions[expectedValue] = (row, 0);
+    }
+}
+
+private void SetupTopRowAndLeftColumnGoal(byte[,] goalBoard, (byte, byte)[] goalPositions)
+{
+    // Top row
+    for (byte col = 0; col < _gridSize; col++)
+    {
+        byte expectedValue = (byte)(col + 1);
+        goalBoard[0, col] = expectedValue;
+        goalPositions[expectedValue] = (0, col);
+    }
+
+    // Left column (skip [0,0] already set)
+    for (byte row = 1; row < _gridSize; row++)
+    {
+        byte expectedValue = (byte)(row * _gridSize + 1);
+        goalBoard[row, 0] = expectedValue;
+        goalPositions[expectedValue] = (row, 0);
+    }
+}
+
+5. Create a scoped goal comparison method
+Add this private method:
+private bool BoardMeetsGoal(byte[,] currentBoard, byte[,] goalBoard, GoalScope scope)
+{
+    switch (scope)
+    {
+        case GoalScope.TopRowOnly:
+            for (byte col = 0; col < _gridSize; col++)
+                if (currentBoard[0, col] != goalBoard[0, col])
+                    return false;
+            return true;
+
+        case GoalScope.LeftColumnOnly:
+            for (byte row = 0; row < _gridSize; row++)
+                if (currentBoard[row, 0] != goalBoard[row, 0])
+                    return false;
+            return true;
+
+        case GoalScope.TopRowAndLeftColumn:
+            for (byte col = 0; col < _gridSize; col++)
+                if (currentBoard[0, col] != goalBoard[0, col])
+                    return false;
+            for (byte row = 1; row < _gridSize; row++)
+                if (currentBoard[row, 0] != goalBoard[row, 0])
+                    return false;
+            return true;
+
+        case GoalScope.FullPuzzle:
+        default:
+            return BoardsEqual(currentBoard, goalBoard);
+    }
+}
+
+6. Modify StepSearch() to use scoped goal comparison
+Change the line that checks for meeting point to use the scoped comparison:
+// Change this line:
+if (oppositeClosed.TryGetState(stateHash, current, out SolveState? oppositeState))
+
+// To check board equality only for the relevant scope before returning true
+if (oppositeClosed.TryGetState(stateHash, current, out SolveState? oppositeState))
+{
+    // Verify the goal state matches the scope
+    if (BoardMeetsGoal(current.Board, oppositeState.Board, _goalScope))
+    {
+        // Found meeting point!
+        if (isForward)
+        {
+            forwardState = current;
+            backwardState = oppositeState;
+            return true;
+        }
+        else
+        {
+            forwardState = oppositeState;
+            backwardState = current;
+            return true;
+        }
+    }
+}
+
+7. Add overloaded Solve() methods
+Add convenience methods before the main Solve():
+public SolveResult SolveTopRowOnly(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory)
+{
+    return SolveWithScope(board, options, heuristicElementFactory, GoalScope.TopRowOnly);
+}
+
+public SolveResult SolveLeftColumnOnly(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory)
+{
+    return SolveWithScope(board, options, heuristicElementFactory, GoalScope.LeftColumnOnly);
+}
+
+public SolveResult SolveTopRowAndLeftColumn(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory)
+{
+    return SolveWithScope(board, options, heuristicElementFactory, GoalScope.TopRowAndLeftColumn);
+}
+
+private SolveResult SolveWithScope(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory, GoalScope scope)
+{
+    _goalScope = scope;
+    return Solve(board, options, heuristicElementFactory);
+}
+
+
+8. Modify the main Solve() method
+Replace the goal board setup section with:
+SetupBoardAndPositions(board, initialBoard, goalBoard, goalPositions, out initialEmptyRow, out initialEmptyCol);
+
+// Setup goal board based on scope
+SetupGoalBoardForScope(goalBoard, goalPositions, _goalScope);
+
+// Check if already solved (using scoped comparison)
+if (BoardMeetsGoal(initialBoard, goalBoard, _goalScope))
+    return new() { Result = SolveResultType.AlreadySolved };
+
+The heuristic MUST be scoped. The corrected approach:
+private int GetHeuristicForScope(byte[,] board, (byte, byte)[] goalPositions, GoalScope scope)
+{
+    int distance = 0;
+    
+    switch (scope)
+    {
+        case GoalScope.TopRowOnly:
+            // Only sum distances for tiles 1, 2, 3, ... (top row tiles)
+            for (byte col = 0; col < _gridSize; col++)
+            {
+                byte targetTile = (byte)(col + 1);
+                FindTilePosition(board, targetTile, out byte currentRow, out byte currentCol);
+                distance += Math.Abs(currentRow - 0) + Math.Abs(currentCol - col);
+            }
+            break;
+            
+        case GoalScope.LeftColumnOnly:
+            // Only sum distances for tiles in left column
+            for (byte row = 0; row < _gridSize; row++)
+            {
+                byte targetTile = (byte)(row * _gridSize + 1);
+                FindTilePosition(board, targetTile, out byte currentRow, out byte currentCol);
+                distance += Math.Abs(currentRow - row) + Math.Abs(currentCol - 0);
+            }
+            break;
+            
+        case GoalScope.TopRowAndLeftColumn:
+            // Top row
+            for (byte col = 0; col < _gridSize; col++)
+            {
+                byte targetTile = (byte)(col + 1);
+                FindTilePosition(board, targetTile, out byte currentRow, out byte currentCol);
+                distance += Math.Abs(currentRow - 0) + Math.Abs(currentCol - col);
+            }
+            // Left column (skip [0,0])
+            for (byte row = 1; row < _gridSize; row++)
+            {
+                byte targetTile = (byte)(row * _gridSize + 1);
+                FindTilePosition(board, targetTile, out byte currentRow, out byte currentCol);
+                distance += Math.Abs(currentRow - row) + Math.Abs(currentCol - 0);
+            }
+            break;
+            
+        default:
+            // Full puzzle - use existing heuristic calculator
+            return _heuristicsCalculator!.GetHeuristic(board, goalPositions, _gridSize);
+    }
+    
+    return distance;
+}
+
+Then modify GetHeuristic() to call the scoped version:
+private int GetHeuristic(byte[,] board, (byte, byte)[] goalPositions, byte gridSize)
+{
+    _statesCalculatedCount++;
+    return GetHeuristicForScope(board, goalPositions, _gridSize);
+}
+
+
+
+Change	Impact
+Add GoalScope enum	Allows specifying which region to solve
+Scope goal board generation	Different target states for different regions
+Scope goal comparison	Meeting point detection works for partial goals
+Add convenience methods	Easy-to-use API: SolveTopRowOnly(), etc.
+
+
+
+
