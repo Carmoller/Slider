@@ -6,9 +6,9 @@ using System.Text;
 
 namespace Slider
 {
-    public class Generator : IGenerator
+    public class PuzzleGenerator : IGenerator
     {
-        private bool IsSolvable(List<int> tiles, int gridSize)
+        public static bool IsSolvable(List<byte> tiles, int gridSize)
         {
             int inversions = 0;
             for (int i = 0; i < tiles.Count; i++)
@@ -35,7 +35,7 @@ namespace Slider
             }
         }
 
-        private bool IsSolved(List<int> tiles)
+        private bool IsSolved(List<byte> tiles)
         {
             for (int i = 0; i < tiles.Count - 1; i++)
             {
@@ -46,13 +46,13 @@ namespace Slider
             }
             return tiles[tiles.Count - 1] == 0;
         }
-        public List<int> Generate(int gridSize)
+        public List<byte> Generate(int gridSize)
         {
             // Generate a random solvable configuration of the sliding puzzle
-            List<int> tiles = new List<int>();
+            List<byte> tiles = new ();
             for (int i = 0; i < gridSize * gridSize; i++)
             {
-                tiles.Add(i);
+                tiles.Add((byte)i);
             }
 
             Random rand = new Random();
@@ -62,7 +62,7 @@ namespace Slider
                 for (int i = tiles.Count - 1; i > 0; i--)
                 {
                     int j = rand.Next(0, i + 1);
-                    int temp = tiles[i];
+                    byte temp = tiles[i];
                     tiles[i] = tiles[j];
                     tiles[j] = temp;
                 }

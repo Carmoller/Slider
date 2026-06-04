@@ -71,7 +71,7 @@ namespace Slider
             MoveHistory.Clear();
             _emptyTile = null;
             NumberOfMoves = 0;
-            List<int> newBoard = _generator.Generate(_options.GridSize);
+            List<byte> newBoard = _generator.Generate(_options.GridSize);
             Debug.Assert(newBoard.Count == _options.GridSize * _options.GridSize);
             int newBoardIndex = 0;
             for (int row = 0; row < _options.GridSize; row++)

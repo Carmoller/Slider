@@ -13,6 +13,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
     <PackageReference Include="Prism.Core" Version="9.0.537" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PDBGenerator\PDBGenerator.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Images\box.png" />

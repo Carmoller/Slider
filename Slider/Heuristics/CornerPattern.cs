@@ -11,8 +11,9 @@ namespace Slider.Heuristics
         public HeuristicStatistics Statistics { get; private set; }
         public string Name { get { return "CornerPattern"; } }
 
-        private HashSet<byte> _cornerTileValues;
-        private (byte row, byte col)[] _corners;
+        private readonly HashSet<byte> _cornerTileValues;
+        private readonly (byte row, byte col)[] _corners;
+
         public CornerPattern(int gridSize)
         {
             Statistics = new();

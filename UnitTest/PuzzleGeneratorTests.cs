@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace UnitTest
 {
     [TestClass]
-    public sealed class GeneratorTests
+    public sealed class PuzzleGeneratorTests
     {
         [TestMethod]
         public void Generate_Returns_Correct_Tile_Count()
@@ -12,7 +12,7 @@ namespace UnitTest
             // Arrange
             int gridSize = 3;
             int expectedCount = gridSize * gridSize;
-            Generator generator = new();
+            PuzzleGenerator generator = new();
             // Act
             var result = generator.Generate(gridSize);
 
@@ -26,7 +26,7 @@ namespace UnitTest
             // Arrange
             int gridSize = 3;
             int expectedCount = gridSize * gridSize;
-            Generator generator = new();
+            PuzzleGenerator generator = new();
 
             // Act
             var result = generator.Generate(gridSize);
@@ -46,10 +46,10 @@ namespace UnitTest
         {
             // Arrange
             int gridSize = 3;
-            Generator generator = new();
+            PuzzleGenerator generator = new();
 
             // Act
-            var result = generator.Generate(gridSize);
+            List<byte> result = generator.Generate(gridSize);
 
             // Assert - verify the configuration is solvable by checking inversion parity
             Assert.IsTrue(IsSolvableManual(result, gridSize));
@@ -60,7 +60,7 @@ namespace UnitTest
         {
             // Arrange
             int gridSize = 4;
-            Generator generator = new();
+            PuzzleGenerator generator = new();
 
             // Act
             var result = generator.Generate(gridSize);
@@ -74,7 +74,7 @@ namespace UnitTest
         {
             // Arrange
             int gridSize = 2;
-            Generator generator = new();
+            PuzzleGenerator generator = new();
 
             // Act
             var result = generator.Generate(gridSize);
@@ -88,7 +88,7 @@ namespace UnitTest
         {
             // Arrange
             int gridSize = 5;
-            Generator generator = new();
+            PuzzleGenerator generator = new();
 
             // Act
             var result = generator.Generate(gridSize);
@@ -102,8 +102,8 @@ namespace UnitTest
         {
             // Arrange
             int gridSize = 3;
-            var results = new List<List<int>>();
-            Generator generator = new();
+            var results = new List<List<byte>>();
+            PuzzleGenerator generator = new();
 
             // Act - generate multiple puzzles
             for (int i = 0; i < 10; i++)
@@ -125,7 +125,7 @@ namespace UnitTest
             Assert.IsTrue(hasDifference, "Generated puzzles should not all be identical");
         }
 
-        private bool IsSolvableManual(List<int> tiles, int gridSize)
+        private bool IsSolvableManual(List<byte> tiles, int gridSize)
         {
             int inversions = 0;
             for (int i = 0; i < tiles.Count; i++)
@@ -150,7 +150,7 @@ namespace UnitTest
             }
         }
 
-        private bool ListsEqual(List<int> list1, List<int> list2)
+        private bool ListsEqual(List<byte> list1, List<byte> list2)
         {
             if (list1.Count != list2.Count)
                 return false;

@@ -1,8 +1,8 @@
 // Memory-Mapped PDB Generation Examples
 
 // For small puzzles (in-memory, faster):
-var gen5x5 = new PDBGenerator.Generator(5, 6, useMemoryMappedFile: false);
-var pdb5x5 = gen5x5.GeneratePdb(new PDBGenerator.Generator.PatternState
+var gen5x5 = new PDBGenerator.PdbGenerator(5, 6, useMemoryMappedFile: false);
+var pdb5x5 = gen5x5.GeneratePdb(new PDBGenerator.PdbGenerator.PatternState
 {
     TilePositions = [0, 1, 2, 3, 4, 5],
     BlankPosition = 24
@@ -10,8 +10,8 @@ var pdb5x5 = gen5x5.GeneratePdb(new PDBGenerator.Generator.PatternState
 Console.WriteLine($"5x5 PDB generated in {gen5x5.ElapsedMs}ms, processing {gen5x5.StatesProcessed} states");
 
 // For larger puzzles (memory-mapped file, unlimited size):
-var gen10x10 = new PDBGenerator.Generator(10, 6, useMemoryMappedFile: true);
-var pdb10x10 = gen10x10.GeneratePdb(new PDBGenerator.Generator.PatternState
+var gen10x10 = new PDBGenerator.PdbGenerator(10, 6, useMemoryMappedFile: true);
+var pdb10x10 = gen10x10.GeneratePdb(new PDBGenerator.PdbGenerator.PatternState
 {
     TilePositions = [0, 1, 2, 3, 4, 5],
     BlankPosition = 99

@@ -8,10 +8,10 @@ namespace Slider.Heuristics
 {
     public sealed class EdgePattern : IHeuristicElement
     {
-        private int Weight = 1;
+        private readonly int Weight = 1;
         public HeuristicStatistics Statistics { get; private set; } = new();
         public string Name { get { return "EdgePattern"; } }
-        private bool IsNonEdgeTile(byte tile, byte gridSize)
+        private static bool IsNonEdgeTile(byte tile, byte gridSize)
         {
             // Check if this tile's goal position is in the center (not on any edge)
             // Tile values are 1-based, calculate their goal position

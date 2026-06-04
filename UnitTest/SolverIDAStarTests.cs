@@ -131,7 +131,7 @@ namespace UnitTest
             sw.Stop();
             TestContext!.WriteLine(options.ToString());
             TestContext.WriteLine("\tSolved board in " + result.TimeSpent.ToString() + " with " + result.Moves?.Count + " moves");
-            TestContext.WriteLine($"\tConsidered {result.TotalStatesConsidered} board states");
+            TestContext.WriteLine($"\tConsidered {result.TotalStatesConsidered} board states ({result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} states/ms)");
             TestContext.WriteLine($"\tCache Hits: {result.ForwardHitCount + result.BackwardHitCount}");
             TestContext.WriteLine($"\tHash collisions {result.ForwardCollisionCount + result.BackwardCollisionCount}");
             TestContext.WriteLine($"\tMax List Length: {Math.Max(result.BackwardMaxListLength, result.ForwardMaxListLength)}");
@@ -141,6 +141,22 @@ namespace UnitTest
                 HeuristicStatistics stats1 = element1.Statistics;
                 TestContext.WriteLine($"\t\t{element1.Name}: {stats1.NumberOfCalls} calls, {stats1.TotalTimeSpentMs} ms, {stats1.AverageTimePerCall} ms/call");
             }
+            long totalAllocated = GC.GetTotalAllocatedBytes();
+
+            // Get the count of collections for each generation
+            int gen0Count = GC.CollectionCount(0);
+            int gen1Count = GC.CollectionCount(1);
+            int gen2Count = GC.CollectionCount(2);
+
+            // Check current total memory currently thought to be alive
+            long totalMemory = GC.GetTotalMemory(false);
+            TestContext.WriteLine("GC Stats:=================================");
+            TestContext.WriteLine($"\tTotal Allocated: {totalAllocated} bytes");
+            TestContext.WriteLine($"\tGen 0 Collections: {gen0Count}");
+            TestContext.WriteLine($"\tGen 1 Collections: {gen1Count}");
+            TestContext.WriteLine($"\tGen 2 Collections: {gen2Count}");
+            TestContext.WriteLine($"\tTotal Memory: {totalMemory} bytes");
+            TestContext.WriteLine("GC Stats:=================================");
 
             options.UseCornerPattern = true;
             options.UseLinearConflict = true;
@@ -150,7 +166,7 @@ namespace UnitTest
             sw.Stop();
             TestContext!.WriteLine(options.ToString());
             TestContext.WriteLine("\tSolved board in " + result2.TimeSpent.ToString() + " with " + result2.Moves?.Count + " moves");
-            TestContext.WriteLine($"\tConsidered {result2.TotalStatesConsidered} board states");
+            TestContext.WriteLine($"\tConsidered {result2.TotalStatesConsidered} board states ({result2.TotalStatesConsidered / result2.TimeSpent.TotalMilliseconds} states/ms)");
             TestContext.WriteLine($"\tCache Hits: {result2.ForwardHitCount + result2.BackwardHitCount}");
             TestContext.WriteLine($"\tHash collisions {result2.ForwardCollisionCount + result2.BackwardCollisionCount}");
             TestContext.WriteLine($"\tMax List Length: {Math.Max(result2.BackwardMaxListLength, result2.ForwardMaxListLength)}");
@@ -160,20 +176,36 @@ namespace UnitTest
                 HeuristicStatistics stats2 = element2.Statistics;
                 TestContext.WriteLine($"\t\t{element2.Name}: {stats2.NumberOfCalls} calls, {stats2.TotalTimeSpentMs} ms, {stats2.AverageTimePerCall} ms/call");
             }
+            totalAllocated = GC.GetTotalAllocatedBytes();
+
+            // Get the count of collections for each generation
+            gen0Count = GC.CollectionCount(0);
+            gen1Count = GC.CollectionCount(1);
+            gen2Count = GC.CollectionCount(2);
+
+            // Check current total memory currently thought to be alive
+            totalMemory = GC.GetTotalMemory(false);
+            TestContext.WriteLine("GC Stats:=================================");
+            TestContext.WriteLine($"\tTotal Allocated: {totalAllocated} bytes");
+            TestContext.WriteLine($"\tGen 0 Collections: {gen0Count}");
+            TestContext.WriteLine($"\tGen 1 Collections: {gen1Count}");
+            TestContext.WriteLine($"\tGen 2 Collections: {gen2Count}");
+            TestContext.WriteLine($"\tTotal Memory: {totalMemory} bytes");
+            TestContext.WriteLine("GC Stats:=================================");
+
         }
         #endregion
 
         #region Solver Tests
-
         private List<BoardTile> CreateSolvedBoard(int gridSize)
         {
             List<BoardTile> board = new();
-            int tileValue = 1;
+            byte tileValue = 1;
             for (int row = 0; row < gridSize; row++)
             {
                 for (int col = 0; col < gridSize; col++)
                 {
-                    int value = (row == gridSize - 1 && col == gridSize - 1) ? 0 : tileValue;
+                    byte value = (row == gridSize - 1 && col == gridSize - 1) ? (byte)0 : tileValue;
                     board.Add(new BoardTile { Value = value, Row = row, Column = col });
                     tileValue++;
                 }
@@ -208,7 +240,7 @@ namespace UnitTest
             int swapIndex = emptyIndex - 1;
             if (swapIndex >= 0 && (emptyIndex % gridSize) != 0)
             {
-                int temp = board[emptyIndex].Value;
+                byte temp = board[emptyIndex].Value;
                 board[emptyIndex].Value = board[swapIndex].Value;
                 board[swapIndex].Value = temp;
             }

@@ -6,44 +6,58 @@ namespace PDBGenerator
 {
     using System;
     using System.IO;
+    using System.Reflection.Metadata;
 
     public class PatternDatabase
     {
         public int GridSize { get; private set; }
         public int K { get; private set; }
         public long TotalStates { get; private set; }
+        public byte[] TrackedTiles { get; private set; }
+        private bool _includeBlank;
 
         private readonly int _chunkShift;
         private readonly int _chunkSize;
         private readonly int _chunkMask;
-        private Dictionary<long, byte[]>? _pdbChunks;
+        public Dictionary<long, byte[]>? _pdbChunks;
         private MemoryMappedPatternDatabase? _mmPdb;
         private bool _isMemoryMapped;
-
         // Constructor for in-memory dictionary
-        public PatternDatabase(int gridSize, int k, long totalStates, Dictionary<long, byte[]> chunks, int chunkShift)
+        public PatternDatabase(int gridSize, int k, bool includeBlank, long totalStates, byte[] goalPositions, Dictionary<long, byte[]> chunks, int chunkShift)
         {
             GridSize = gridSize;
             K = k;
+            _includeBlank = includeBlank;
             TotalStates = totalStates;
             _pdbChunks = chunks;
             _chunkShift = chunkShift;
             _chunkSize = 1 << chunkShift;
             _chunkMask = _chunkSize - 1;
             _isMemoryMapped = false;
+            TrackedTiles = new byte[goalPositions.GetLength(0)];
+            for (int i = 0; i < goalPositions.Length; i++)
+            {
+                TrackedTiles[i] = (byte)(goalPositions[i] + 1); // Positions are zero-based, tile numbers are 1-based
+            }
         }
 
         // Constructor for memory-mapped file
-        public PatternDatabase(int gridSize, int k, long totalStates, string mmfFilePath)
+        public PatternDatabase(int gridSize, int k, bool includeBlank, long totalStates, byte[] goalPositions, string mmfFilePath)
         {
             GridSize = gridSize;
             K = k;
+            _includeBlank = includeBlank;
             TotalStates = totalStates;
             _mmPdb = MemoryMappedPatternDatabase.LoadFromFile(mmfFilePath);
             _chunkShift = 20;
             _chunkSize = 1 << _chunkShift;
             _chunkMask = _chunkSize - 1;
             _isMemoryMapped = true;
+            TrackedTiles = new byte[goalPositions.GetLength(0)];
+            for (int i = 0; i < goalPositions.Length; i++)
+            {
+                TrackedTiles[i] = (byte)(goalPositions[i] + 1); // Positions are zero-based, tile numbers are 1-based
+            }
         }
 
         /// <summary>
@@ -75,16 +89,25 @@ namespace PDBGenerator
             using (var writer = new BinaryWriter(fs))
             {
                 // Write standard schema metadata header
+                writer.Write("PDB");
+                int headerLength = 25 + TrackedTiles.Length;
+                writer.Write(headerLength);
                 writer.Write(GridSize);
                 writer.Write(K);
+                writer.Write(_includeBlank);
                 writer.Write(TotalStates);
+                writer.Write(TrackedTiles.Length);
+                for (int i = 0; i < TrackedTiles.Length; i++)
+                {
+                    writer.Write(TrackedTiles[i]);
+                }
                 writer.Write(_chunkShift);
 
                 // Write number of allocated chunks
                 writer.Write(_pdbChunks.Count);
 
                 // Stream each chunk with its index
-                foreach (var kvp in _pdbChunks)
+                foreach (KeyValuePair<long, byte[]> kvp in _pdbChunks)
                 {
                     writer.Write(kvp.Key);
                     writer.Write(kvp.Value);
@@ -93,16 +116,27 @@ namespace PDBGenerator
         }
 
         /// <summary>
-        /// Loads a pre-generated PDB binary payload back into RAM instantly.
+        /// Loads a pre-generated PDB binary payload back into RAM
         /// </summary>
-        public static PatternDatabase LoadFromFile(string filePath)
+        public static PatternDatabase? LoadFromFile(string filePath)
         {
-            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var reader = new BinaryReader(fs))
+            using (FileStream fs = new (filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (BinaryReader reader = new (fs))
             {
+                string header = reader.ReadString();// reader.ReadBoundedString(3);
+                if (header != "PDB")
+                    return null;
+                int headerLength = reader.ReadInt32();
                 int gridSize = reader.ReadInt32();
                 int k = reader.ReadInt32();
+                bool includeBlank = reader.ReadBoolean();
                 long totalStates = reader.ReadInt64();
+                int trackedTilesCount = reader.ReadInt32();
+                byte[] trackedTiles = new byte[trackedTilesCount];
+                for (int i=0; i<trackedTilesCount; i++)
+                {
+                    trackedTiles[i] = (byte)(reader.ReadByte() - 1); // Bit of a hack: We know the constructor expects the POSITION, not the tile number
+                }
                 int chunkShift = reader.ReadInt32();
                 int chunkSize = 1 << chunkShift;
 
@@ -116,8 +150,23 @@ namespace PDBGenerator
                     chunks[chunkIdx] = chunkData;
                 }
 
-                return new PatternDatabase(gridSize, k, totalStates, chunks, chunkShift);
+                return new PatternDatabase(gridSize, k, includeBlank, totalStates, trackedTiles, chunks, chunkShift);
             }
+        }
+
+        public static int GetSizeFromPdb(string filename)
+        {
+            using (FileStream fs = new(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (BinaryReader reader = new(fs))
+            {
+                string header = reader.ReadString();// reader.ReadBoundedString(3);
+                if (header != "PDB")
+                    return -1;
+                reader.ReadInt32();
+                int headerLength = reader.ReadInt32();
+                return headerLength;
+            }
+
         }
     }
 }

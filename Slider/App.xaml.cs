@@ -33,10 +33,10 @@ namespace Slider
                     services.AddSingleton<IMainViewModel, MainViewModel>();
                     services.AddSingleton<IUserAlert>(serviceProvider => serviceProvider.GetRequiredService<MainWindow>());
                     services.AddSingleton<IModel, Model>();
-                    services.AddSingleton<IGenerator, Generator>();
+                    services.AddSingleton<IGenerator, PuzzleGenerator>();
                     services.AddSingleton<IOptions, Options>();
                     services.AddSingleton<ITileControlViewModelFactory, TileControlViewModelFactory>();
-                    services.AddSingleton<ISolver, SolverIDAStar>();
+                    services.AddSingleton<ISolver, SolverIdaStarPdb>();
                     services.AddSingleton<IHeuristicElementFactory, HeuristicFactory>();
                 })
                 .Build();

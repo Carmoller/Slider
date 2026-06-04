@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
@@ -7,8 +8,8 @@ namespace PDBGenerator
 {
     public class Codec
     {
-        private int N;
-        private int K;
+        private readonly int N;
+        private readonly int K;
         private readonly long[] Factorials;
         private readonly long[,] BinomialCoefficients;
 
@@ -40,7 +41,6 @@ namespace PDBGenerator
 
         /// <summary>
         /// Encodes tracked tile positions AND the blank tile position into a single unified database index.
-        /// Total unique indices: (1,120,562,400 combinadic states) * 100 blank positions = 112,056,240,000
         /// </summary>
         /// <param name="tilePositions">An array of exactly K integers representing the 0-indexed positions of the tiles.</param>
         /// <param name="blankPosition">The 0-indexed board position of the empty/blank tile (0 to 99).</param>
@@ -50,6 +50,15 @@ namespace PDBGenerator
                 throw new ArgumentException($"Array must contain exactly {K} elements.");
             if (blankPosition < 0 || blankPosition >= N)
                 throw new ArgumentOutOfRangeException(nameof(blankPosition), $"Blank position must be between 0 and {N - 1}.");
+
+            for (int i = 0; i < K; i++)
+            {
+                if (tilePositions[i] == blankPosition)
+                {
+                    // Return a special indicator value.
+                    return -1;
+                }
+            }
 
             // 1. Extract combination footprint by sorting the positions
             int[] sortedPositions = new int[K];
@@ -143,16 +152,3 @@ namespace PDBGenerator
         }
     }
 }
-//Use code with caution.2. Validation Test ExecutionYou can run this snippet inside your Main method to test compliance. It utilizes 0-indexed representations (\(0\) to \(14\)) for the math backend, which easily map to real-world variables (\(1\) to \(15\)).csharppublic static void Main()
-//{
-//    // Example: A distinct ordered pick of 6 numbers out of 0-14 range
-//    int[] inputSequence = new int[] { 14, 2, 7, 0, 11, 5 };
-
-//    // Convert to index
-//    long uniqueIndex = PermutationCodec.Encode(inputSequence);
-//    Console.WriteLine($"Sequence: [{string.Join(", ", inputSequence)}] maps to Integer: {uniqueIndex}");
-
-//    // Convert back from index
-//    int[] decodedSequence = PermutationCodec.Decode(uniqueIndex);
-//    Console.WriteLine($"Integer: {uniqueIndex} decodes back to Sequence: [{string.Join(", ", decodedSequence)}]");
-//}

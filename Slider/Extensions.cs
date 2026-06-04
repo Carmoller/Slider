@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
 
 namespace Slider
 {
@@ -13,10 +14,15 @@ namespace Slider
                 {
                     sb.Append(array[row, col]);
                     if (row != array.GetLength(0) - 1 || col != array.GetLength(1) - 1)
-                        sb.Append(",");
+                        sb.Append(',');
                 }
             }
             return sb.ToString();
         }
+        public static string ToCommaSeparatedString(this byte[] array)
+        {
+            return string.Join(',', array);
+        }
+
     }
 }

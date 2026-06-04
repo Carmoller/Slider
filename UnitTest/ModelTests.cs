@@ -32,7 +32,7 @@ namespace UnitTest
             _mockOptions.Setup(o => o.SolverOptions).Returns(new SolverOptions());
 
             // Setup generator to return solved 3x3 board: 1 2 3 / 4 5 6 / 7 8 0
-            List<int> solvedBoard = new() { 1, 2, 3, 4, 5, 6, 7, 8, 0 };
+            List<byte> solvedBoard = new() { 1, 2, 3, 4, 5, 6, 7, 8, 0 };
             _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(solvedBoard);
 
             // Setup solver
@@ -345,7 +345,7 @@ namespace UnitTest
         public void IsSolved_WithUnsolvedBoard_ReturnsFalse()
         {
             // Arrange
-            List<int> unsolvedBoard = new() { 1, 2, 3, 4, 5, 6, 7, 0, 8 }; // 0 and 8 swapped
+            List<byte> unsolvedBoard = new() { 1, 2, 3, 4, 5, 6, 7, 0, 8 }; // 0 and 8 swapped
             _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(unsolvedBoard);
             _model.New();
 
@@ -360,7 +360,7 @@ namespace UnitTest
         public void IsSolved_WithEmptyNotInCorner_ReturnsFalse()
         {
             // Arrange
-            List<int> unsolvedBoard = new() { 1, 2, 3, 4, 5, 6, 7, 0, 8 }; // Empty not at (2, 2)
+            List<byte> unsolvedBoard = new() { 1, 2, 3, 4, 5, 6, 7, 0, 8 }; // Empty not at (2, 2)
             _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(unsolvedBoard);
             _model.New();
 

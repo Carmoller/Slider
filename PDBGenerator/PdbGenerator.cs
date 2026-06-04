@@ -5,11 +5,12 @@ using System.Text;
 namespace PDBGenerator
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
 
-    public class Generator
+    public class PdbGenerator
     {
         public long ElapsedMs { get; private set; }
         public long StatesProcessed { get; private set; }
@@ -17,6 +18,8 @@ namespace PDBGenerator
         private int GridSize;
         private int TotalPositions;
         private int K = 6;
+        private bool _includeBlank = true;
+        private long _maxQueueLength;
 
         // Chunk configuration to avoid huge contiguous allocations
         private const int ChunkShift = 20; // 1MB per chunk
@@ -46,7 +49,7 @@ namespace PDBGenerator
         ///    - Suitable for 10x10+ puzzles
         ///    - File path: %TEMP%/pdb_{gridSize}x{gridSize}_k{k}.mmf
         /// </summary>
-        public Generator(byte gridSize, byte k, bool useMemoryMappedFile = false)
+        public PdbGenerator(byte gridSize, byte k, bool useMemoryMappedFile = false)
         {
             GridSize = gridSize;
             _codec = new(gridSize, k);
@@ -135,24 +138,27 @@ namespace PDBGenerator
         /// <summary>
         /// Executes the reverse BFS loop starting from the goal pattern configuration.
         /// </summary>
+
         public PatternDatabase GeneratePdb(PatternState goalState)
         {
             Stopwatch sw = new();
             sw.Start();
-            Queue<PatternState> queue = new Queue<PatternState>();
+            PriorityQueue<PatternState, byte> queue = new();
 
             // Encode and store the starting goal state
             long goalIndex = EncodePattern(goalState.TilePositions, goalState.BlankPosition);
             SetDistance(goalIndex, 0);
-            queue.Enqueue(goalState);
+            queue.Enqueue(goalState, 0);
 
             long processedStates = 0;
-
-            while (queue.Count > 0)
+            byte currentCost;
+            while (queue.TryDequeue(out PatternState current, out currentCost))
             {
-                PatternState current = queue.Dequeue();
+                _maxQueueLength = Math.Max(_maxQueueLength, queue.Count);
+                byte neighborCost = currentCost;
                 long currentIndex = EncodePattern(current.TilePositions, current.BlankPosition);
-                byte currentDist = GetDistance(currentIndex);
+                // Skip if we have already calculated this state with a lower cost (can happen due to multiple paths to the same state)
+                if (currentCost > GetDistance(currentIndex)) continue;
 
                 processedStates++;
                 //if (processedStates % 1000000 == 0)
@@ -172,45 +178,41 @@ namespace PDBGenerator
                     if (shiftedTileIndex != -1)
                     {
                         nextTiles[shiftedTileIndex] = current.BlankPosition;
+                        neighborCost++;
                     }
 
                     long neighborIndex = EncodePattern(nextTiles, nextBlank);
-                    //Console.WriteLine($"Calculating neighbor: Blank moves from {current.BlankPosition} to {nextBlank}, shifted tile index: {shiftedTileIndex}, neighbor index: {neighborIndex}, current distance: {currentDist}");
-                    //Console.Write("(");
-                    //for (int i=0; i<nextTiles.Length; i++)
-                    //{
-                    //    Console.Write($"{nextTiles[i]},");
-                    //}
-                    //Console.WriteLine($") Blank: {nextBlank}");
+                    if (neighborIndex == -1)
+                        continue;
                     // If this pattern layout hasn't been visited yet, update and enqueue
-                    if (GetDistance(neighborIndex) == byte.MaxValue)
+                    byte neighborDist = GetDistance(neighborIndex);
+                    if (neighborDist == byte.MaxValue || neighborDist > neighborCost)
                     {
-                        SetDistance(neighborIndex, (byte)(currentDist + 1));
-
+                        SetDistance(neighborIndex, (byte)(neighborCost));
                         queue.Enqueue(new PatternState
                         {
                             TilePositions = nextTiles,
                             BlankPosition = nextBlank
-                        });
+                        }, neighborCost);
                     }
                 }
             }
-            Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}");
             sw.Stop();
+            Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}. Time spent {sw.Elapsed}");
+            Console.WriteLine($"Max queue length {_maxQueueLength}");
             StatesProcessed = processedStates;
             ElapsedMs = sw.ElapsedMilliseconds;
 
             if (_useMemoryMappedFile)
             {
                 _mmPdb!.Close();
-                return new PatternDatabase(GridSize, K, _totalStates, _mmPdb.FilePath);
+                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, goalState.TilePositions, _mmPdb.FilePath);
             }
             else
             {
-                return new PatternDatabase(GridSize, K, _totalStates, _pdbChunks!, ChunkShift);
+                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, goalState.TilePositions, _pdbChunks!, ChunkShift);
             }
         }
-
         private IEnumerable<int> GetValidMoves(int blankPos)
         {
             int row = blankPos / GridSize;

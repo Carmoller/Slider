@@ -11,5 +11,6 @@ namespace Slider.Interfaces
         SolverOptions SolverOptions { get; set; }
         int GridSize { get; set; }
         int AnimationDelay { get; set; }
+        string PdbLocation { get; set; }
     }
 }

@@ -18,7 +18,8 @@ namespace Slider.Interfaces
         Up,
         Down,
         Left, 
-        Right
+        Right,
+        None
     }
 
     public enum HeuristicType

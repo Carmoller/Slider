@@ -8,7 +8,7 @@ namespace Slider.Heuristics
 {
     public sealed class HeuristicCalculator : IHeuristicCalculator
     {
-        private SolverOptions _solverOptions;
+        private readonly SolverOptions _solverOptions;
         public List<IHeuristicElement> ElementCalculators { get; } = new();
         public HeuristicCalculator(SolverOptions solverOptions, int gridSize, IHeuristicElementFactory elementFactory)
         {
@@ -38,7 +38,7 @@ namespace Slider.Heuristics
             return distance;
         }
 
-        public int ManhattanDistance(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
+        public static int ManhattanDistance(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
         {
             int distance = 0;
             for (int row = 0; row < gridSize; row++)
@@ -54,6 +54,5 @@ namespace Slider.Heuristics
             }
             return distance;
         }
-
     }
 }

@@ -8,7 +8,7 @@ namespace Slider.Interfaces
     [DebuggerDisplay("{Value} @ ({Row}, {Column})")]
     public class BoardTile
     {
-        public int Value { get; set; }
+        public byte Value { get; set; }
         public int Row { get; set; }
         public int Column { get; set; }
         public bool IsEmpty { get { return Value == 0; } }

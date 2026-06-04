@@ -146,7 +146,7 @@
                     <RowDefinition Height="23"/>
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Solve time"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveTime}"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveTime, StringFormat=\{0:mm\\:ss\\.fff\}}"/>
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Moves"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SolveMoveCount}"/>
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="States"/>
