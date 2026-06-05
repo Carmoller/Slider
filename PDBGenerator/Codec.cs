@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 
@@ -37,6 +38,64 @@ namespace PDBGenerator
                         BinomialCoefficients[i, j] = BinomialCoefficients[i - 1, j - 1] + BinomialCoefficients[i - 1, j];
                 }
             }
+        }
+
+        public long Encode(Memory<byte> tilePositions, byte blankPosition)
+        {
+            if (tilePositions.Length != K)
+                throw new ArgumentException($"Array must contain exactly {K} elements.");
+            if (blankPosition < 0 || blankPosition >= N)
+                throw new ArgumentOutOfRangeException(nameof(blankPosition), $"Blank position must be between 0 and {N - 1}.");
+            Span<byte> tilePositionsSpan = tilePositions.Span;
+            int[] sortedPositions = new int[K];
+            for (int i = 0; i < K; i++)
+            {
+                if (tilePositionsSpan[i] == blankPosition)
+                {
+                    // Return a special indicator value.
+                    return -1;
+                }
+                sortedPositions[i] = tilePositionsSpan[i];
+            }
+            Array.Sort(sortedPositions);
+            long combinationRank = 0;
+            for (int i = K; i >= 1; i--)
+            {
+                int positionValue = sortedPositions[i - 1];
+                combinationRank += BinomialCoefficients[positionValue, i];
+            }
+
+            // 3. Compute Permutation Rank via Lehmer Code using stackalloc to avoid GC thrashing
+            long permutationRank = 0;
+            Span<int> availablePool = stackalloc int[K];
+            for (int i = 0; i < K; i++) availablePool[i] = sortedPositions[i];
+
+            for (int i = 0; i < K; i++)
+            {
+                int targetPos = tilePositionsSpan[i];
+                int relativeIndex = 0;
+                int poolSize = K - i;
+
+                for (int j = 0; j < poolSize; j++)
+                {
+                    if (availablePool[j] == targetPos)
+                    {
+                        relativeIndex = j;
+                        for (int m = j; m < poolSize - 1; m++)
+                        {
+                            availablePool[m] = availablePool[m + 1];
+                        }
+                        break;
+                    }
+                }
+                permutationRank += relativeIndex * Factorials[K - 1 - i];
+            }
+
+            // 4. Combine the pure tile layout rank with the blank tile space
+            long pureTileRank = (combinationRank * Factorials[K]) + permutationRank;
+
+            // Multiply by N to shift the index, then safely embed the blank position offset
+            return (pureTileRank * N) + blankPosition;
         }
 
         /// <summary>
@@ -150,5 +209,48 @@ namespace PDBGenerator
 
             return new DecodeResult(resultPositions, blankPosition);
         }
+        public DecodeResultMem DecodeMem(long dynamicDatabaseIndex)
+        {
+            // 1. Extract the blank position using remainder math, and isolate the pure tile rank
+            byte blankPosition = (byte)(dynamicDatabaseIndex % N);
+            long pureTileRank = dynamicDatabaseIndex / N;
+
+            long combinationRank = pureTileRank / Factorials[K];
+            long permutationRank = pureTileRank % Factorials[K];
+
+            // 2. Unrank Combinadic
+            byte[] chosenPositions = new byte[K];
+            byte nextSlot = (byte)(N - 1);
+            long remainingCombRank = combinationRank;
+
+            for (int i = K; i >= 1; i--)
+            {
+                while (BinomialCoefficients[nextSlot, i] > remainingCombRank)
+                {
+                    nextSlot--;
+                }
+                chosenPositions[i - 1] = nextSlot;
+                remainingCombRank -= BinomialCoefficients[nextSlot, i];
+            }
+
+            // 3. Unrank Permutation via Lehmer code
+            Memory<byte> resultPositions = new byte[K];
+            Span<byte> resultSpan = resultPositions.Span;
+            List<byte> availablePool = new(chosenPositions);
+            long remainingPermRank = permutationRank;
+
+            for (int i = 0; i < K; i++)
+            {
+                long factSpace = Factorials[K - 1 - i];
+                int poolIndex = (int)(remainingPermRank / factSpace);
+                remainingPermRank %= factSpace;
+
+                resultSpan[i] = availablePool[poolIndex];
+                availablePool.RemoveAt(poolIndex);
+            }
+
+            return new DecodeResultMem(resultPositions, blankPosition);
+        }
+
     }
 }

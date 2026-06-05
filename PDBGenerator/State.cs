@@ -7,7 +7,6 @@ namespace PDBGenerator
     internal class State
     {
         private int[] Positions;
-        int blankPos;
 
         public State(int boardSize, int patternTileCount)
         {

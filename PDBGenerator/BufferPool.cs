@@ -19,7 +19,7 @@ namespace PDBGenerator
 
         private readonly int _size;
         private readonly byte[] _buffer;
-        private readonly ConcurrentStack<int> _freeSlots = new ConcurrentStack<int>();
+        private readonly ConcurrentStack<int> _freeSlots = new();
 
         public BufferPool(int capacity, int size)
         {

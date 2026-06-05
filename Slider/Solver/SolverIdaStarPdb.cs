@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Windows.Shapes;
 using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Slider.Solver
 {
@@ -18,11 +19,14 @@ namespace Slider.Solver
             public MoveDirection Direction { get; set; }
             public required byte[] Board{ get; set; }
             public int NewBlankPos { get; set; }
+            public int H_value { get; set; }
+            public int G_value { get; set; }
         }
         private class PdbDescriptor
         {
             public PatternDatabase Pdb { get; set; }
             public byte[] TrackedTiles { get; set; }
+            public Codec Codec { get; private set; }
             private Dictionary<int, int> _tileToTrackedTileMap = new();
 
             public PdbDescriptor(PatternDatabase pdb)
@@ -30,6 +34,7 @@ namespace Slider.Solver
                 Pdb = pdb;
                 TrackedTiles = new byte[pdb.K];
                 _tileToTrackedTileMap = new();
+                Codec = new(pdb.GridSize, pdb.K);
             }
             public void MoveTile(int tileNumber, int newPosition)
             {
@@ -40,6 +45,14 @@ namespace Slider.Solver
             {
                  _tileToTrackedTileMap[tileNumber] = trackedTilePosition;
             }
+        }
+
+        private class TranspositionEntry
+        {
+            public int Iteration { get; set; }
+            public Byte[] Board { get; set; }
+            public int RemainingDepth { get; set; }
+            public int MinChildDistanceLargerThanBound { get; set; }
         }
         private PatternDatabase[]? _pdbs;
 
@@ -59,6 +72,8 @@ namespace Slider.Solver
             string[] pdbFiles = Directory.GetFiles(_pdbLocation, "*.pdb" );
             foreach (string possiblePdb in pdbFiles)
             {
+                if (possiblePdb.Contains(" - Copy"))
+                    continue;
                 int size = PatternDatabase.GetSizeFromPdb(possiblePdb);
                 if (size > 0)
                 {
@@ -158,6 +173,7 @@ namespace Slider.Solver
         }
         public SolveResult Solve(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory)
         {
+            Dictionary<long, List<TranspositionEntry>> transpoitionTable = new();
             Stopwatch sw = Stopwatch.StartNew();
             _gridSize = (int)Math.Sqrt(board.Count);
             LoadPdbs(_gridSize);
@@ -167,10 +183,10 @@ namespace Slider.Solver
             SolveResult result = new();
             byte[] boardData = BoardDataFromTileList(board, out blankPos);
             int bound = GetHeuristics(boardData);
-
             while (true)
             {
-                int t = Search(new MoveRecord { Board = boardData, Direction = MoveDirection.None }, blankPos, 0, bound, result, new());
+                result.IDAStarIterations++;
+                int t = Search(result.IDAStarIterations, new MoveRecord { Board = boardData, Direction = MoveDirection.None, H_value = bound }, blankPos, 0, bound, result, new(),transpoitionTable);
                 if (t == 0)
                 {
                     Console.WriteLine($"Solution found in {result.Moves.Count} moves.");
@@ -178,7 +194,11 @@ namespace Slider.Solver
                     result.Moves.Reverse();
                     break;
                 }
-                bound = t; 
+                if (t == bound)
+                    throw new InvalidOperationException("t == bound");
+                bound = t;
+
+                //transpoitionTable.Clear();
             }
             sw.Stop();
             result.TimeSpent = sw.Elapsed;
@@ -251,11 +271,9 @@ namespace Slider.Solver
             SwapTiles(newBoard, blankPos, newBlankPos);
             return new MoveRecord { Direction = MoveDirection.Right, Board = newBoard, NewBlankPos = newBlankPos };
         }
-        private int Search(MoveRecord previousMove, int blankPos, int g, int bound, SolveResult result, List<MoveRecord> previousMoves)
+        private int Search(int iteration, MoveRecord previousMove, int blankPos, int g, int bound, SolveResult result, List<MoveRecord> previousMoves, Dictionary<long, List<TranspositionEntry>> transpositionTable)
         {
-            List<MoveRecord> newPreviousMoves = new(previousMoves);
-            result.TotalStatesConsidered++;
-            int h = GetHeuristics(previousMove.Board);
+            int h = previousMove.H_value; // GetHeuristics(previousMove.Board);
             //Console.WriteLine($"Search g: {g} h: {h}, bound: {bound}");
             //Debug.WriteLine($"Search g: {g} h: {h}, bound: {bound}, board: {previousMove.Board.ToCommaSeparatedString()}, previous: {previousMove.Direction}");
 
@@ -272,41 +290,85 @@ namespace Slider.Solver
             {
                 return 0;
             }
-            PriorityQueue<MoveRecord, int> orderedMoves = new();
 
+            int remainingDepth = bound - g;
+            long hash = StateHashes.FastHash(previousMove.Board);
+
+            if (transpositionTable.TryGetValue(hash, out List<TranspositionEntry>? hashValues))
+            {
+                foreach (TranspositionEntry entry in hashValues)
+                {
+                    if (entry.Board.SequenceCompareTo(previousMove.Board) == 0)
+                    {
+                        // We've seen this board before
+                        if (entry.Iteration == iteration)
+                        {
+                            // We saw it in this iteration, stop immediately if we saw it with more moves remaining than what we have now
+                            if (entry.RemainingDepth >= remainingDepth)
+                            {
+                                return int.MaxValue;
+                            }
+                            else
+                            {
+                                entry.RemainingDepth = remainingDepth;
+                            }
+                        }
+                        else
+                        {
+                            // We saw it in another iteration; if we can see that all children would exceed the bound, then stop
+                            if (entry.RemainingDepth >= remainingDepth && entry.MinChildDistanceLargerThanBound > bound)
+                                return entry.MinChildDistanceLargerThanBound;
+                        }
+                    }
+                }
+            }
+            result.TotalStatesConsidered++;
+            List<MoveRecord> newPreviousMoves = new(previousMoves);
+
+            MoveRecord[] moveArray = new MoveRecord[4];
             MoveRecord? newMove = MoveUp(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                orderedMoves.Enqueue(newMove, h);
+                newMove.H_value = GetHeuristics(newMove.Board);
+                newMove.G_value = g + 1;
+                moveArray[0] = newMove;
             }
 
             newMove = MoveDown(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                orderedMoves.Enqueue(newMove, h);
+                newMove.H_value = GetHeuristics(newMove.Board);
+                newMove.G_value = g + 1;
+                moveArray[1] = newMove;
             }
             newMove = MoveLeft(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                orderedMoves.Enqueue(newMove, h);
+                newMove.H_value = GetHeuristics(newMove.Board);
+                newMove.G_value = g + 1;
+                moveArray[2] = newMove;
             }
             newMove = MoveRight(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                orderedMoves.Enqueue(newMove, h);
+                newMove.H_value = GetHeuristics(newMove.Board);
+                newMove.G_value = g + 1;
+                moveArray[3] = newMove;
             }
+            List<MoveRecord> moveList = moveArray.Where(p => p != null).OrderBy(p => p.H_value).ToList();
             int minNextBound = int.MaxValue;
-            while (orderedMoves.TryDequeue(out MoveRecord? move, out int _))
+            foreach (MoveRecord move in moveList)
+//            while (orderedMoves.TryDequeue(out MoveRecord? move, out int _))
             {
-                foreach (MoveRecord? moveRecord in newPreviousMoves)
-                {
-                    if (moveRecord.Board.SequenceEqual(move.Board))
-                    {
-                        continue;
-                    }
-                }
+                //foreach (MoveRecord? moveRecord in newPreviousMoves)
+                //{
+                //    if (moveRecord.Board.SequenceEqual(move.Board))
+                //    {
+                //        continue;
+                //    }
+                //}
                 newPreviousMoves.Add(move);
-                int t= Search(move, move.NewBlankPos, g + 1, bound, result, newPreviousMoves);
+                int t= Search(iteration, move, move.NewBlankPos, g + 1, bound, result, newPreviousMoves, transpositionTable);
                 if (t == 0)
                 {
                     int fromRow, fromCol, toRow, toCol;
@@ -317,6 +379,12 @@ namespace Slider.Solver
                 }
                 minNextBound = Math.Min(minNextBound, t);
             }
+            if (hashValues == null)
+            {
+                hashValues = new List<TranspositionEntry>();
+                transpositionTable[hash] = hashValues;
+            }
+            hashValues.Add(new TranspositionEntry { Board = previousMove.Board, RemainingDepth = remainingDepth, MinChildDistanceLargerThanBound = minNextBound });
             return minNextBound;
         }
 
@@ -350,8 +418,7 @@ namespace Slider.Solver
             int h = 0;
             for (int i = 0; i < _pdbDescriptors!.Length; i++)
             {
-                Codec codec = new(_gridSize, _pdbDescriptors[i].TrackedTiles.Length);
-                long encoded = codec.Encode(_pdbDescriptors[i].TrackedTiles, blankPosition);
+                long encoded = _pdbDescriptors[i].Codec.Encode(_pdbDescriptors[i].TrackedTiles, blankPosition);
                 h+= _pdbDescriptors[i].Pdb.GetDistance(encoded);
             }
             return h;

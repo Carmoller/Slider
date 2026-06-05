@@ -85,5 +85,51 @@ namespace UnitTest
             Assert.IsGreaterThan(0, result.Moves.Count);
             VerifyMoves(board, result);
         }
+
+        [TestMethod]
+        public void Test_Problematic_State()
+        {
+            List<BoardTile> board = new();
+            board.Add(new BoardTile { Value = 0, Row = 1, Column = 2 });
+            board.Add(new BoardTile { Value = 1, Row = 2, Column = 4 });
+            board.Add(new BoardTile { Value = 2, Row = 2, Column = 1 });
+            board.Add(new BoardTile { Value = 3, Row = 1, Column = 1 });
+            board.Add(new BoardTile { Value = 4, Row = 4, Column = 0 });
+            board.Add(new BoardTile { Value = 5, Row = 0, Column = 4 });
+            board.Add(new BoardTile { Value = 6, Row = 0, Column = 1 });
+            board.Add(new BoardTile { Value = 7, Row = 4, Column = 1 });
+            board.Add(new BoardTile { Value = 8,  Row = 0, Column = 0 });
+            board.Add(new BoardTile { Value = 9, Row = 3, Column = 2 });
+            board.Add(new BoardTile { Value = 10, Row = 4, Column = 4 });
+            board.Add(new BoardTile { Value = 11, Row = 0, Column = 3 });
+            board.Add(new BoardTile { Value = 12, Row = 2, Column = 2 });
+            board.Add(new BoardTile { Value = 13, Row = 1, Column = 4 });
+            board.Add(new BoardTile { Value = 14, Row = 3, Column = 4 });
+            board.Add(new BoardTile { Value = 15, Row = 0, Column = 2 });
+            board.Add(new BoardTile { Value = 16, Row = 2, Column = 0 });
+            board.Add(new BoardTile { Value = 17, Row = 4, Column = 3 });
+            board.Add(new BoardTile { Value = 18, Row = 3, Column = 1 });
+            board.Add(new BoardTile { Value = 19, Row = 1, Column = 0 });
+            board.Add(new BoardTile { Value = 20, Row = 4, Column = 2 });
+            board.Add(new BoardTile { Value = 21, Row = 3, Column = 0 });
+            board.Add(new BoardTile { Value = 22, Row = 1, Column = 3 });
+            board.Add(new BoardTile { Value = 23, Row = 2, Column = 3 });
+            board.Add(new BoardTile { Value = 24, Row = 3, Column = 3 });
+
+            SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true };
+            List<byte> puzzle = new() { 8, 6, 15, 11, 5, 19, 3, 0, 33, 13, 16, 2, 12, 23, 1, 21, 18, 9, 24, 14, 4, 7, 20, 17, 10 };
+            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
+            Assert.IsTrue(solvable);
+
+            SolverIdaStarPdb solver = new(new Options { PdbLocation = @"E:\src\net\Slider" });
+            SolveResult result = solver.Solve(board, options, null);
+            Assert.AreEqual(SolveResultType.Solved, result.Result);
+            Assert.IsGreaterThan(0, result.Moves.Count);
+            VerifyMoves(board, result);
+            Console.WriteLine($"Iterations: {result.IDAStarIterations}");
+            Console.WriteLine($"Moves: {result.MoveCount}");
+            Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
+        }
+
     }
 }

@@ -39,7 +39,7 @@ namespace UnitTest
             PdbGenerator gen = new(2, 3);
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
-                TilePositions = [0, 1, 2],
+                TilePositions = new byte[] { 0, 1, 2 },
                 BlankPosition = 3
             });
             Codec codec = new(2, 3);
@@ -67,7 +67,7 @@ namespace UnitTest
             PdbGenerator gen = new(2, 3, true);
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
-                TilePositions = [0, 1, 2],
+                TilePositions = new byte[] { 0, 1, 2 },
                 BlankPosition = 3
             });
             Codec codec = new(2, 3);
@@ -123,7 +123,7 @@ namespace UnitTest
             PdbGenerator gen = new(4, 3);
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
-                TilePositions = [12, 13, 14],
+                TilePositions = new byte[] { 12, 13, 14 },
                 BlankPosition = 15
             });
             string tempFile = Path.GetTempFileName();
@@ -160,8 +160,8 @@ namespace UnitTest
             {
                 int byteCount = trackedTileSets[tileSet].Count(p => p != byte.MaxValue);
                 byte[] trackedTiles = new byte[byteCount];
-                long factor = boardSize * boardSize;
-                long numberOfStates = 1;
+                int factor = boardSize * boardSize;
+                int numberOfStates = 1;
                 string fileName = string.Empty;
                 for (int i = 0; i < trackedTiles.Length; i++)
                 {
@@ -178,7 +178,7 @@ namespace UnitTest
                 {
                     TilePositions = trackedTiles,
                     BlankPosition = (byte)((boardSize * boardSize) - 1)
-                });
+                }, numberOfStates);
                 db.SaveToFile($"E:\\src\\net\\Slider\\{boardSize}x{boardSize}_{fileName}.pdb");
             }
         }
@@ -192,8 +192,8 @@ namespace UnitTest
             {
                 int byteCount = trackedTileSets[tileSet].Count(p => p != byte.MaxValue);
                 byte[] trackedTiles = new byte[byteCount];
-                long factor = boardSize * boardSize;
-                long numberOfStates = 1;
+                int factor = boardSize * boardSize;
+                int numberOfStates = 1;
                 string fileName = string.Empty;
                 for (int i = 0; i < trackedTiles.Length; i++)
                 {
@@ -210,7 +210,7 @@ namespace UnitTest
                 {
                     TilePositions = trackedTiles,
                     BlankPosition = (byte)((boardSize * boardSize) - 1)
-                });
+                }, numberOfStates);
                 db.SaveToFile($"E:\\src\\net\\Slider\\{boardSize}x{boardSize}_{fileName}.pdb");
             }
         }

@@ -19,6 +19,7 @@ namespace Slider.Interfaces
         public long BackwardHitCount { get; set; }
         public long ForwardMaxListLength { get; set; }
         public long BackwardMaxListLength { get; set; }
+        public int IDAStarIterations { get; set; }
 
         public SolveResult()
         {

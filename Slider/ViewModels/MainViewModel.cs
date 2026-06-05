@@ -33,6 +33,7 @@ namespace Slider.ViewModels
         private long _backwardCollisionCount ;
         private long _forwardHitCount ;
         private long _backwardHitCount;
+        private long _idAStarIterations;
 
         public int GridSize { get => _options.GridSize; set { _options.GridSize = value; OnPropertyChanged(); } } 
         public int AnimationDelay { get => _options.AnimationDelay; set { _options.AnimationDelay = value; OnPropertyChanged(); } }
@@ -49,6 +50,7 @@ namespace Slider.ViewModels
         public long ForwardHitCount { get { return _forwardHitCount; } set { if (value != _forwardHitCount) { _forwardHitCount = value; OnPropertyChanged(); } } }
         public long BackwardHitCount { get { return _backwardHitCount; } set { if (value != _backwardHitCount) { _backwardHitCount = value; OnPropertyChanged(); } } }
         public long TotalStatesConsidered { get { return _totalStatesConsidered; } set { if (value != _totalStatesConsidered) { _totalStatesConsidered = value; OnPropertyChanged(); } } }
+        public long IDAStarIterations { get { return _idAStarIterations; } set { if (value != _idAStarIterations) { _idAStarIterations = value; OnPropertyChanged(); } } }
         public ObservableCollection<ITileControlViewModel> Tiles { get; private set; } = new();
         public ObservableCollection<Move> SolveMoves { get; private set; } = new();
 
@@ -123,6 +125,7 @@ namespace Slider.ViewModels
             TotalStatesConsidered = result.TotalStatesConsidered;
             ForwardDictonarySize = result.ForwardDictonarySize;
             BackwardDictonarySize = result.BackwardDictonarySize;
+            IDAStarIterations = result.IDAStarIterations;
             foreach (Move move in result.Moves)
             {
                 SolveMoves.Add(move);

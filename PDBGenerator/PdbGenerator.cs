@@ -28,7 +28,7 @@ namespace PDBGenerator
 
         private Dictionary<long, byte[]>? _pdbChunks;
         private MemoryMappedPatternDatabase? _mmPdb;
-        private long _totalStates;
+        private int _totalStates;
         private Codec _codec;
         private bool _useMemoryMappedFile;
 
@@ -73,10 +73,10 @@ namespace PDBGenerator
             }
         }
 
-        private long CalculateTotalStates()
+        private int CalculateTotalStates()
         {
             // We ignore the blank tile position in the math
-            long total = 1;
+            int total = 1;
             for (int i = 0; i < K; i++)
             {
                 total *= (TotalPositions - i);
@@ -131,24 +131,42 @@ namespace PDBGenerator
         public struct PatternState
         {
             // Stores the 0-indexed board positions of the K tracked tiles
-            public byte[] TilePositions;
+            public Memory<byte> TilePositions;
+            public BufferPool.Slot Slot;
             public byte BlankPosition;
         }
 
         /// <summary>
         /// Executes the reverse BFS loop starting from the goal pattern configuration.
         /// </summary>
-
+        public PatternDatabase GeneratePdb(PatternState goalState, int totalStates)
+        {
+            _totalStates = totalStates;
+            return GeneratePdb(goalState);
+        }
         public PatternDatabase GeneratePdb(PatternState goalState)
         {
+            BufferPool pool = new(_totalStates + 1, K);
             Stopwatch sw = new();
             sw.Start();
             PriorityQueue<PatternState, byte> queue = new();
 
+            // Copy the goal state into the pool to ensure it's managed by the pool
+            BufferPool.Slot goalSlot = pool.Rent();
+            Memory<byte> goalTiles = pool.GetMemory(goalSlot);
+            goalState.TilePositions.CopyTo(goalTiles);
+
+            PatternState pooledGoalState = new PatternState
+            {
+                TilePositions = goalTiles,
+                BlankPosition = goalState.BlankPosition,
+                Slot = goalSlot
+            };
+
             // Encode and store the starting goal state
-            long goalIndex = EncodePattern(goalState.TilePositions, goalState.BlankPosition);
+            long goalIndex = EncodePattern(pooledGoalState.TilePositions, pooledGoalState.BlankPosition);
             SetDistance(goalIndex, 0);
-            queue.Enqueue(goalState, 0);
+            queue.Enqueue(pooledGoalState, 0);
 
             long processedStates = 0;
             byte currentCost;
@@ -158,44 +176,70 @@ namespace PDBGenerator
                 byte neighborCost = currentCost;
                 long currentIndex = EncodePattern(current.TilePositions, current.BlankPosition);
                 // Skip if we have already calculated this state with a lower cost (can happen due to multiple paths to the same state)
-                if (currentCost > GetDistance(currentIndex)) continue;
+                if (currentCost > GetDistance(currentIndex))
+                {
+                    pool.Return(current.Slot);
+                    continue;
+                }
 
                 processedStates++;
-                //if (processedStates % 1000000 == 0)
-                //{
-                //    Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}");
-                //}
+                if (processedStates % 1000000 == 0)
+                {
+                    Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}");
+                }
 
                 // Generate physical movements of the blank tile
                 foreach (byte nextBlank in GetValidMoves(current.BlankPosition))
                 {
                     // Create a clone for the neighbor state
-                    byte[] nextTiles = (byte[])current.TilePositions.Clone();
+                    BufferPool.Slot slot = pool.Rent();
+                    Memory<byte> nextTiles = pool.GetMemory(slot);
+                    current.TilePositions.CopyTo(nextTiles);
 
                     // If the blank tile moves into a slot occupied by one of our tracked tiles,
                     // that tracked tile physically shifts into the old blank space slot.
-                    int shiftedTileIndex = Array.IndexOf(nextTiles, nextBlank);
+                    int shiftedTileIndex = -1;
+                    Span<byte> nextTilesSpan = nextTiles.Span;
+                    for (int i = 0; i < nextTiles.Length; i++)
+                    {
+                        if (nextTilesSpan[i] == nextBlank)
+                        {
+                            shiftedTileIndex = i;
+                            break;
+                        }
+                    }
                     if (shiftedTileIndex != -1)
                     {
-                        nextTiles[shiftedTileIndex] = current.BlankPosition;
-                        neighborCost++;
+                        nextTilesSpan[shiftedTileIndex] = current.BlankPosition;
+                        neighborCost++;  // Only increase if this neighbor move affects a tracked tile
                     }
 
                     long neighborIndex = EncodePattern(nextTiles, nextBlank);
                     if (neighborIndex == -1)
+                    {
+                        pool.Return(slot);
                         continue;
+                    }
                     // If this pattern layout hasn't been visited yet, update and enqueue
                     byte neighborDist = GetDistance(neighborIndex);
                     if (neighborDist == byte.MaxValue || neighborDist > neighborCost)
                     {
-                        SetDistance(neighborIndex, (byte)(neighborCost));
+                        SetDistance(neighborIndex, neighborCost);
                         queue.Enqueue(new PatternState
                         {
                             TilePositions = nextTiles,
-                            BlankPosition = nextBlank
+                            BlankPosition = nextBlank,
+                            Slot = slot
                         }, neighborCost);
                     }
+                    else
+                    {
+                        pool.Return(slot);
+                    }
                 }
+
+                // Return current slot only after we're done processing all neighbors
+                pool.Return(current.Slot);
             }
             sw.Stop();
             Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}. Time spent {sw.Elapsed}");
@@ -203,14 +247,16 @@ namespace PDBGenerator
             StatesProcessed = processedStates;
             ElapsedMs = sw.ElapsedMilliseconds;
 
+            byte[] tilePositionsByte = goalState.TilePositions.Span.ToArray();
             if (_useMemoryMappedFile)
             {
                 _mmPdb!.Close();
-                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, goalState.TilePositions, _mmPdb.FilePath);
+                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, tilePositionsByte, _mmPdb.FilePath);
             }
             else
             {
-                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, goalState.TilePositions, _pdbChunks!, ChunkShift);
+
+                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, tilePositionsByte, _pdbChunks!, ChunkShift);
             }
         }
         private IEnumerable<int> GetValidMoves(int blankPos)
@@ -224,7 +270,7 @@ namespace PDBGenerator
             if (col < GridSize - 1) yield return blankPos + 1; // Move Right
         }
 
-        private long EncodePattern(byte[] positions, byte blankPosition)
+        private long EncodePattern(Memory<byte> positions, byte blankPosition)
         {
             return _codec.Encode(positions, blankPosition);
         }
