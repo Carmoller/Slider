@@ -34,7 +34,7 @@ namespace Slider.Solver
                 Pdb = pdb;
                 TrackedTiles = new byte[pdb.K];
                 _tileToTrackedTileMap = new();
-                Codec = new(pdb.GridSize, pdb.K);
+                Codec = new(pdb.GridSize, pdb.K, pdb.IncludeBlank);
             }
             public void MoveTile(int tileNumber, int newPosition)
             {

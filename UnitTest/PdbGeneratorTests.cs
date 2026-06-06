@@ -1,5 +1,6 @@
 ﻿using Mono.Cecil.Cil;
 using PDBGenerator;
+using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -12,7 +13,7 @@ namespace UnitTest
     {
         private class Result
         {
-            public byte[]? Board { get; set; }
+            public required byte[] Board { get; set; }
             public int Distance { get; set; }
         }
 
@@ -36,13 +37,13 @@ namespace UnitTest
         public void Test_GeneratorCompleteness_Mem()
         {
             // Test that the generator considers all legal states
-            PdbGenerator gen = new(2, 3);
+            PdbGenerator gen = new(2, 3, true);
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
                 TilePositions = new byte[] { 0, 1, 2 },
                 BlankPosition = 3
             });
-            Codec codec = new(2, 3);
+            Codec codec = new(2, 3, true);
 
             int[] trackedTiles = [1, 2, 3];
             PdbHelper helper = new(trackedTiles);
@@ -70,7 +71,7 @@ namespace UnitTest
                 TilePositions = new byte[] { 0, 1, 2 },
                 BlankPosition = 3
             });
-            Codec codec = new(2, 3);
+            Codec codec = new(2, 3, true);
 
             int[] trackedTiles = [1, 2, 3];
             PdbHelper helper = new(trackedTiles);
@@ -89,7 +90,7 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void PdbGeneratorPerformance3x3()
+        public void PdbGeneratorPerformance4x4_4TrackedTiles()
         {
             byte boardSize =4;
             byte k = 4;
@@ -100,12 +101,12 @@ namespace UnitTest
             for (int i=0; i<k; i++)
             {
                 numberOfStates*= factor;
-                trackedTiles[i] = (byte)(i + 1);
+                trackedTiles[i] = (byte)i;
                 factor--;
             }
             // NumberOfStates should also consider the blank
             numberOfStates *= factor;
-            PdbGenerator gen = new(boardSize, k, false);
+            PdbGenerator gen = new(boardSize, k, true);
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
                 TilePositions = trackedTiles,
@@ -120,7 +121,7 @@ namespace UnitTest
         [TestMethod]
         public void Test_Generator_LoadAndSave_YieldsSameByteArray()
         {
-            PdbGenerator gen = new(4, 3);
+            PdbGenerator gen = new(4, 3, true);
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
                 TilePositions = new byte[] { 12, 13, 14 },
@@ -135,7 +136,7 @@ namespace UnitTest
             Assert.IsNotNull(loadedDb);
             Assert.AreEqual(3, loadedDb.K);
 
-            Codec codec = new(4, 3);
+            Codec codec = new(4, 3, true);
             long index = codec.Encode(new byte[] { 2, 0, 13 }, 7);
             Assert.AreEqual(27591, index);
             byte distance1 = db.GetDistance(index);
@@ -154,6 +155,7 @@ namespace UnitTest
         [TestMethod]
         public void Create4x4Pdbs()
         {
+            bool includeBlank = false;
             byte boardSize = 4; // 4x4 grid
             byte[][] trackedTileSets = [[0, 1, 4, 5], [2, 3, 6, 7], [8, 9, 12, 13], [10, 11, 14, byte.MaxValue]];
             for (int tileSet = 0; tileSet < trackedTileSets.Length; tileSet++)
@@ -172,28 +174,82 @@ namespace UnitTest
                 }
                 // NumberOfStates should also consider the blank
                 numberOfStates *= factor;
-                Codec codec = new(boardSize, (byte)byteCount);
-                PdbGenerator gen = new(boardSize, (byte)byteCount, false);
+                Codec codec = new(boardSize, (byte)byteCount, includeBlank);
+                PdbGenerator gen = new(boardSize, (byte)byteCount, includeBlank);
                 PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
                 {
                     TilePositions = trackedTiles,
                     BlankPosition = (byte)((boardSize * boardSize) - 1)
-                }, numberOfStates);
+                });
                 db.SaveToFile($"E:\\src\\net\\Slider\\{boardSize}x{boardSize}_{fileName}.pdb");
             }
         }
 
         [TestMethod]
+        [DataRow(5, 5)]
+        [DataRow(5, 6)]
+        [DataRow(5, 7)]
+        [DataRow(6, 5)]
+        [DataRow(6, 6)]
+        [DataRow(6, 7)]
+        [DataRow(10, 4)]
+        [DataRow(10, 5)]
+        public void CalculateNumberOfStates(int boardSize, int trackedTilesCount)
+        {
+            string FormatNumber(long number)
+            {
+                if (number < 1000)
+                {
+                    return number.ToString();
+                }
+                int exp = 0;
+                double dNumber = number;
+                while (dNumber >= 1000)
+                {
+                    dNumber /= 1000.0;
+                    exp += 3;
+                }
+                return $"{Math.Round(dNumber, 2)}E{exp}";
+            }
+            // Not a test method, as such, just a calculator of predicted number of steps
+            int factor = boardSize * boardSize;
+            long numberOfStates = 1;
+            for (int i = 0; i < trackedTilesCount; i++)
+            {
+                numberOfStates *= factor;
+                factor--;
+            }
+            long numberOfTrackedTileStates = numberOfStates;
+            // NumberOfStates should also consider the blank
+            numberOfStates *= factor;
+            Console.WriteLine($"BoardSize: {boardSize}, tracked tiles: {trackedTilesCount}, numberOfStates: {FormatNumber(numberOfTrackedTileStates)}, including blank: {FormatNumber(numberOfStates)} ({FormatNumber(numberOfStates / 8)} bytes)");
+        }
+        [TestMethod]
         public void Create5x5Pdbs()
         {
             byte boardSize = 5; // 5x5 grid
-            byte[][] trackedTileSets = [[0, 1, 2, 5, 6], [3, 4, 7, 8, 9], [10, 15, 16, 20, 21], [17, 18, 19, 22, 23], [11, 12, 13, 14]];
+            byte[][] trackedTileSets = [[0, 1, 2, 5, 6, 7], [3, 4, 8, 9, 13, 14], [10, 11, 15, 16, 20, 21], [12, 17, 18, 19, 22, 23]];
+
+            // Verify tile sets
+            byte[] testBoard = new byte[boardSize * boardSize];
+            foreach (byte[] tileSet in trackedTileSets)
+            {
+                foreach (byte trackedTile in tileSet)
+                {
+                    Assert.AreEqual(0, testBoard[trackedTile], $"Tile with index {trackedTile} occurs multiple times");
+                    testBoard[trackedTile] = 1;
+                }
+            }
+            for (int i = 0; i < testBoard.Length -1; i++)
+            {
+                Assert.AreNotEqual(0, testBoard[i], $"Index {i} is not tracked");
+            }
             for (int tileSet = 0; tileSet < trackedTileSets.Length; tileSet++)
             {
                 int byteCount = trackedTileSets[tileSet].Count(p => p != byte.MaxValue);
                 byte[] trackedTiles = new byte[byteCount];
                 int factor = boardSize * boardSize;
-                int numberOfStates = 1;
+                long numberOfStates = 1;
                 string fileName = string.Empty;
                 for (int i = 0; i < trackedTiles.Length; i++)
                 {
@@ -204,13 +260,13 @@ namespace UnitTest
                 }
                 // NumberOfStates should also consider the blank
                 numberOfStates *= factor;
-                Codec codec = new(boardSize, (byte)byteCount);
+                Codec codec = new(boardSize, (byte)byteCount, false);
                 PdbGenerator gen = new(boardSize, (byte)byteCount, false);
                 PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
                 {
                     TilePositions = trackedTiles,
                     BlankPosition = (byte)((boardSize * boardSize) - 1)
-                }, numberOfStates);
+                });
                 db.SaveToFile($"E:\\src\\net\\Slider\\{boardSize}x{boardSize}_{fileName}.pdb");
             }
         }

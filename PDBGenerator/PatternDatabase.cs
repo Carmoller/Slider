@@ -14,7 +14,7 @@ namespace PDBGenerator
         public int K { get; private set; }
         public long TotalStates { get; private set; }
         public byte[] TrackedTiles { get; private set; }
-        private bool _includeBlank;
+        public bool IncludeBlank { get; private set; }
 
         private readonly int _chunkShift;
         private readonly int _chunkSize;
@@ -27,7 +27,7 @@ namespace PDBGenerator
         {
             GridSize = gridSize;
             K = k;
-            _includeBlank = includeBlank;
+            IncludeBlank = includeBlank;
             TotalStates = totalStates;
             _pdbChunks = chunks;
             _chunkShift = chunkShift;
@@ -46,7 +46,7 @@ namespace PDBGenerator
         {
             GridSize = gridSize;
             K = k;
-            _includeBlank = includeBlank;
+            IncludeBlank = includeBlank;
             TotalStates = totalStates;
             _mmPdb = MemoryMappedPatternDatabase.LoadFromFile(mmfFilePath);
             _chunkShift = 20;
@@ -94,7 +94,7 @@ namespace PDBGenerator
                 writer.Write(headerLength);
                 writer.Write(GridSize);
                 writer.Write(K);
-                writer.Write(_includeBlank);
+                writer.Write(IncludeBlank);
                 writer.Write(TotalStates);
                 writer.Write(TrackedTiles.Length);
                 for (int i = 0; i < TrackedTiles.Length; i++)

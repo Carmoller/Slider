@@ -22,7 +22,7 @@ namespace UnitTest
             BufferPool.Slot slot2 = pool.Rent();
 
             // Assert
-            Assert.AreEqual(slot.Index, slot2.Index, "Returned slot should be reused");
+            Assert.AreEqual(slot.Offset, slot2.Offset, "Returned slot should be reused");
             Assert.AreEqual(64, slot.Size);
         }
 
@@ -34,7 +34,7 @@ namespace UnitTest
             BufferPool.Slot slot = pool.Rent();
 
             // Act
-            Memory<byte> memory = pool.GetMemory(slot);
+            Memory<byte> memory = slot.Memory;
 
             // Assert
             Assert.AreEqual(128, memory.Length);
@@ -47,7 +47,7 @@ namespace UnitTest
             // Arrange
             BufferPool pool = new(capacity: 5, size: 128);
             BufferPool.Slot slot = pool.Rent();
-            Memory<byte> memory = pool.GetMemory(slot);
+            Memory<byte> memory = slot.Memory;
 
             // Act
             memory.Span[0] = 42;
@@ -95,7 +95,7 @@ namespace UnitTest
             // Write different values to identify slots
             for (int i = 0; i < 3; i++)
             {
-                Memory<byte> mem = pool.GetMemory(slots[i]);
+                Memory<byte> mem = slots[i].Memory;
                 mem.Span[0] = (byte)i;
             }
 
@@ -106,11 +106,11 @@ namespace UnitTest
 
             // Rent again - should reuse in LIFO order
             BufferPool.Slot reused1 = pool.Rent();
-            Memory<byte> mem1 = pool.GetMemory(reused1);
+            Memory<byte> mem1 = reused1.Memory;
             Assert.AreEqual(2, mem1.Span[0], "Should reuse most recently returned slot");
 
             BufferPool.Slot reused2 = pool.Rent();
-            Memory<byte> mem2 = pool.GetMemory(reused2);
+            Memory<byte> mem2 = reused2.Memory;
             Assert.AreEqual(0, mem2.Span[0]);
         }
 
@@ -140,7 +140,7 @@ namespace UnitTest
             for (int i = 0; i < allocations; i++)
             {
                 BufferPool.Slot slot = pool.Rent();
-                Memory<byte> memory = pool.GetMemory(slot);
+                Memory<byte> memory = slot.Memory;
 
                 // Write to ensure memory is touched
                 memory.Span[0] = (byte)(i % 256);
@@ -182,7 +182,7 @@ namespace UnitTest
 
             // Verify pool is still functional
             BufferPool.Slot testSlot = pool.Rent();
-            Memory<byte> testMem = pool.GetMemory(testSlot);
+            Memory<byte> testMem = testSlot.Memory;
             Assert.AreEqual(size, testMem.Length, "Pool should still be functional");
 
             // GC should be minimal with buffering strategy
@@ -210,7 +210,7 @@ namespace UnitTest
             for (int i = 0; i < 10000; i++)
             {
                 BufferPool.Slot slot = pool.Rent();
-                Memory<byte> memory = pool.GetMemory(slot);
+                Memory<byte> memory = slot.Memory;
 
                 // Write to multiple locations to ensure memory is functional
                 memory.Span[0] = (byte)(i % 256);
@@ -258,7 +258,7 @@ namespace UnitTest
                         for (int i = 0; i < allocationsPerThread; i++)
                         {
                             BufferPool.Slot slot = pool.Rent();
-                            Memory<byte> memory = pool.GetMemory(slot);
+                            Memory<byte> memory = slot.Memory;
                             memory.Span[0] = (byte)Thread.CurrentThread.ManagedThreadId;
                             pool.Return(slot);
                         }
