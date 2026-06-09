@@ -19,7 +19,6 @@ namespace PDBGenerator
         private int GridSize;
         private int TotalPositions;
         private int K = 6;
-        private bool _includeBlank = true;
         private long _maxQueueLength;
 
         // Chunk configuration to avoid huge contiguous allocations
@@ -51,11 +50,10 @@ namespace PDBGenerator
         ///    - Suitable for 10x10+ puzzles
         ///    - File path: %TEMP%/pdb_{gridSize}x{gridSize}_k{k}.mmf
         /// </summary>
-        public PdbGenerator(byte gridSize, byte k, bool includeBlank, bool useMemoryMappedFile = false)
+        public PdbGenerator(byte gridSize, byte k, bool useMemoryMappedFile = false)
         {
             GridSize = gridSize;
-            _pdbCodec = new(gridSize, k, includeBlank);
-            _includeBlank = includeBlank;
+            _pdbCodec = new(gridSize, k);
             TotalPositions = GridSize * GridSize;
             K = k;
             _totalStates = CalculateTotalStates(true);
@@ -152,9 +150,10 @@ namespace PDBGenerator
         public struct PatternState
         {
             // Stores the 0-indexed board positions of the K tracked tiles
-            public Memory<byte> TilePositions;
+            public required Memory<byte> TilePositions;
             public Slot Slot;
-            public byte BlankPosition;
+            public required byte BlankPosition;
+            public byte PreviousBlankPosition;
 
             public override string ToString()
             {
@@ -166,8 +165,9 @@ namespace PDBGenerator
         /// <summary>
         /// Executes the reverse BFS loop starting from the goal pattern configuration.
         /// </summary>
-        public PatternDatabase GeneratePdb(PatternState goalState)
+        public PatternDatabase GeneratePdb(PatternState goalState, Action<long, long>? Verify = null)
         {
+            byte maxCost = 0;
             BufferPool pool = new(_totalStates + 1, K);
             Stopwatch sw = new();
             sw.Start();
@@ -182,6 +182,7 @@ namespace PDBGenerator
             {
                 TilePositions = goalTiles,
                 BlankPosition = goalState.BlankPosition,
+                PreviousBlankPosition = byte.MaxValue,
                 Slot = goalSlot
             };
 
@@ -196,7 +197,8 @@ namespace PDBGenerator
                 _maxQueueLength = Math.Max(_maxQueueLength, queue.Count);
                 long currentIndex = EncodePattern(current.TilePositions, current.BlankPosition);
                 // Skip if we have already calculated this state with a lower cost (can happen due to multiple paths to the same state)
-//                Debug.WriteLine($"Examining {current.ToString()}, index {currentIndex}, cost {currentCost}");
+                //                Debug.WriteLine($"Examining {current.ToString()}, index {currentIndex}, cost {currentCost}");
+
                 if (currentCost < GetDistance(currentIndex))
                 {
                     SetDistance(currentIndex, currentCost);
@@ -208,14 +210,18 @@ namespace PDBGenerator
                 //    continue;
                 //}
                 processedStates++;
-                if (processedStates % 1000000 == 0)
-                {
-                    Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}");
-                }
+                //if (processedStates % 1000000 == 0)
+                //{
+                //    Console.WriteLine($"Processed {processedStates} states. Queue size: {queue.Count}");
+                //}
 
                 // Generate physical movements of the blank tile
                 foreach (byte nextBlank in GetValidMoves(current.BlankPosition))
                 {
+                    if (nextBlank == current.PreviousBlankPosition)
+                    {
+                        continue;
+                    }
                     byte neighborCost = currentCost;
                     // Create a clone for the neighbor state
                     BufferPool.Slot slot = pool.Rent();
@@ -242,12 +248,12 @@ namespace PDBGenerator
 
                     byte[] temp = nextTiles.Span.ToArray();
 
- //                   Debug.WriteLine($"Examining neighbor {string.Join(',', temp)}, blank: {nextBlank}");
+                    //                   Debug.WriteLine($"Examining neighbor {string.Join(',', temp)}, blank: {nextBlank}");
 
                     long neighborIndex = EncodePattern(nextTiles, nextBlank);
                     if (neighborIndex == -1)
                     {
-  //                      Debug.WriteLine("Neighbor index == -1");
+                        //                      Debug.WriteLine("Neighbor index == -1");
 
                         pool.Return(slot);
                         continue;
@@ -256,35 +262,34 @@ namespace PDBGenerator
                     // or if the board state (where we include the blank) has not been visted
                     // update and enqueue
                     byte neighborDist = GetDistance(neighborIndex);
-                    bool isNeighborVisited = _includeBlank ? IsStateVisited(neighborIndex) : IsStateVisited(neighborIndex * GridSize * GridSize + nextBlank);
+                    bool isNeighborVisited = IsStateVisited(neighborIndex);
 
                     if ((neighborDist == byte.MaxValue || neighborDist > neighborCost) || !isNeighborVisited)
                     {
+                        if (Verify != null)
+                        {
+                            Verify(neighborIndex, neighborCost);
+                        }
                         PatternState neighborState = new PatternState
                         {
                             TilePositions = nextTiles,
                             BlankPosition = nextBlank,
+                            PreviousBlankPosition = current.BlankPosition,
                             Slot = slot
                         };
- //                       Debug.WriteLine($"Queuing neighbor {neighborState.ToString()}, index={neighborIndex}, dist={neighborDist}, visited={isNeighborVisited}");
+                        //                       Debug.WriteLine($"Queuing neighbor {neighborState.ToString()}, index={neighborIndex}, dist={neighborDist}, visited={isNeighborVisited}");
                         queue.Enqueue(neighborState, neighborCost);
+                        maxCost = Math.Max(maxCost, neighborCost);
                     }
                     else
                     {
-   //                     Debug.WriteLine($"Neighbor not queued, index={neighborIndex}, {neighborDist}, {isNeighborVisited}");
+                        //                     Debug.WriteLine($"Neighbor not queued, index={neighborIndex}, {neighborDist}, {isNeighborVisited}");
                         pool.Return(slot);
                     }
                 }
                 // Return current slot only after we're done processing all neighbors
                 pool.Return(current.Slot);
-                if (_includeBlank)
-                {
-                    SetStateVisited(currentIndex);
-                }
-                else
-                {
-                    SetStateVisited(currentIndex * GridSize * GridSize + current.BlankPosition);
-                }
+                SetStateVisited(currentIndex);
 
             }
             sw.Stop();
@@ -297,12 +302,12 @@ namespace PDBGenerator
             if (_useMemoryMappedFile)
             {
                 _mmPdb!.Close();
-                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, tilePositionsByte, _mmPdb.FilePath);
+                return new PatternDatabase(GridSize, K,  _totalStates, tilePositionsByte, _mmPdb.FilePath);
             }
             else
             {
 
-                return new PatternDatabase(GridSize, K, _includeBlank,  _totalStates, tilePositionsByte, _pdbChunks!, ChunkShift);
+                return new PatternDatabase(GridSize, K,  _totalStates, tilePositionsByte, _pdbChunks!, ChunkShift);
             }
         }
         private IEnumerable<int> GetValidMoves(int blankPos)
@@ -318,7 +323,7 @@ namespace PDBGenerator
 
         private long EncodePattern(Memory<byte> positions, byte blankPosition)
         {
-            return _pdbCodec.Encode(positions, blankPosition);
+            return _pdbCodec.Encode(positions.Span, blankPosition);
         }
     }
 

@@ -14,20 +14,17 @@ namespace PDBGenerator
         public int K { get; private set; }
         public long TotalStates { get; private set; }
         public byte[] TrackedTiles { get; private set; }
-        public bool IncludeBlank { get; private set; }
-
         private readonly int _chunkShift;
         private readonly int _chunkSize;
         private readonly int _chunkMask;
         public Dictionary<long, byte[]>? _pdbChunks;
-        private MemoryMappedPatternDatabase? _mmPdb;
-        private bool _isMemoryMapped;
+        private readonly MemoryMappedPatternDatabase? _mmPdb;
+        private readonly bool _isMemoryMapped;
         // Constructor for in-memory dictionary
-        public PatternDatabase(int gridSize, int k, bool includeBlank, long totalStates, byte[] goalPositions, Dictionary<long, byte[]> chunks, int chunkShift)
+        public PatternDatabase(int gridSize, int k, long totalStates, byte[] goalPositions, Dictionary<long, byte[]> chunks, int chunkShift)
         {
             GridSize = gridSize;
             K = k;
-            IncludeBlank = includeBlank;
             TotalStates = totalStates;
             _pdbChunks = chunks;
             _chunkShift = chunkShift;
@@ -42,11 +39,10 @@ namespace PDBGenerator
         }
 
         // Constructor for memory-mapped file
-        public PatternDatabase(int gridSize, int k, bool includeBlank, long totalStates, byte[] goalPositions, string mmfFilePath)
+        public PatternDatabase(int gridSize, int k, long totalStates, byte[] goalPositions, string mmfFilePath)
         {
             GridSize = gridSize;
             K = k;
-            IncludeBlank = includeBlank;
             TotalStates = totalStates;
             _mmPdb = MemoryMappedPatternDatabase.LoadFromFile(mmfFilePath);
             _chunkShift = 20;
@@ -94,7 +90,6 @@ namespace PDBGenerator
                 writer.Write(headerLength);
                 writer.Write(GridSize);
                 writer.Write(K);
-                writer.Write(IncludeBlank);
                 writer.Write(TotalStates);
                 writer.Write(TrackedTiles.Length);
                 for (int i = 0; i < TrackedTiles.Length; i++)
@@ -118,7 +113,7 @@ namespace PDBGenerator
         /// <summary>
         /// Loads a pre-generated PDB binary payload back into RAM
         /// </summary>
-        public static PatternDatabase? LoadFromFile(string filePath)
+        public static PatternDatabase? LoadFromFile(string filePath, bool headerhasBlank = false)
         {
             using (FileStream fs = new (filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (BinaryReader reader = new (fs))
@@ -129,7 +124,8 @@ namespace PDBGenerator
                 int headerLength = reader.ReadInt32();
                 int gridSize = reader.ReadInt32();
                 int k = reader.ReadInt32();
-                bool includeBlank = reader.ReadBoolean();
+                if (headerhasBlank)
+                    reader.ReadBoolean();
                 long totalStates = reader.ReadInt64();
                 int trackedTilesCount = reader.ReadInt32();
                 byte[] trackedTiles = new byte[trackedTilesCount];
@@ -150,7 +146,7 @@ namespace PDBGenerator
                     chunks[chunkIdx] = chunkData;
                 }
 
-                return new PatternDatabase(gridSize, k, includeBlank, totalStates, trackedTiles, chunks, chunkShift);
+                return new PatternDatabase(gridSize, k, totalStates, trackedTiles, chunks, chunkShift);
             }
         }
 

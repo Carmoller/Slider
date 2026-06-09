@@ -171,7 +171,7 @@ namespace UnitTest
                 { 3, 4, 8, 6 },
                 { 10, 11, 12, 13 }
             }; BfsSolver solver = new(board);
-            Codec codec = new(boardSize, k, true);
+            Codec codec = new(boardSize, k);
             byte[] trackedTilesArray = [4, 5, 8, 9];
             byte blankPosition = 0;
 

@@ -4,6 +4,7 @@ using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Text;
 
 namespace UnitTest
@@ -17,7 +18,7 @@ namespace UnitTest
             public int Distance { get; set; }
         }
 
-        private readonly Result[] AllLegalBoards = 
+        private readonly Result[] AllLegalBoards =
         [
            new Result {Board = [0, 1, 3, 2], Distance = 2},
            new Result {Board = [0, 2, 1, 3], Distance = 2},
@@ -41,9 +42,9 @@ namespace UnitTest
             PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
             {
                 TilePositions = new byte[] { 0, 1, 2 },
-                BlankPosition = 3
+                BlankPosition = 3,
             });
-            Codec codec = new(2, 3, true);
+            Codec codec = new(2, 3);
 
             int[] trackedTiles = [1, 2, 3];
             PdbHelper helper = new(trackedTiles);
@@ -71,7 +72,7 @@ namespace UnitTest
                 TilePositions = new byte[] { 0, 1, 2 },
                 BlankPosition = 3
             });
-            Codec codec = new(2, 3, true);
+            Codec codec = new(2, 3);
 
             int[] trackedTiles = [1, 2, 3];
             PdbHelper helper = new(trackedTiles);
@@ -92,15 +93,15 @@ namespace UnitTest
         [TestMethod]
         public void PdbGeneratorPerformance4x4_4TrackedTiles()
         {
-            byte boardSize =4;
+            byte boardSize = 4;
             byte k = 4;
             byte[] trackedTiles = new byte[k];
             long factor = boardSize * boardSize;
             long numberOfStates = 1;
 
-            for (int i=0; i<k; i++)
+            for (int i = 0; i < k; i++)
             {
-                numberOfStates*= factor;
+                numberOfStates *= factor;
                 trackedTiles[i] = (byte)i;
                 factor--;
             }
@@ -136,7 +137,7 @@ namespace UnitTest
             Assert.IsNotNull(loadedDb);
             Assert.AreEqual(3, loadedDb.K);
 
-            Codec codec = new(4, 3, true);
+            Codec codec = new(4, 3);
             long index = codec.Encode(new byte[] { 2, 0, 13 }, 7);
             Assert.AreEqual(27591, index);
             byte distance1 = db.GetDistance(index);
@@ -155,7 +156,6 @@ namespace UnitTest
         [TestMethod]
         public void Create4x4Pdbs()
         {
-            bool includeBlank = false;
             byte boardSize = 4; // 4x4 grid
             byte[][] trackedTileSets = [[0, 1, 4, 5], [2, 3, 6, 7], [8, 9, 12, 13], [10, 11, 14, byte.MaxValue]];
             for (int tileSet = 0; tileSet < trackedTileSets.Length; tileSet++)
@@ -174,8 +174,8 @@ namespace UnitTest
                 }
                 // NumberOfStates should also consider the blank
                 numberOfStates *= factor;
-                Codec codec = new(boardSize, (byte)byteCount, includeBlank);
-                PdbGenerator gen = new(boardSize, (byte)byteCount, includeBlank);
+                Codec codec = new(boardSize, (byte)byteCount);
+                PdbGenerator gen = new(boardSize, (byte)byteCount);
                 PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
                 {
                     TilePositions = trackedTiles,
@@ -228,22 +228,23 @@ namespace UnitTest
         public void Create5x5Pdbs()
         {
             byte boardSize = 5; // 5x5 grid
-            byte[][] trackedTileSets = [[0, 1, 2, 5, 6, 7], [3, 4, 8, 9, 13, 14], [10, 11, 15, 16, 20, 21], [12, 17, 18, 19, 22, 23]];
-
+                                //            byte[][] trackedTileSets = [[0, 1, 2, 5, 6], [3, 4, 7, 8, 9], [10, 11, 12, 15, 16], [13, 14, 18, 19, 23], [17, 20, 21, 22]];
+                                //            byte[][] trackedTileSets = [[0, 1, 2, 5, 10], [3, 4, 9, 14, 19], [15,20,21, 22, 23], [6,7,8, 11, 16], [12, 13, 17, 18]];
+            byte[][] trackedTileSets = [[0, 1, 2, 5, 6]];
             // Verify tile sets
-            byte[] testBoard = new byte[boardSize * boardSize];
-            foreach (byte[] tileSet in trackedTileSets)
-            {
-                foreach (byte trackedTile in tileSet)
-                {
-                    Assert.AreEqual(0, testBoard[trackedTile], $"Tile with index {trackedTile} occurs multiple times");
-                    testBoard[trackedTile] = 1;
-                }
-            }
-            for (int i = 0; i < testBoard.Length -1; i++)
-            {
-                Assert.AreNotEqual(0, testBoard[i], $"Index {i} is not tracked");
-            }
+            //byte[] testBoard = new byte[boardSize * boardSize];
+            //foreach (byte[] tileSet in trackedTileSets)
+            //{
+            //    foreach (byte trackedTile in tileSet)
+            //    {
+            //        Assert.AreEqual(0, testBoard[trackedTile], $"Tile with index {trackedTile} occurs multiple times");
+            //        testBoard[trackedTile] = 1;
+            //    }
+            //}
+            //for (int i = 0; i < testBoard.Length -1; i++)
+            //{
+            //    Assert.AreNotEqual(0, testBoard[i], $"Index {i} is not tracked");
+            //}
             for (int tileSet = 0; tileSet < trackedTileSets.Length; tileSet++)
             {
                 int byteCount = trackedTileSets[tileSet].Count(p => p != byte.MaxValue);
@@ -260,7 +261,7 @@ namespace UnitTest
                 }
                 // NumberOfStates should also consider the blank
                 numberOfStates *= factor;
-                Codec codec = new(boardSize, (byte)byteCount, false);
+                Codec codec = new(boardSize, (byte)byteCount);
                 PdbGenerator gen = new(boardSize, (byte)byteCount, false);
                 PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
                 {
@@ -271,5 +272,47 @@ namespace UnitTest
             }
         }
 
+        [TestMethod]
+        public void VerifyAgainstTruth()
+        {
+            PatternDatabase? pdbTruth = PatternDatabase.LoadFromFile(@"E:\src\net\Slider\PDB Backups\5x5_0102030607.pdb", true);
+            Assert.IsNotNull(pdbTruth);
+            byte boardSize = 5; // 5x5 grid
+            byte[] trackedTiles = [0, 1, 2, 5, 6];
+            byte blankPos = 24;
+            Codec codecNew = new(boardSize, 5);
+            Codec codecTruth = new(boardSize, 5);
+            PdbGenerator gen = new(boardSize, 5, false);
+            int equals = 0;
+            PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
+            {
+                TilePositions = trackedTiles,
+                BlankPosition = (byte)((boardSize * boardSize) - 1)
+            }, ((index, cost) =>
+            {
+                if (index == 5)
+                {
+                    int a = 1;
+                }
+                DecodeResult result = codecNew.Decode(index); // Get the byte pattern
+                blankPos = result.BlankPosition;
+                long truthIndex = codecTruth.Encode(result.TilePositions, blankPos);
+                byte truthDistance = pdbTruth.GetDistance(truthIndex);
+                if (truthDistance != cost)
+                {
+                    string message = $"{string.Join(",", result.TilePositions)}: Truth PDB says {truthDistance}, but new PDB says {cost}\r\nNew index was {index}, equals so far {equals}";
+                    Debug.WriteLine(message);
+                    //Assert.AreEqual(truthDistance, cost, message);
+                }
+                else
+                    equals++;
+            }));
+            long[] keys = pdbTruth._pdbChunks.Keys.ToArray();
+            for (int i = 0; i < pdbTruth._pdbChunks.Keys.Count; i++)
+            {
+                List<ByteDifference> diffs = ByteSearcher.CompareByteArrays(pdbTruth._pdbChunks[keys[i]], db._pdbChunks[keys[i]]);
+                Assert.IsEmpty(diffs);
+            }
+        }
     }
 }

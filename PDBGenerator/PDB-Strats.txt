@@ -1,0 +1,113 @@
+﻿To build a highly effective solver using 5-tile Pattern Databases (PDBs), you need to slice the 24 tiles into multiple distinct configurations. Relying on just one or two partition sets leaves a "friction blind spot" [1]. Because 5-tile groups are quite small, tiles that constantly block each other are frequently separated into different databases, causing your lookups to miss those collisions entirely [1].
+In their definitive research on additive pattern databases, AI scientists Richard Korf and Ariel Felner demonstrated that to close the underestimation gap on large sliding puzzles, you must generate a diverse collection of overlapping partition sets [1]. For a $5 \times 5$ board, using 8 distinct partition sets is the standard requirement to capture both micro-collisions and macro-gridlock across all rows, columns, and corners.
+Here are the 8 structural ways you should slice your $5 \times 5$ board.
+------------------------------
+## The 8 Essential Partition Sets
+Each of these 8 sets must contain four 5-tile groups and one 4-tile group, strictly accounting for all 24 tiles. During your IDA* search, you will calculate the sum of each independent set and take the absolute maximum [1]:
+$$\mathbf{h(n) = \max(Set_1, Set_2, Set_3, \dots, Set_8)}$$ 
+## Set 1 & 2: The Corner Rings (Your Current Setup)
+Your current arrangement is an excellent baseline because it isolates the outer edges where tiles easily get jammed.
+
+* Set 1 (Outer Ring Dominant):
+* [0, 1, 2, 5, 10], [3, 4, 9, 14, 19], [15, 20, 21, 22, 23], [6, 7, 8, 11, 16], [12, 13, 17, 18]
+* Set 2 (Horizontal Grid/Blocks):
+* [0, 1, 2, 5, 6], [3, 4, 7, 8, 9], [10, 11, 12, 15, 16], [13, 14, 18, 19, 23], [17, 20, 21, 22]
+
+## Set 3 & 4: Vertical and Horizontal Stripes
+Stripes excel at tracking linear conflicts and "traffic jams" where tiles are trying to cross paths along a single axis.
+
+* Set 3 (Horizontal Stripes): Divide the board strictly into rows.
+* Row 1: [0, 1, 2, 3, 4]
+   * Row 2: [5, 6, 7, 8, 9]
+   * Row 3: [10, 11, 12, 13, 14]
+   * Row 4: [15, 16, 17, 18, 19]
+   * Row 5 (4 tiles): [20, 21, 22, 23]
+* Set 4 (Vertical Stripes): Divide the board strictly into columns (the orthogonal counterpart to Set 3).
+* Col 1: [0, 5, 10, 15, 20]
+   * Col 2: [1, 6, 11, 16, 21]
+   * Col 3: [2, 7, 12, 17, 22]
+   * Col 4: [3, 8, 13, 18, 23]
+   * Col 5 (4 tiles): [4, 9, 14, 19]
+
+## Set 5 & 6: Nested L-Shape Fringes
+Instead of breaking the outer ring into multiple separate corners (like Set 1), these sets group the entire top and left edges together into continuous L-shapes.
+
+* Set 5 (Outer Fringe Focus):
+* Group 1 (Top edge + top corner): [0, 1, 2, 3, 4]
+   * Group 2 (Left edge remaining): [5, 10, 15, 20, 21]
+   * Group 3 (Inner L-shape): [6, 7, 8, 11, 16]
+   * Group 4 (Bottom-Right remaining block): [9, 13, 14, 18, 19]
+   * Group 5 (4 tiles - Core/Bottom): [12, 17, 22, 23]
+* Set 6 (Inverted Fringe Focus): Mirror of Set 5, but grouping the bottom and right outer edges together to catch traffic jams moving toward the goal state's final quadrants.
+
+## Set 7 & 8: Diagonal Crosses (The X-Patterns)
+Sliding puzzle bottlenecks often happen diagonally, where groups of tiles must rotate around each other in cycles.
+
+* Set 7 (Main Diagonal Segments): Group tiles that run from the top-left to bottom-right.
+* [0, 6, 12, 18, 24] (Note: if 24 is your blank, replace 24 with a neighboring tile like 23)
+   * [1, 2, 7, 8, 13]
+   * [5, 10, 11, 16, 17]
+   * [3, 4, 9, 14, 19]
+   * [15, 20, 21, 22, 23]
+* Set 8 (Anti-Diagonal Segments): Group tiles running from the top-right to bottom-left.
+
+------------------------------
+## Do I Have to Generate All 8 From Scratch?
+No. You can use symmetry to dramatically reduce your workload.
+Because a $5 \times 5$ grid is completely symmetrical, you only need to write the generator code and output files for 4 base sets (e.g., Set 1, Set 3, Set 5, and Set 7).
+When your solver loads them into memory, you can dynamically map their orthogonal mirror pairs (Sets 2, 4, 6, and 8) on the fly using the diagonal reflection mapping we worked out earlier.
+## Why This Maximizes Your Heuristic
+When your IDA* search hits a node, Set 1 might report a distance of 71. However, if that particular board state has a severe column-shuffling bottleneck, Set 4 (Vertical Stripes) might look at it and report a 92. Taking the Math.Max() over all 8 options ensures your solver always benefits from the highest possible lower bound, compressing the search space down to a fraction of its original size.
+If you want to try this out, you can start by adding the Horizontal and Vertical Stripe sets (Sets 3 and 4) next. They are mathematically simple to map and highly effective at catching linear conflicts.
+Would you like to review how to write a quick index-remapping wrapper so you can reuse your existing Set 1 database files to instantly look up Set 2 values without generating a new file?
+
+
+
+
+
+
+Yes, you can absolutely use these exact same symmetry techniques for both 4x4 (15-puzzle) and 6x6 (35-puzzle) boards. Reflection and rotation symmetries are a mathematical property of any square grid.
+Whenever you have a square puzzle grid, the physical bottlenecks, corner traps, and distances remain identical whether the board is looked at normally, flipped diagonally, or rotated 90 degrees.
+Here is how you apply it to those board sizes and what you need to keep in mind.
+------------------------------
+## 1. The Diagonal Reflection Formula (Any N × N Grid)
+To map a flat array position i to its diagonally reflected position on an N × N board, the generalized formula is:
+$$\text{reflected\_position} = (i \pmod N) \times N + \lfloor i / N \rfloor$$ 
+Using this formula across different dimensions:
+
+* For 4x4 (N=4): Position 1 (Row 0, Col 1) becomes $(1 \pmod 4) \times 4 + 0 = \mathbf{4}$ (Row 1, Col 0).
+* For 6x6 (N=6): Position 1 (Row 0, Col 1) becomes $(1 \pmod 6) \times 6 + 0 = \mathbf{6}$ (Row 1, Col 0).
+
+Just like the 5x5 board, positions sitting directly on the main diagonal (e.g., index 0, or index 5 on a 4x4) will map cleanly to themselves.
+------------------------------
+## 2. Slicing a 4x4 Board (The 15-Puzzle)
+The 4x4 board has 15 tiles and 1 blank. Because the total number of tiles is much smaller, you don't need 8 partition sets. You can achieve incredible, near-instant solver speeds using a 6-6-3 partitioning scheme (two 6-tile databases and one 3-tile database) [1].
+By utilizing symmetry, you only need to build one database layout:
+
+   1. Base Set (Horizontal Focus): Group tiles by horizontal rows (e.g., Top two rows as the two 6-tile groups, bottom row as the 3-tile group).
+   2. Symmetry Set (Vertical Focus): Run your diagonal reflection mapping on the board at every node during the search and look it up against that exact same database.
+
+Taking the Math.Max() of these two lookups will perfectly capture both horizontal and vertical tile friction.
+------------------------------
+## 3. Slicing a 6x6 Board (The 35-Puzzle)
+A 6x6 board has 35 tiles and 1 blank, creating an astronomically large search space. 5-tile or 6-tile databases are actually too weak for a 6x6 puzzle if used alone, because a 6-tile group only tracks about 17% of the board.
+If you build a solver for a 6x6 board, you will face the exact same underestimation issue you just solved on your 5x5 unless you heavily rely on symmetries:
+
+* The Strategy: You should partition the 35 tiles into seven 5-tile groups.
+* The Multiplier: Because the board is larger, you should leverage all 8 square symmetries (Reflection across main diagonal, anti-diagonal, horizontal flip, vertical flip, and 90, 180, 270-degree rotations).
+* The Evaluation: By coding those 8 geometric transformations into your heuristic function, a single 35-tile partition layout will dynamically turn into 8 unique lower-bound evaluations at every node inside your IDA* search. Taking the maximum of all 8 will heavily compress the 6x6 search tree.
+
+------------------------------
+## ⚠️ The Golden Rule: The Goal State Must Be Symmetrical
+The only strict rule for reusing your database files via symmetry is that the goal state of your puzzle must also be symmetrical when transformed.
+Most standard sliding puzzle goal states are sequentially ordered from top-left to bottom-right:
+
+[ 0,  1,  2,  3]
+[ 4,  5,  6,  7]
+[ 8,  9, 10, 11]
+[12, 13, 14, 15]
+
+If you reflect this goal state across the main diagonal, Tile 1 (wishing to be at position 1) moves to position 4. Because position 4 is the goal for Tile 4, Tile 1 and Tile 4 perfectly swap identities.
+As long as your code transforms the Tile IDs along with the Positions (using the exact same N × N mapping array), your PDB lookups will be 100% mathematically valid and perfectly admissible for any square board size you choose to build.
+Are you planning on adapting your current solver infrastructure to handle dynamic board sizes (like passing N as a variable), or are you keeping the 4x4, 5x5, and 6x6 engines completely separate?
+

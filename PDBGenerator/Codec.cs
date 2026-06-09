@@ -14,8 +14,7 @@ namespace PDBGenerator
         private readonly long[] Factorials;
         private readonly long[,] BinomialCoefficients;
         private readonly long _maxBin;
-        private bool _includeBlank;
-        public Codec(int boardSize, int sequenceLength, bool includeBlank)
+        public Codec(int boardSize, int sequenceLength)
         {
             N = boardSize * boardSize;
             K = sequenceLength;
@@ -42,26 +41,24 @@ namespace PDBGenerator
                 }
             }
 
-            _includeBlank = includeBlank;
         }
 
-        public long Encode(Memory<byte> tilePositions, byte blankPosition)
+        public long Encode(Span<byte> tilePositions, byte blankPosition)
         {
             if (tilePositions.Length != K)
                 throw new ArgumentException($"Array must contain exactly {K} elements.");
-            if (_includeBlank && (blankPosition < 0 || blankPosition >= N))
+            if (blankPosition < 0 || blankPosition >= N)
                 throw new ArgumentOutOfRangeException(nameof(blankPosition), $"Blank position must be between 0 and {N - 1}.");
 
-            Span<byte> tilePositionsSpan = tilePositions.Span;
             int[] sortedPositions = new int[K];
             for (int i = 0; i < K; i++)
             {
-                if (_includeBlank && tilePositionsSpan[i] == blankPosition)
+                if (tilePositions[i] == blankPosition)
                 {
-                    // Return a special indicator value.
+                    // Return a special indicator value that one of the tiles occupy the same space as the blank
                     return -1;
                 }
-                sortedPositions[i] = tilePositionsSpan[i];
+                sortedPositions[i] = tilePositions[i];
             }
             Array.Sort(sortedPositions);
             long combinationRank = 0;
@@ -78,7 +75,7 @@ namespace PDBGenerator
 
             for (int i = 0; i < K; i++)
             {
-                int targetPos = tilePositionsSpan[i];
+                int targetPos = tilePositions[i];
                 int relativeIndex = 0;
                 int poolSize = K - i;
 
@@ -99,9 +96,6 @@ namespace PDBGenerator
 
             // 4. Combine the pure tile layout rank with the blank tile space
             long pureTileRank = (combinationRank * Factorials[K]) + permutationRank;
-            if (!_includeBlank)
-                return pureTileRank;
-
             // Multiply by N to shift the index, then safely embed the blank position offset
             return (pureTileRank * N) + blankPosition;
         }
@@ -115,21 +109,18 @@ namespace PDBGenerator
         {
             if (tilePositions == null || tilePositions.Length != K)
                 throw new ArgumentException($"Array must contain exactly {K} elements.");
-            if (_includeBlank)
+            if (blankPosition < 0 || blankPosition >= N)
+                throw new ArgumentOutOfRangeException(nameof(blankPosition), $"Blank position must be between 0 and {N - 1}.");
+
+            for (int i = 0; i < K; i++)
             {
-                if (blankPosition < 0 || blankPosition >= N)
-                    throw new ArgumentOutOfRangeException(nameof(blankPosition), $"Blank position must be between 0 and {N - 1}.");
-
-                for (int i = 0; i < K; i++)
+                if (tilePositions[i] == blankPosition)
                 {
-                    if (tilePositions[i] == blankPosition)
-                    {
-                        // Return a special indicator value.
-                        return -1;
-                    }
+                    // Return a special indicator value.
+                    return -1;
                 }
-
             }
+
             // 1. Extract combination footprint by sorting the positions
             int[] sortedPositions = new int[K];
             for (int i = 0; i < K; i++) sortedPositions[i] = tilePositions[i];
@@ -173,8 +164,6 @@ namespace PDBGenerator
             long pureTileRank = (combinationRank * Factorials[K]) + permutationRank;
 
             // Multiply by N to shift the index, then safely embed the blank position offset
-            if (!_includeBlank)
-                return pureTileRank;
             return (pureTileRank * N) + blankPosition;
         }
 
@@ -186,16 +175,9 @@ namespace PDBGenerator
             byte blankPosition = 0xFF;
             long pureTileRank;
 
-            if (_includeBlank)
-            {
-                // Extract the blank position using remainder math, and isolate the pure tile rank
-                blankPosition = (byte)(dynamicDatabaseIndex % N);
-                pureTileRank = dynamicDatabaseIndex / N;
-            }
-            else
-            {
-                pureTileRank = dynamicDatabaseIndex;
-            }
+            // Extract the blank position and isolate the pure tile rank
+            blankPosition = (byte)(dynamicDatabaseIndex % N);
+            pureTileRank = dynamicDatabaseIndex / N;
 
             long combinationRank = pureTileRank / Factorials[K];
             long permutationRank = pureTileRank % Factorials[K];
@@ -232,21 +214,14 @@ namespace PDBGenerator
 
             return new DecodeResult(resultPositions, blankPosition);
         }
-        public DecodeResultMem DecodeMem(long dynamicDatabaseIndex)
+        public bool DecodeMem(long dynamicDatabaseIndex, Span<byte> targetSpan, out byte blankPosition)
         {
-            byte blankPosition = 0xFF;
+            blankPosition = 0xFF;
             long pureTileRank;
 
-            if (_includeBlank)
-            {
-                // Extract the blank position using remainder math, and isolate the pure tile rank
-                blankPosition = (byte)(dynamicDatabaseIndex % N);
-                pureTileRank = dynamicDatabaseIndex / N;
-            }
-            else
-            {
-                pureTileRank = dynamicDatabaseIndex;
-            }
+            // Extract the blank position, and isolate the pure tile rank
+            blankPosition = (byte)(dynamicDatabaseIndex % N);
+            pureTileRank = dynamicDatabaseIndex / N;
 
             long combinationRank = pureTileRank / Factorials[K];
             long permutationRank = pureTileRank % Factorials[K];
@@ -267,8 +242,6 @@ namespace PDBGenerator
             }
 
             // 3. Unrank Permutation via Lehmer code
-            Memory<byte> resultPositions = new byte[K];
-            Span<byte> resultSpan = resultPositions.Span;
             List<byte> availablePool = new(chosenPositions);
             long remainingPermRank = permutationRank;
 
@@ -278,11 +251,10 @@ namespace PDBGenerator
                 int poolIndex = (int)(remainingPermRank / factSpace);
                 remainingPermRank %= factSpace;
 
-                resultSpan[i] = availablePool[poolIndex];
+                targetSpan[i] = availablePool[poolIndex];
                 availablePool.RemoveAt(poolIndex);
             }
-
-            return new DecodeResultMem(resultPositions, blankPosition);
+            return true;
         }
 
     }

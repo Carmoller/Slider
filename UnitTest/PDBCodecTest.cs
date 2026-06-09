@@ -39,7 +39,7 @@ namespace UnitTest
         [TestMethod]
         public void TestCodec()
         {
-            Codec codec = new Codec(15, 6, true);
+            Codec codec = new Codec(15, 6);
             // Example test cases
             byte[] sequence1 = { 0, 1, 2, 3, 4, 5 };
             byte[] sequence2 = { 5, 4, 3, 2, 1, 0 };
@@ -58,7 +58,7 @@ namespace UnitTest
         [TestMethod]
         public void TestCodec_NoBlank()
         {
-            Codec codec = new Codec(15, 6, false);
+            Codec codec = new Codec(15, 6);
             // Example test cases
             byte[] sequence1 = { 0, 1, 2, 3, 4, 5 };
             byte[] sequence2 = { 5, 4, 3, 2, 1, 0 };
@@ -78,27 +78,39 @@ namespace UnitTest
         [TestMethod]
         public void TestMemCodec()
         {
-            Codec codec = new Codec(15, 6, true);
+            Codec codec = new Codec(15, 6);
             // Example test cases
+            byte blankPos1 = 13;
+            byte blankPos2 = 14;
+            byte blankPos3 = 15;
             Memory<byte> sequence1 = new byte[] { 0, 1, 2, 3, 4, 5 };
             Memory<byte> sequence2 = new byte[] { 5, 4, 3, 2, 1, 0 };
             Memory<byte> sequence3 = new byte[] { 0, 1, 3, 2, 4, 5 };
-            long index1 = codec.Encode(sequence1, 14);
-            long index2 = codec.Encode(sequence2, 14);
-            long index3 = codec.Encode(sequence3, 14);
+            long index1 = codec.Encode(sequence1.Span, blankPos1);
+            long index2 = codec.Encode(sequence2.Span, blankPos2);
+            long index3 = codec.Encode(sequence3.Span, blankPos3);
 
-            DecodeResult result1 = codec.Decode(index1);
-            DecodeResult result2 = codec.Decode(index2);
-            DecodeResult result3 = codec.Decode(index3);
-            Assert.IsTrue(CompareSequences(sequence1, result1.TilePositions), "Decoded sequence1 does not match original");
-            Assert.IsTrue(CompareSequences(sequence2, result2.TilePositions), "Decoded sequence2 does not match original");
-            Assert.IsTrue(CompareSequences(sequence3, result3.TilePositions), "Decoded sequence3 does not match original");
+            Memory<byte> decodeSequence1 = new byte[6];
+            Memory<byte> decodeSequence2 = new byte[6];
+            Memory<byte> decodeSequence3 = new byte[6];
+
+            codec.DecodeMem(index1, decodeSequence1.Span, out byte resultBlankPos1);
+            codec.DecodeMem(index2, decodeSequence2.Span, out byte resultBlankPos2);
+            codec.DecodeMem(index3, decodeSequence3.Span, out byte resultBlankPos3);
+
+            Assert.IsTrue(CompareSequences(sequence1, decodeSequence1), "Decoded sequence1 does not match original");
+            Assert.IsTrue(CompareSequences(sequence2, decodeSequence2), "Decoded sequence2 does not match original");
+            Assert.IsTrue(CompareSequences(sequence3, decodeSequence3), "Decoded sequence3 does not match original");
+
+            Assert.AreEqual(blankPos1, resultBlankPos1);
+            Assert.AreEqual(blankPos2, resultBlankPos2);
+            Assert.AreEqual(blankPos3, resultBlankPos3);
         }
 
         [TestMethod]
         public void TestCodecPerformance()
         {
-            Codec codec = new Codec(15, 6, true);
+            Codec codec = new Codec(15, 6);
             int loopCount = 1000000;
             byte[] sequence1 = { 5, 4, 3, 2, 1, 0 };
             long index = 0;
@@ -142,7 +154,7 @@ namespace UnitTest
         [TestMethod]
         public void TestCodecPerformanceMemoryStruct()
         {
-            Codec codec = new Codec(15, 6, true);
+            Codec codec = new Codec(15, 6);
             int loopCount = 1000000;
             byte[] sequence1 = { 5, 4, 3, 2, 1, 0 };
             Memory<byte> memSequence1 = new(sequence1);
@@ -155,7 +167,7 @@ namespace UnitTest
                 sw.Start();
                 for (int i = 0; i < loopCount; i++)
                 {
-                    index = codec.Encode(memSequence1, 14);
+                    index = codec.Encode(memSequence1.Span, 14);
                     DecodeResult result = codec.Decode(index);
                 }
                 sw.Stop();
@@ -168,9 +180,10 @@ namespace UnitTest
             Debug.WriteLine($"Gen2 Collections: {stats.gen2Collections}");
             Debug.WriteLine($"Memory Growth: {stats.memoryGrowth:N0} bytes");
             sw.Restart();
+            Memory<byte> sequence = new byte[6];
             for (int i = 0; i < loopCount; i++)
             {
-                DecodeResultMem result = codec.DecodeMem(index);
+                codec.DecodeMem(index, sequence.Span, out byte _);
             }
             sw.Stop();
             Console.WriteLine($"Decoding completed in {sw.ElapsedMilliseconds} ms");
