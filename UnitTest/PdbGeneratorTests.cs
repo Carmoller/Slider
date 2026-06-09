@@ -227,6 +227,14 @@ namespace UnitTest
         [TestMethod]
         public void Create5x5Pdbs()
         {
+
+            // PatternState implementation
+            // Duraction 3 min
+            // Processed 248957839 states.Queue size: 0.Time spent 00:02:49.0897390
+            // Max queue length 14631242
+            // Peak Working Set during execution: 7,030,505,472 bytes
+
+
             byte boardSize = 5; // 5x5 grid
                                 //            byte[][] trackedTileSets = [[0, 1, 2, 5, 6], [3, 4, 7, 8, 9], [10, 11, 12, 15, 16], [13, 14, 18, 19, 23], [17, 20, 21, 22]];
                                 //            byte[][] trackedTileSets = [[0, 1, 2, 5, 10], [3, 4, 9, 14, 19], [15,20,21, 22, 23], [6,7,8, 11, 16], [12, 13, 17, 18]];
@@ -261,13 +269,26 @@ namespace UnitTest
                 }
                 // NumberOfStates should also consider the blank
                 numberOfStates *= factor;
-                Codec codec = new(boardSize, (byte)byteCount);
-                PdbGenerator gen = new(boardSize, (byte)byteCount, false);
-                PatternDatabase db = gen.GeneratePdb(new PdbGenerator.PatternState
+
+                PatternDatabase? db;
+                using (Process currentProcess = Process.GetCurrentProcess())
                 {
-                    TilePositions = trackedTiles,
-                    BlankPosition = (byte)((boardSize * boardSize) - 1)
-                });
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    currentProcess.Refresh();
+
+                    Codec codec = new(boardSize, (byte)byteCount);
+                    PdbGenerator gen = new(boardSize, (byte)byteCount, false);
+                    db = gen.GeneratePdb(new PdbGenerator.PatternState
+                    {
+                        TilePositions = trackedTiles,
+                        BlankPosition = (byte)((boardSize * boardSize) - 1)
+                    });
+                    currentProcess.Refresh();
+                    long peakWorkingSet = currentProcess.PeakWorkingSet64;
+                    Console.WriteLine($"Peak Working Set during execution: {peakWorkingSet:N0} bytes");
+                }
                 db.SaveToFile($"E:\\src\\net\\Slider\\{boardSize}x{boardSize}_{fileName}.pdb");
             }
         }
