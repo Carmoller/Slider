@@ -41,6 +41,11 @@ namespace Slider.Solver
             if (list.Count > 0)
             {
                 CollisionCount++;
+                foreach (T existingState in list)
+                {
+                    if (existingState.Equals(state))
+                        return;
+                }
             }
             list.Add(state);
             if (list.Count > MaxLength)

@@ -6,6 +6,7 @@ using Slider.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace UnitTest
@@ -223,6 +224,52 @@ namespace UnitTest
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
         }
+
+        [TestMethod]
+        public void Test_4x4_Sprint_vs_NoSprint()
+        {
+            Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
+            List<BoardTile> board = new();
+            board.Add(new BoardTile { Value = 0, Row = 3, Column = 2 });
+            board.Add(new BoardTile { Value = 1, Row = 0, Column = 3 });
+            board.Add(new BoardTile { Value = 2, Row = 2, Column = 2 });
+            board.Add(new BoardTile { Value = 3, Row = 1, Column = 0 });
+            board.Add(new BoardTile { Value = 4, Row = 0, Column = 1 });
+            board.Add(new BoardTile { Value = 5, Row = 1, Column = 3 });
+            board.Add(new BoardTile { Value = 6, Row = 3, Column = 3 });
+            board.Add(new BoardTile { Value = 7, Row = 2, Column = 3 });
+            board.Add(new BoardTile { Value = 8, Row = 2, Column = 0 });
+            board.Add(new BoardTile { Value = 9, Row = 2, Column = 1 });
+            board.Add(new BoardTile { Value = 10, Row = 1, Column = 2 });
+            board.Add(new BoardTile { Value = 11, Row = 0, Column = 0 });
+            board.Add(new BoardTile { Value = 12, Row = 1, Column = 1 });
+            board.Add(new BoardTile { Value = 13, Row = 0, Column = 2 });
+            board.Add(new BoardTile { Value = 14, Row = 3, Column = 1 });
+            board.Add(new BoardTile { Value = 15, Row = 3, Column = 0 });
+
+            SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UseSprintFinish = true };
+            List<byte> puzzle = board.OrderBy(p => p.Row * 4 + p.Column).Select(p => p.Value).ToList();
+            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
+            Assert.IsTrue(solvable);
+
+            WeightedAStarSolver solver = new(optionsMock.Object);
+            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            Assert.AreEqual(SolveResultType.Solved, result.Result);
+            int sprintMoves = result.MoveCount;
+            Console.Write($"Moves with BFS sprint: {sprintMoves}");
+
+            solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UseSprintFinish = false };
+            result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            Assert.AreEqual(SolveResultType.Solved, result.Result);
+            int noSprintMoves = result.MoveCount;
+            Console.Write($"Moves without BFS sprint: {noSprintMoves}");
+            //Assert.IsGreaterThan(0, result.Moves.Count);
+            //VerifyMoves(board, result);
+            Assert.AreEqual(sprintMoves, noSprintMoves);
+        }
+
         [TestMethod]
         public void Test_Simple_3x3()
         {

@@ -1,0 +1,34 @@
+﻿using Slider.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Slider.Solver
+{
+    public struct StateInfo
+    {
+        public int NodeIndex { get; set; }
+        public int ParentIndex { get; set; }
+        public byte[] Board { get; set; }
+        public int BlankPos { get; set; }
+        public long Hash { get; set; }
+        public int BestG { get; set; }
+        public int CurrentG { get; set; }
+        public int CurrentH { get; set; }
+        public double CurrentF { get; set; }
+        public MoveDirection PreviousMove { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj == null)
+                return false;
+            StateInfo other = (StateInfo)obj;
+            if (BlankPos != other.BlankPos) return false;
+            return Enumerable.SequenceEqual(Board, other.Board);
+        }
+        public override int GetHashCode()
+        {
+            return (int)StateHashes.FastHash(Board);
+        }
+    }
+}

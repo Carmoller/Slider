@@ -22,35 +22,9 @@ namespace Slider.Solver
     {
         const int F_Scale = 1000;
         const int G_Scale = 10;
+        private const int H_CutoffForBfs = 10;
+
         private double w = 2;
-
-        private struct StateInfo
-        {
-            public int NodeIndex { get; set; }
-            public int ParentIndex { get; set; }
-            public byte[] Board { get; set; }
-            public int BlankPos { get; set; }
-            public long Hash { get; set; }
-            public int BestG { get; set; }
-            public int CurrentG { get; set; }
-            public int CurrentH { get; set; }
-            public double CurrentF { get; set; }
-            public MoveDirection PreviousMove { get; set; }
-
-            public override bool Equals(object? obj)
-            {
-                if (obj == null)
-                    return false;
-                StateInfo other = (StateInfo)obj;
-                if (BlankPos != other.BlankPos) return false;
-                return Enumerable.SequenceEqual(Board, other.Board);
-            }
-            public override int GetHashCode()
-            {
-                return (int)StateHashes.FastHash(Board);
-            }
-        }
-
         private PriorityQueue<StateInfo, double> _openQueue = new();
         private SolveStateDictionary<StateInfo> _closed = new();
         private int _gridSize;
@@ -101,15 +75,35 @@ namespace Slider.Solver
             startState.Hash = GetHashCode(startState);
             _openQueue.Enqueue(startState, startState.CurrentF);
             int min_h = int.MaxValue;
-
+            int h_previous = int.MaxValue;
             while (_openQueue.TryDequeue(out StateInfo currentState, out double f_current))
             {
                 int h_Current = currentState.CurrentH;
                 if (h_Current < min_h)
                 {
                     bestHValueIndex = currentState.NodeIndex;
-                    Debug.WriteLine($"{result.TotalStatesConsidered}: {h_Current}");
+                    Debug.WriteLine($"Weighted A*: State #{result.TotalStatesConsidered}: h:{h_Current}");
                     min_h = h_Current;
+                }
+                if (solverOptions.UseSprintFinish)
+                {
+                    if ((h_Current < H_CutoffForBfs) && (h_Current >= h_previous))
+                    {
+                        Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
+                        // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
+                        GreedyBfsSolver solver = new();
+                        List<Move>? moves = solver.SprintSolve(currentState, _stateInfoPool, _heuristicCalculator, _gridSize);
+                        if (moves != null)
+                        {
+                            // Finished
+                            sw.Stop();
+                            result.TimeSpent = sw.Elapsed;
+                            result.Moves = moves;
+                            result.Result = SolveResultType.Solved;
+                            Cleanup();
+                            return result;
+                        }
+                    }
                 }
                 // Adjust w to avoid getting stuck at a low h-value, and refusing to climb back up the tree
                 w = h_Current < 30 ? 1 : 2;
@@ -146,6 +140,7 @@ namespace Slider.Solver
                     closedState.ParentIndex = currentState.NodeIndex;
                     closedState.BestG = currentState.CurrentG;
                 }
+                h_previous = h_Current;
                 result.TotalStatesConsidered++;
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
