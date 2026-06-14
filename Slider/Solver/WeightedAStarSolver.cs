@@ -96,7 +96,7 @@ namespace Slider.Solver
             });
             startBoard.CopyTo(startState.Board);
 
-            startState.CurrentH = GetHeuristic(startState.Board);
+            startState.CurrentH = GetHeuristics(startState.Board, _gridSize);
             startState.CurrentF = (w * startState.CurrentH);
             startState.Hash = GetHashCode(startState);
             _openQueue.Enqueue(startState, startState.CurrentF);
@@ -218,7 +218,7 @@ namespace Slider.Solver
             }
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
-            newState.CurrentH = GetHeuristic(newState.Board);
+            newState.CurrentH = GetHeuristics(newState.Board, _gridSize);
             newState.CurrentF = newState.CurrentG + (w * newState.CurrentH);
             if (newState.BestG > currentState.CurrentG)
             {
@@ -292,47 +292,51 @@ namespace Slider.Solver
             board[tile2] = board[tile1];
             board[tile1] = temp;
         }
-        private int GetHeuristic(byte[] board)
+        private int GetHeuristics(byte[] board, int gridSize)
         {
             if (_heuristicCalculator == null)
                 throw new InvalidOperationException("_heursticCalculator has not been initialized");
-            return _heuristicCalculator.GetHeuristic(board, _gridSize);// HeuristicCalculator.ManhattanDistance(board, _gridSize);
+            return GetHeuristics(board, gridSize, _heuristicCalculator);
         }
-            //open = priority queue ordered by(f, tie - breakers)
-    //closed = hash map: state → best g seen
-    //g[start] = 0
-    //h[start] = heuristic(start)
-    //f[start] = g[start] + w * h[start]
-    //push start into open
-    //while open is not empty:
-    //    current = pop node with smallest f
-    //    if current is goal:
-    //        return reconstruct_path(current)
-    //    if current in closed and closed[current] ≤ g
-    //            continue
-    //    closed[current] = g[current]
-    //    for each neighbor in expand(current):
-    //        tentative_g = g[current] + 1
-    //        if neighbor in closed and closed[neighbor] ≤ tentative_g:
-    //        continue
-    //        g[neighbor] = tentative_g
-    //        h[neighbor] = heuristic(neighbor)
-    //        f[neighbor] = g[neighbor] + w * h[neighbor]
-    //        push neighbor into open with priority:
-    //            (f[neighbor],
-    //             -g[neighbor],        // prefer deeper nodes
-    //             h[neighbor])         // secondary tie-break
-    //return failure        
-                
+        private int GetHeuristics(byte[] board, int gridSize, IHeuristicCalculator customCalculator)
+        {
+            return customCalculator.GetHeuristic(board, gridSize);// HeuristicCalculator.ManhattanDistance(board, _gridSize);
+        }
+        //open = priority queue ordered by(f, tie - breakers)
+        //closed = hash map: state → best g seen
+        //g[start] = 0
+        //h[start] = heuristic(start)
+        //f[start] = g[start] + w * h[start]
+        //push start into open
+        //while open is not empty:
+        //    current = pop node with smallest f
+        //    if current is goal:
+        //        return reconstruct_path(current)
+        //    if current in closed and closed[current] ≤ g
+        //            continue
+        //    closed[current] = g[current]
+        //    for each neighbor in expand(current):
+        //        tentative_g = g[current] + 1
+        //        if neighbor in closed and closed[neighbor] ≤ tentative_g:
+        //        continue
+        //        g[neighbor] = tentative_g
+        //        h[neighbor] = heuristic(neighbor)
+        //        f[neighbor] = g[neighbor] + w * h[neighbor]
+        //        push neighbor into open with priority:
+        //            (f[neighbor],
+        //             -g[neighbor],        // prefer deeper nodes
+        //             h[neighbor])         // secondary tie-break
+        //return failure        
+
 
         public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
         {
-            return -1;
-        }
-
-        public int GetHeuristics(byte[] boardData)
-        {
-            return HeuristicCalculator.ManhattanDistance(boardData, _gridSize);
+            byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
+            int gridSize = (int)(Math.Sqrt(byteBoard.Length));
+            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(null,
+                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true },
+                gridSize);
+            return GetHeuristics(byteBoard, gridSize, calculator);
         }
 
         private long GetHashCode(StateInfo state)
