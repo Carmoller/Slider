@@ -10,9 +10,10 @@ namespace Slider.Heuristics
     {
         public HeuristicStatistics Statistics { get; private set; }
         public string Name { get { return "CornerPattern"; } }
-
+        public bool IsAdditive { get { return true; } }
         private readonly HashSet<byte> _cornerTileValues;
         private readonly (byte row, byte col)[] _corners;
+        private readonly byte[] _cornersFlat;
 
         public CornerPattern(int gridSize)
         {
@@ -31,11 +32,19 @@ namespace Slider.Heuristics
 
             // Corner positions to check
             _corners = new[]
-            {
+               {
                      ((byte)0, (byte)0),
                      ((byte)0, (byte)(gridSize - 1)),
                      ((byte)(gridSize - 1), (byte)0),
                      ((byte)(gridSize - 1), (byte)(gridSize - 1))
+                 };
+
+            _cornersFlat = new[]
+               {
+                     (byte)0,
+                     (byte)(gridSize - 1),
+                     (byte)(gridSize*gridSize - gridSize),
+                     (byte)(gridSize*gridSize - 2)
                  };
         }
 
@@ -75,5 +84,43 @@ namespace Slider.Heuristics
             Statistics.TicksSpent += sw.ElapsedTicks;
             return penalty;
         }
+
+        public int Calculate(byte[] board, int gridSize)
+        {
+            Stopwatch sw = Stopwatch.StartNew();
+            int penalty = 0;
+
+            // Iterate through each corner
+            for (int i = 0; i < _corners.Length; i++)
+            {
+                byte position = _cornersFlat[i];
+                byte tileAtCorner = board[position];
+                byte expectedTile = (byte)(position+1);
+
+                // Special case: bottom-right should be empty or the last numbered tile
+                if (position == gridSize*gridSize -1)
+                {
+                    expectedTile = 0;
+                }
+
+                // Case 1: Non-corner tile in corner = LOCK situation (highest penalty)
+                if (tileAtCorner != 0 && tileAtCorner != expectedTile && !_cornerTileValues.Contains(tileAtCorner))
+                {
+                    // A center/edge tile is blocking a corner - major lock
+                    penalty += 2;
+                }
+                // Case 2: Corner tile in wrong corner (lower penalty)
+                else if (tileAtCorner != expectedTile && _cornerTileValues.Contains(tileAtCorner))
+                {
+                    // Wrong corner tile here - less restrictive but still wrong
+                    penalty += 1;
+                }
+                // Case 3: Correct tile in correct corner (no penalty)
+            }
+            Statistics.NumberOfCalls++;
+            Statistics.TicksSpent += sw.ElapsedTicks;
+            return penalty;
+        }
+
     }
 }

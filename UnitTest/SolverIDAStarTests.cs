@@ -123,11 +123,12 @@ namespace UnitTest
             board.Add(new BoardTile { Value = 14, Row = 0, Column = 0 });
             board.Add(new BoardTile { Value = 15, Row = 3, Column = 1 });
 
+            Mock<IOptions> optionsMock = new();
             SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true };
             Stopwatch sw = new();
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             sw.Start();
-            SolveResult result = solver.Solve(board, options, new HeuristicFactory());
+            SolveResult result = solver.Solve(board, options, new HeuristicElementFactory());
             sw.Stop();
             TestContext!.WriteLine(options.ToString());
             TestContext.WriteLine("\tSolved board in " + result.TimeSpent.ToString() + " with " + result.Moves?.Count + " moves");
@@ -162,7 +163,7 @@ namespace UnitTest
             options.UseLinearConflict = true;
             options.UseEdgePattern = true;
             sw.Restart();
-            SolveResult result2 = solver.Solve(board, options, new HeuristicFactory());
+            SolveResult result2 = solver.Solve(board, options, new HeuristicElementFactory());
             sw.Stop();
             TestContext!.WriteLine(options.ToString());
             TestContext.WriteLine("\tSolved board in " + result2.TimeSpent.ToString() + " with " + result2.Moves?.Count + " moves");
@@ -252,7 +253,8 @@ namespace UnitTest
         public void Solve_AlreadySolvedBoard_ReturnsEmptyList()
         {
             // Arrange
-            SolverIDAStar solver = new();
+            Mock<IOptions> optionsMock = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             List<BoardTile> board = CreateSolvedBoard(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             // Act
@@ -265,12 +267,13 @@ namespace UnitTest
         [TestMethod]
         public void Solve_SingleMoveAway_ReturnsSingleMove()
         {
+            Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             List<BoardTile> board = CreateBoardWithSingleMove(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
@@ -283,12 +286,13 @@ namespace UnitTest
         [TestMethod]
         public void Solve_ThreeMovesAway_ReturnsValidSolution()
         {
+            Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
@@ -310,12 +314,13 @@ namespace UnitTest
         [TestMethod]
         public void Solve_TwoByTwoBoard_Solves()
         {
+            Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             List<BoardTile> board = CreateBoardWithSingleMove(2);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
@@ -327,12 +332,13 @@ namespace UnitTest
         [TestMethod]
         public void Solve_FourByFourBoard_Solves()
         {
+            Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             List<BoardTile> board = CreateBoardWithSingleMove(4);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new ();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p=>p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p=>p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
 
@@ -344,12 +350,13 @@ namespace UnitTest
         [TestMethod]
         public void Solve_ReturnedMovesAreAdjacent()
         {
+            Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
@@ -370,13 +377,14 @@ namespace UnitTest
         [TestMethod]
         public void Solve_MoveSequenceIsValid()
         {
+            Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             int gridSize = 3;
             List<BoardTile> board = CreateBoardWithThreeMoves(gridSize);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
@@ -405,11 +413,12 @@ namespace UnitTest
         [TestMethod]
         public void Solve_VariousBoards_AllReturnsValidMoveList()
         {
+            Mock<IOptions> optionsMock = new();
             // Test multiple board configurations
-            SolverIDAStar solver = new();
+            SolverIDAStar solver = new(optionsMock.Object);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             for (int gridSize = 2; gridSize <= 3; gridSize++)
             {

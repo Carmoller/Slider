@@ -12,5 +12,6 @@ namespace Slider.Interfaces
         int GridSize { get; set; }
         int AnimationDelay { get; set; }
         string PdbLocation { get; set; }
+        TimeSpan SolveTimeout { get; set; }
     }
 }

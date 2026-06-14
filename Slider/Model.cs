@@ -161,7 +161,7 @@ namespace Slider
         {
             Debug.WriteLine($"{DateTime.Now}: Starting Solve()");
             SolveResult result = _solver.Solve(Board, _options.SolverOptions, _heuristicElementFactory);
-            if (result.Result == SolveResultType.Solved)
+            if ((result.Result == SolveResultType.Solved) || (result.Result == SolveResultType.Timeout))
                 Debug.WriteLine($"{DateTime.Now}: Finished Solve() in {result.TimeSpent.ToString()}, Using {result.Moves!.Count} moves");
             else 
                 Debug.WriteLine($"{DateTime.Now}: Finished Solve() in {result.TimeSpent.ToString()}, Result: {result.Result}");

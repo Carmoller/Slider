@@ -34,7 +34,7 @@ namespace Slider.ViewModels
         private long _forwardHitCount ;
         private long _backwardHitCount;
         private long _idAStarIterations;
-
+        private SolveResultType _solveResult;
         public int GridSize { get => _options.GridSize; set { _options.GridSize = value; OnPropertyChanged(); } } 
         public int AnimationDelay { get => _options.AnimationDelay; set { _options.AnimationDelay = value; OnPropertyChanged(); } }
         public int Heuristic { get => _model.Heuristic; }
@@ -43,6 +43,7 @@ namespace Slider.ViewModels
         public bool IsSolveDataAvailable { get => _isSolveDataAvailable; set { if (value != _isSolveDataAvailable) { _isSolveDataAvailable = value; OnPropertyChanged(); } } }
         public TimeSpan SolveTime { get { return _solveTimeElasped; } set {if (value != _solveTimeElasped) { _solveTimeElasped = value; OnPropertyChanged(); } } }
         public int SolveMoveCount { get { return _solveMoveCount; } set { if (value != _solveMoveCount) { _solveMoveCount = value; OnPropertyChanged(); } } }
+        public SolveResultType SolveResult { get { return _solveResult; } set { if (value != _solveResult) { _solveResult = value; OnPropertyChanged(); } } }
         public long ForwardDictonarySize { get { return _forwardDictonarySize; } set { if (value != _forwardDictonarySize) { _forwardDictonarySize = value; OnPropertyChanged(); } } }
         public long BackwardDictonarySize { get { return _backwardDictonarySize; } set { if (value != _backwardDictonarySize) { _backwardDictonarySize = value; OnPropertyChanged(); } } }
         public long ForwardCollisionCount { get { return _forwardCollisionCount; } set { if (value != _forwardCollisionCount) { _forwardCollisionCount = value; OnPropertyChanged(); } } }
@@ -114,7 +115,7 @@ namespace Slider.ViewModels
             IsSolveDataAvailable = false;
             SolveMoves.Clear();
             SolveResult result = _model.Solve();
-            if (result.Result != SolveResultType.Solved)
+            if ((result.Result != SolveResultType.Solved) && (result.Result != SolveResultType.Timeout))
             {
                 _userAlert.Alert("The puzzle could not be solved!", "Sliding Puzzle");
                 return;
@@ -122,6 +123,7 @@ namespace Slider.ViewModels
             IsSolveDataAvailable = true;
             SolveTime = result.TimeSpent;
             SolveMoveCount = result.MoveCount;
+            SolveResult = result.Result;
             TotalStatesConsidered = result.TotalStatesConsidered;
             ForwardDictonarySize = result.ForwardDictonarySize;
             BackwardDictonarySize = result.BackwardDictonarySize;

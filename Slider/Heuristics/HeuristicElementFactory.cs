@@ -6,11 +6,11 @@ using System.Text;
 
 namespace Slider.Heuristics
 {
-    public class HeuristicFactory : IHeuristicElementFactory
+    public class HeuristicElementFactory : IHeuristicElementFactory
     {
-        public IHeuristicCalculator CreateHeuristicCalculator(SolverOptions solverOptions, int gridSize)
+        public IHeuristicCalculator CreateHeuristicCalculator(IOptions options, SolverOptions solverOptions, int gridSize)
         {
-            return new HeuristicCalculator(solverOptions, gridSize, this);
+            return new HeuristicCalculator(solverOptions, gridSize, this, options);
         }
 
         public IHeuristicElement CreateLinearConflict()

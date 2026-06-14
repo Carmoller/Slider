@@ -9,6 +9,7 @@ namespace Slider.Solver
         public bool UseLinearConflict { get; set; } = true;
         public bool UseCornerPattern { get; set; } = true;
         public bool UseEdgePattern { get; set; } = false;
+        public bool UsePdbs { get; set; } = false;
 
         public override string ToString()
         {

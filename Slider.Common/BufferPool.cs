@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace PDBGenerator
+namespace Slider.Common
 {
     using System;
     using System.Collections.Concurrent;
@@ -50,8 +50,6 @@ namespace PDBGenerator
         private readonly long _itemsPerBuffer;
         private readonly long _indexMask;
 
-        private readonly long MaxItemsPerBuffer = 200_000_000;
-        private readonly long MaxArraySize = 2_000_000_000;
         public BufferPool(long capacity, int size)
         {
             _size = size;

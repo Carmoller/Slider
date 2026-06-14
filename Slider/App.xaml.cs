@@ -36,8 +36,8 @@ namespace Slider
                     services.AddSingleton<IGenerator, PuzzleGenerator>();
                     services.AddSingleton<IOptions, Options>();
                     services.AddSingleton<ITileControlViewModelFactory, TileControlViewModelFactory>();
-                    services.AddSingleton<ISolver, SolverIdaStarPdb>();
-                    services.AddSingleton<IHeuristicElementFactory, HeuristicFactory>();
+                    services.AddTransient<ISolver, WeightedAStarSolver>();
+                    services.AddSingleton<IHeuristicElementFactory, HeuristicElementFactory>();
                 })
                 .Build();
             ShutdownMode = ShutdownMode.OnMainWindowClose;

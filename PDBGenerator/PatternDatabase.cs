@@ -14,14 +14,14 @@ namespace PDBGenerator
         public int K { get; private set; }
         public long TotalStates { get; private set; }
         public byte[] TrackedTiles { get; private set; }
+        public int BlankIndex { get; private set; }
         private readonly int _chunkShift;
         private readonly int _chunkSize;
-        private readonly int _chunkMask;
-        public Dictionary<long, byte[]>? _pdbChunks;
+        public Dictionary<long, byte[]> _pdbChunks = new();
         private readonly MemoryMappedPatternDatabase? _mmPdb;
         private readonly bool _isMemoryMapped;
         // Constructor for in-memory dictionary
-        public PatternDatabase(int gridSize, int k, long totalStates, byte[] goalPositions, Dictionary<long, byte[]> chunks, int chunkShift)
+        public PatternDatabase(int gridSize, int k, long totalStates, byte[] goalPositions, int blankIndex, Dictionary<long, byte[]> chunks, int chunkShift)
         {
             GridSize = gridSize;
             K = k;
@@ -29,13 +29,13 @@ namespace PDBGenerator
             _pdbChunks = chunks;
             _chunkShift = chunkShift;
             _chunkSize = 1 << chunkShift;
-            _chunkMask = _chunkSize - 1;
             _isMemoryMapped = false;
             TrackedTiles = new byte[goalPositions.GetLength(0)];
             for (int i = 0; i < goalPositions.Length; i++)
             {
                 TrackedTiles[i] = (byte)(goalPositions[i] + 1); // Positions are zero-based, tile numbers are 1-based
             }
+            BlankIndex = blankIndex;
         }
 
         // Constructor for memory-mapped file
@@ -47,7 +47,6 @@ namespace PDBGenerator
             _mmPdb = MemoryMappedPatternDatabase.LoadFromFile(mmfFilePath);
             _chunkShift = 20;
             _chunkSize = 1 << _chunkShift;
-            _chunkMask = _chunkSize - 1;
             _isMemoryMapped = true;
             TrackedTiles = new byte[goalPositions.GetLength(0)];
             for (int i = 0; i < goalPositions.Length; i++)
@@ -86,20 +85,19 @@ namespace PDBGenerator
             {
                 // Write standard schema metadata header
                 writer.Write("PDB");
-                int headerLength = 25 + TrackedTiles.Length;
-                writer.Write(headerLength);
-                writer.Write(GridSize);
-                writer.Write(K);
-                writer.Write(TotalStates);
-                writer.Write(TrackedTiles.Length);
+                int headerLength = 36 + TrackedTiles.Length;
+                writer.Write(headerLength); // 4 bytes
+                writer.Write(GridSize); // 4 bytes
+                writer.Write(K); // 4 bytes
+                writer.Write(TotalStates); // 8 bytes
+                writer.Write(TrackedTiles.Length); // 4 bytes
                 for (int i = 0; i < TrackedTiles.Length; i++)
                 {
-                    writer.Write(TrackedTiles[i]);
+                    writer.Write(TrackedTiles[i]); // 1 byte
                 }
-                writer.Write(_chunkShift);
-
-                // Write number of allocated chunks
-                writer.Write(_pdbChunks.Count);
+                writer.Write(BlankIndex); // 4 bytes
+                writer.Write(_chunkShift); // 4 bytes
+                writer.Write(_pdbChunks.Count); // 4 bytes
 
                 // Stream each chunk with its index
                 foreach (KeyValuePair<long, byte[]> kvp in _pdbChunks)
@@ -113,7 +111,7 @@ namespace PDBGenerator
         /// <summary>
         /// Loads a pre-generated PDB binary payload back into RAM
         /// </summary>
-        public static PatternDatabase? LoadFromFile(string filePath, bool headerhasBlank = false)
+        public static PatternDatabase? LoadFromFile(string filePath)
         {
             using (FileStream fs = new (filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (BinaryReader reader = new (fs))
@@ -124,8 +122,6 @@ namespace PDBGenerator
                 int headerLength = reader.ReadInt32();
                 int gridSize = reader.ReadInt32();
                 int k = reader.ReadInt32();
-                if (headerhasBlank)
-                    reader.ReadBoolean();
                 long totalStates = reader.ReadInt64();
                 int trackedTilesCount = reader.ReadInt32();
                 byte[] trackedTiles = new byte[trackedTilesCount];
@@ -133,6 +129,7 @@ namespace PDBGenerator
                 {
                     trackedTiles[i] = (byte)(reader.ReadByte() - 1); // Bit of a hack: We know the constructor expects the POSITION, not the tile number
                 }
+                int blankIndex = reader.ReadInt32();
                 int chunkShift = reader.ReadInt32();
                 int chunkSize = 1 << chunkShift;
 
@@ -146,7 +143,7 @@ namespace PDBGenerator
                     chunks[chunkIdx] = chunkData;
                 }
 
-                return new PatternDatabase(gridSize, k, totalStates, trackedTiles, chunks, chunkShift);
+                return new PatternDatabase(gridSize, k, totalStates, trackedTiles, blankIndex, chunks, chunkShift);
             }
         }
 

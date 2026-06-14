@@ -18,7 +18,11 @@ namespace Slider.Solver
         private int _statesCalculatedCount { get; set; }
         private ArrayPool2D? _arrayPool;
         private IHeuristicCalculator? _heuristicsCalculator;
-
+        private IOptions _options;
+        public SolverIDAStar(IOptions options)
+        {
+            _options = options;
+        }
         private void SetupBoardAndPositions(
             List<BoardTile> board,
             byte[,] boardArray,
@@ -59,7 +63,7 @@ namespace Slider.Solver
         {
             Stopwatch sw = Stopwatch.StartNew();
             _solverOptions = options;
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(_solverOptions, (int)Math.Sqrt(board.Count));
+            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, _solverOptions, (int)Math.Sqrt(board.Count));
 
             _gridSize = (byte)Math.Sqrt(board.Count);
             (byte row, byte col)[] goalPositions = new (byte, byte)[_gridSize * _gridSize];
@@ -373,7 +377,7 @@ namespace Slider.Solver
                     }
                 }
             }
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(_solverOptions, (int)Math.Sqrt(board.Count));
+            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, _solverOptions, (int)Math.Sqrt(board.Count));
             return GetHeuristic(boardArray, goalPositions, gridSize);
         }
 

@@ -15,4 +15,8 @@
     <None Include="MemoryMappedFileGenesis.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Slider.Common\Slider.Common.csproj" />
+  </ItemGroup>
+
 </Project>

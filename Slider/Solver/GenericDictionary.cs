@@ -1,25 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Slider.Solver
 {
     [DebuggerDisplay("Keys:{Count}, CollisionCount={CollisionCount}, HitCount={HitCount}, MaxLength={MaxLength}")]
-    public class SolveStateDictionary<T> : Dictionary<long, List<T>>
+    public class SolveStateDictionary : Dictionary<long, List<SolveState>>
     {
         public long CollisionCount { get; private set; }
-        public long HitCount { get; private set; }
+        public long HitCount { get; private set;  }
         public int MaxLength { get; private set; }
         public SolveStateDictionary() : base(1000000)
         {
         }
-        public bool Exists(long hash, T state)
+        public bool Exists(long hash, SolveState state)
         {
-            if (TryGetValue(hash, out List<T>? states))
+            if (TryGetValue(hash, out List<SolveState>? states))
             {
-                foreach (T closedState in states)
+                foreach (SolveState closedState in states)
                 {
                     if (closedState.Equals(state))
                     {
@@ -31,9 +30,9 @@ namespace Slider.Solver
             return false;
         }
 
-        public void AddState(long hash, T state)
+        public void AddState(long hash, SolveState state)
         {
-            if (!TryGetValue(hash, out List<T>? list))
+            if (!TryGetValue(hash, out List<SolveState>? list))
             {
                 list = new();
                 Add(hash, list);
@@ -45,20 +44,16 @@ namespace Slider.Solver
             list.Add(state);
             if (list.Count > MaxLength)
             {
-                if (list.Count > 1)
-                {
-                    int a = 1;
-                }
                 MaxLength = base[hash].Count;
             }
         }
 
-        public bool TryGetState(long hash, T queryState, [NotNullWhen(true)]out T? existingState)
+        public bool TryGetState(long hash, SolveState queryState, out SolveState? existingState)
         {
-            existingState = default(T);
-            if (!TryGetValue(hash, out List<T>? existingStates))
+            existingState = null;
+            if (!TryGetValue(hash, out List<SolveState>? existingStates))
                 return false;
-            foreach (T state in existingStates)
+            foreach (SolveState state in existingStates)
             {
                 if (state.Equals(queryState))
                 {

@@ -1,4 +1,5 @@
 ﻿using PDBGenerator;
+using Slider.Heuristics;
 using Slider.Interfaces;
 using System;
 using System.CodeDom.Compiler;
@@ -21,11 +22,13 @@ namespace Slider.Solver
             public int NewBlankPos { get; set; }
             public int H_value { get; set; }
             public int G_value { get; set; }
+            public int ManhattanDistance { get; set; }
         }
         private class PdbDescriptor
         {
             public PatternDatabase Pdb { get; set; }
             public byte[] TrackedTiles { get; set; }
+            public int BlankIndex { get; set; }
             public Codec Codec { get; private set; }
             private Dictionary<int, int> _tileToTrackedTileMap = new();
 
@@ -35,6 +38,7 @@ namespace Slider.Solver
                 TrackedTiles = new byte[pdb.K];
                 _tileToTrackedTileMap = new();
                 Codec = new(pdb.GridSize, pdb.K);
+                BlankIndex = pdb.BlankIndex;
             }
             public void MoveTile(int tileNumber, int newPosition)
             {
@@ -45,6 +49,10 @@ namespace Slider.Solver
             {
                 _tileToTrackedTileMap[tileNumber] = trackedTilePosition;
             }
+            public void SetBlankPosition(byte blankPosition)
+            {
+                TrackedTiles[BlankIndex] = blankPosition;
+            }
         }
 
         private class TranspositionEntry
@@ -52,7 +60,7 @@ namespace Slider.Solver
             public int Iteration { get; set; }
             public Byte[] Board { get; set; }
             public int RemainingDepth { get; set; }
-            public int MinChildDistanceLargerThanBound { get; set; }
+            public int RefinedH { get; set; }
         }
         private PatternDatabase[]? _pdbs;
 
@@ -218,6 +226,32 @@ namespace Slider.Solver
             column = position % _gridSize;
         }
 
+        public int EvaluateChildNode(int rawPdbH, int currentBlankPos)
+        {
+            int blankRow = currentBlankPos % _gridSize;
+            int blankCol = currentBlankPos % _gridSize;
+            // 1. Calculate the Manhattan distance of the blank tile to its goal position
+            int blankManhattanDistance = Math.Abs(blankRow - _gridSize) +
+                                         Math.Abs(blankCol - _gridSize);
+
+            // 2. Determine the physical parity of the board layout (0 for even, 1 for odd)
+            int physicalParity = blankManhattanDistance % 2;
+
+            // 3. Determine the parity of your current PDB lookup sum
+            int pdbParity = rawPdbH % 2;
+
+            // 4. Force the heuristic to align with physical board constraints.
+            // If the parities don't match, the PDB is mathematically underestimating 
+            // by an odd fractional amount, so we safely bump it up by 1.
+            int adjustedH = (pdbParity != physicalParity) ? rawPdbH + 1 : rawPdbH;
+            if (adjustedH != rawPdbH)
+            {
+                int a = 1;
+            }
+            // 5. Compute the actual f-value used for pruning and the next threshold update
+            return adjustedH;
+        }
+
         private MoveRecord? MoveUp(byte[] boardData, MoveDirection parentMove, int blankPos)
         {
             int newBlankPos;
@@ -284,6 +318,10 @@ namespace Slider.Solver
 
             if ((g + h) > bound)
             {
+                if (g + h == 51)
+                {
+                    int a = 1;
+                }
                 return g + h;
             }
             if (h == 0)
@@ -294,12 +332,14 @@ namespace Slider.Solver
             int remainingDepth = bound - g;
             long hash = StateHashes.FastHash(previousMove.Board);
 
+            TranspositionEntry? current = null;
             if (transpositionTable.TryGetValue(hash, out List<TranspositionEntry>? hashValues))
             {
                 foreach (TranspositionEntry entry in hashValues)
                 {
                     if (entry.Board.SequenceCompareTo(previousMove.Board) == 0)
                     {
+                        current = entry;
                         // We've seen this board before
                         if (entry.Iteration == iteration)
                         {
@@ -315,9 +355,13 @@ namespace Slider.Solver
                         }
                         else
                         {
-                            // We saw it in another iteration; if we can see that all children would exceed the bound, then stop
-                            if (entry.RemainingDepth >= remainingDepth && entry.MinChildDistanceLargerThanBound > bound)
-                                return entry.MinChildDistanceLargerThanBound;
+                            // We saw it in another iteration; 
+                            if (entry.RemainingDepth >= remainingDepth && entry.RefinedH > bound)
+                            {
+                                h = Math.Max(h, entry.RefinedH);
+                                if ((g + h) > bound)
+                                    return entry.RefinedH;
+                            }
                         }
                     }
                 }
@@ -329,33 +373,41 @@ namespace Slider.Solver
             MoveRecord? newMove = MoveUp(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                newMove.H_value = GetHeuristics(newMove.Board);
                 newMove.G_value = g + 1;
+                newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
+                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
                 moveArray[0] = newMove;
             }
 
             newMove = MoveDown(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                newMove.H_value = GetHeuristics(newMove.Board);
                 newMove.G_value = g + 1;
+                newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
+                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
                 moveArray[1] = newMove;
             }
             newMove = MoveLeft(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                newMove.H_value = GetHeuristics(newMove.Board);
+                newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
                 newMove.G_value = g + 1;
+                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
                 moveArray[2] = newMove;
             }
             newMove = MoveRight(previousMove.Board, previousMove.Direction, blankPos);
             if (newMove != null)
             {
-                newMove.H_value = GetHeuristics(newMove.Board);
+                newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
                 newMove.G_value = g + 1;
+                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
                 moveArray[3] = newMove;
             }
-            List<MoveRecord> moveList = moveArray.Where(p => p != null).OrderBy(p => p.H_value).ToList();
+            List<MoveRecord> moveList = moveArray.Where(p => p != null).OrderBy(p => p.H_value).ThenBy(p=>p.ManhattanDistance).ToList();
+            if (moveList[0].H_value < 36)
+            {
+                int a = 1;
+            }
             int minNextBound = int.MaxValue;
             foreach (MoveRecord move in moveList)
             //            while (orderedMoves.TryDequeue(out MoveRecord? move, out int _))
@@ -384,7 +436,8 @@ namespace Slider.Solver
                 hashValues = new List<TranspositionEntry>();
                 transpositionTable[hash] = hashValues;
             }
-            hashValues.Add(new TranspositionEntry { Board = previousMove.Board, RemainingDepth = remainingDepth, MinChildDistanceLargerThanBound = minNextBound });
+            if (current == null)
+                hashValues.Add(new TranspositionEntry { Board = previousMove.Board, RemainingDepth = remainingDepth, RefinedH = minNextBound - g });
             return minNextBound;
         }
 
@@ -427,9 +480,12 @@ namespace Slider.Solver
             }
 
             int h = 0;
+            byte blankValue = (byte)boardData.Length;
             for (int i = 0; i < _pdbDescriptors!.Length; i++)
             {
-                long encoded = _pdbDescriptors[i].Codec.Encode(_pdbDescriptors[i].TrackedTiles, blankPosition);
+                _pdbDescriptors[i].SetBlankPosition(blankPosition);
+
+                long encoded = _pdbDescriptors[i].Codec.Encode(_pdbDescriptors[i].TrackedTiles);
                 h += _pdbDescriptors[i].Pdb.GetDistance(encoded);
             }
             return h;
@@ -461,7 +517,8 @@ namespace Slider.Solver
             int h = 0;
             for (int i = 0; i < _pdbDescriptors!.Length; i++)
             {
-                long encoded = _pdbDescriptors[i].Codec.Encode(_pdbDescriptors[i].TrackedTiles, blankPositionSwap);
+                _pdbDescriptors[i].SetBlankPosition(blankPositionSwap);
+                long encoded = _pdbDescriptors[i].Codec.Encode(_pdbDescriptors[i].TrackedTiles);
                 h += _pdbDescriptors[i].Pdb.GetDistance(encoded);
             }
             return h;

@@ -145,19 +145,22 @@
                     <RowDefinition Height="23"/>
                     <RowDefinition Height="23"/>
                     <RowDefinition Height="23"/>
+                    <RowDefinition Height="23"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Solve time"/>
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveTime, StringFormat=\{0:mm\\:ss\\.fff\}}"/>
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Moves"/>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SolveMoveCount}"/>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="States"/>
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TotalStatesConsidered}"/>
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="Forward Size"/>
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ForwardDictonarySize}"/>
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Backward Size"/>
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding BackwardDictonarySize}"/>
-                <TextBlock Grid.Row="5" Grid.Column="0" Text="IDA* Iterations"/>
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding IDAStarIterations}"/>
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Result"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveResult}"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Solve time"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SolveTime, StringFormat=\{0:mm\\:ss\\.fff\}}"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Moves"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SolveMoveCount}"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="States"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TotalStatesConsidered}"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Forward Size"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ForwardDictonarySize}"/>
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="Backward Size"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding BackwardDictonarySize}"/>
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="IDA* Iterations"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding IDAStarIterations}"/>
             </Grid>
         </Grid>
     </Grid>

@@ -1,0 +1,93 @@
+﻿Since you strictly require a true byte[] reference, you must use the nested pooling strategy. Your intuition was correct: keeping the buffers attached would cause severe memory fragmentation as sizes swing between 4 and 100 bytes over millions of instances.To make this rock-solid, you need to enforce a clear Ownership and Lifecycle Rule across your codebase.The Operational Golden RuleThe Methods processing the object only read and write data. They must never return the buffer or the object to the pools.The Registry Wrapper is the absolute owner. It is the only component allowed to return the array to the ArrayPool and the object shell to the ObjectPool.Here is how you stitch this together into a clean, automated pipeline.1. The Clean Object ContractYour object remains a simple data carrier.csharppublic class MyComplexObject
+{
+    // The true byte[] reference required by your methods
+    public byte[]? Buffer { get; set; }
+    public int ActiveLength { get; set; }
+
+    public void ClearReferences()
+    {
+        Buffer = null; 
+        ActiveLength = 0;
+    }
+}
+Use code with caution.2. The Centralized Factory & RegistryBy pairing Microsoft.Extensions.ObjectPool with ArrayPool<byte>, you can build a unified registry. This registry manages the dual-pool lifecycle automatically behind the scenes so your business logic stays clean.csharpusing System.Buffers;
+using System.Collections.Concurrent;
+using Microsoft.Extensions.ObjectPool;
+
+public class MyPooledObjectRegistry
+{
+    private readonly ConcurrentDictionary<string, MyComplexObject> _storage = new();
+    private readonly ObjectPool<MyComplexObject> _objectPool;
+
+    public MyPooledObjectRegistry(ObjectPool<MyComplexObject> objectPool)
+    {
+        _objectPool = objectPool;
+    }
+
+    // Renting and initializing happens here
+    public MyComplexObject CreateAndAdd(string key, int userRequestedSize)
+    {
+        // 1. Get a dry shell from the ObjectPool
+        MyComplexObject obj = _objectPool.Get();
+
+        // 2. Get the appropriate array from the ArrayPool
+        obj.Buffer = ArrayPool<byte>.Shared.Rent(userRequestedSize);
+        obj.ActiveLength = userRequestedSize;
+
+        // 3. Store it. If an old object is overwritten, clean it up immediately.
+        _storage.AddOrUpdate(key, obj, (_, oldObj) => 
+        {
+            ReleaseResources(oldObj);
+            return obj;
+        });
+
+        return obj;
+    }
+
+    // Eviction and returning happens here
+    public bool TryRemoveAndRelease(string key)
+    {
+        if (_storage.TryRemove(key, out var obj))
+        {
+            ReleaseResources(obj);
+            return true;
+        }
+        return false;
+    }
+
+    private void ReleaseResources(MyComplexObject obj)
+    {
+        // 1. Return the array to the ArrayPool
+        if (obj.Buffer != null)
+        {
+            ArrayPool<byte>.Shared.Return(obj.Buffer);
+        }
+
+        // 2. Wipe references inside the object shell
+        obj.ClearReferences();
+
+        // 3. Return the dry shell to the ObjectPool
+        _objectPool.Return(obj);
+    }
+}
+Use code with caution.3. Clean Usage in Business LogicYour other methods can now freely accept MyComplexObject, pass it around, or pull it from the dictionary without ever worrying about memory leaks.csharppublic class DataProcessor
+{
+    private readonly MyPooledObjectRegistry _registry;
+
+    public void OnUserRequestReceived(string requestId, int size)
+    {
+        // Everything is allocated and tracked seamlessly here
+        MyComplexObject item = _registry.CreateAndAdd(requestId, size);
+        
+        // Pass the true byte[] around to your other methods safely
+        FillData(item.Buffer, item.ActiveLength);
+        ProcessData(item);
+    }
+
+    public void OnRequestFinished(string requestId)
+    {
+        // Array goes back to ArrayPool, object goes back to ObjectPool
+        _registry.TryRemoveAndRelease(requestId);
+    }
+}
+Use code with caution.Safety Checklist For This ImplementationArray Length Hazard: Remember that ArrayPool<byte>.Shared.Rent(100) might return an array that is actually 128 bytes long. Always use item.ActiveLength in your loops and methods rather than item.Buffer.Length.The clearArray setting: If your byte arrays contain sensitive user data, change the cleanup line to ArrayPool<byte>.Shared.Return(obj.Buffer, clearArray: true). This zeroes out the memory before giving it to the next consumer, preventing data leaks across requests.

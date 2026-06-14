@@ -43,23 +43,17 @@ namespace PDBGenerator
 
         }
 
-        public long Encode(Span<byte> tilePositions, byte blankPosition)
+        public long Encode(Span<byte> tilePositions)
         {
             if (tilePositions.Length != K)
                 throw new ArgumentException($"Array must contain exactly {K} elements.");
-            if (blankPosition < 0 || blankPosition >= N)
-                throw new ArgumentOutOfRangeException(nameof(blankPosition), $"Blank position must be between 0 and {N - 1}.");
 
             int[] sortedPositions = new int[K];
             for (int i = 0; i < K; i++)
             {
-                if (tilePositions[i] == blankPosition)
-                {
-                    // Return a special indicator value that one of the tiles occupy the same space as the blank
-                    return -1;
-                }
                 sortedPositions[i] = tilePositions[i];
             }
+
             Array.Sort(sortedPositions);
             long combinationRank = 0;
             for (int i = K; i >= 1; i--)
@@ -97,7 +91,7 @@ namespace PDBGenerator
             // 4. Combine the pure tile layout rank with the blank tile space
             long pureTileRank = (combinationRank * Factorials[K]) + permutationRank;
             // Multiply by N to shift the index, then safely embed the blank position offset
-            return (pureTileRank * N) + blankPosition;
+            return pureTileRank;
         }
 
         /// <summary>
@@ -172,7 +166,7 @@ namespace PDBGenerator
         /// </summary>
         public DecodeResult Decode(long dynamicDatabaseIndex)
         {
-            byte blankPosition = 0xFF;
+            byte blankPosition;
             long pureTileRank;
 
             // Extract the blank position and isolate the pure tile rank
@@ -214,17 +208,11 @@ namespace PDBGenerator
 
             return new DecodeResult(resultPositions, blankPosition);
         }
-        public bool DecodeMem(long dynamicDatabaseIndex, Span<byte> targetSpan, out byte blankPosition)
+
+        public bool DecodeMem(long dynamicDatabaseIndex, Span<byte> targetSpan)
         {
-            blankPosition = 0xFF;
-            long pureTileRank;
-
-            // Extract the blank position, and isolate the pure tile rank
-            blankPosition = (byte)(dynamicDatabaseIndex % N);
-            pureTileRank = dynamicDatabaseIndex / N;
-
-            long combinationRank = pureTileRank / Factorials[K];
-            long permutationRank = pureTileRank % Factorials[K];
+            long combinationRank = dynamicDatabaseIndex / Factorials[K];
+            long permutationRank = dynamicDatabaseIndex % Factorials[K];
 
             // 2. Unrank Combinadic
             byte[] chosenPositions = new byte[K];
