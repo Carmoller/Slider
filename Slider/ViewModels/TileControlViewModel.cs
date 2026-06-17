@@ -1,4 +1,5 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
+using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

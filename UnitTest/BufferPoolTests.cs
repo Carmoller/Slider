@@ -14,15 +14,12 @@ namespace UnitTest
         [TestMethod]
         public void RentAndReturn_BasicOperation_Success()
         {
-            // Arrange
             BufferPool pool = new(capacity: 10, size: 64);
 
-            // Act
             BufferPool.Slot slot = pool.Rent();
             pool.Return(slot);
             BufferPool.Slot slot2 = pool.Rent();
 
-            // Assert
             Assert.AreEqual(slot.Offset, slot2.Offset, "Returned slot should be reused");
             Assert.AreEqual(64, slot.Size);
         }
@@ -30,14 +27,11 @@ namespace UnitTest
         [TestMethod]
         public void GetMemory_ReturnsValidMemory()
         {
-            // Arrange
             BufferPool pool = new(capacity: 5, size: 128);
             BufferPool.Slot slot = pool.Rent();
 
-            // Act
             Memory<byte> memory = slot.Memory;
 
-            // Assert
             Assert.AreEqual(128, memory.Length);
             Assert.AreEqual(0, memory.Span[0], "Memory should be initialized");
         }
@@ -45,16 +39,13 @@ namespace UnitTest
         [TestMethod]
         public void WriteAndReadMemory_DataPersists()
         {
-            // Arrange
             BufferPool pool = new(capacity: 5, size: 128);
             BufferPool.Slot slot = pool.Rent();
             Memory<byte> memory = slot.Memory;
 
-            // Act
             memory.Span[0] = 42;
             memory.Span[100] = 99;
 
-            // Assert
             Assert.AreEqual(42, memory.Span[0]);
             Assert.AreEqual(99, memory.Span[100]);
         }
@@ -62,10 +53,8 @@ namespace UnitTest
         [TestMethod]
         public void Rent_PoolEmpty_ThrowsException()
         {
-            // Arrange
             BufferPool pool = new(capacity: 2, size: 64);
 
-            // Act & Assert
             pool.Rent();
             pool.Rent();
 
@@ -83,11 +72,9 @@ namespace UnitTest
         [TestMethod]
         public void MultipleRentReturn_CorrectSlotReuse()
         {
-            // Arrange
             BufferPool pool = new(capacity: 3, size: 32);
             BufferPool.Slot[] slots = new BufferPool.Slot[3];
 
-            // Act - Rent all
             for (int i = 0; i < 3; i++)
             {
                 slots[i] = pool.Rent();
@@ -118,7 +105,6 @@ namespace UnitTest
         [TestMethod]
         public void MillionAllocations_MonitorGC()
         {
-            // Arrange
             int capacity = 10000;
             int size = 128;
             int allocations = 1000000;
@@ -137,7 +123,6 @@ namespace UnitTest
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            // Act - Allocate and return slots many times
             for (int i = 0; i < allocations; i++)
             {
                 BufferPool.Slot slot = pool.Rent();
@@ -162,7 +147,6 @@ namespace UnitTest
             int gen1CountAfter = GC.CollectionCount(1);
             int gen2CountAfter = GC.CollectionCount(2);
 
-            // Assert & Report
             int gen0Collections = gen0CountAfter - gen0CountBefore;
             int gen1Collections = gen1CountAfter - gen1CountBefore;
             int gen2Collections = gen2CountAfter - gen2CountBefore;
@@ -207,7 +191,7 @@ namespace UnitTest
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            // Act - Perform 10,000 allocations with large buffers
+            // Perform 10,000 allocations with large buffers
             for (int i = 0; i < 10000; i++)
             {
                 BufferPool.Slot slot = pool.Rent();
@@ -226,7 +210,6 @@ namespace UnitTest
             long memAfter = GC.GetTotalMemory(false);
             int gen0After = GC.CollectionCount(0);
 
-            // Assert & Report
             Debug.WriteLine($"\n=== Large Buffer Pool Test ===");
             Debug.WriteLine($"Buffer Size: {size} bytes");
             Debug.WriteLine($"Pool Capacity: {capacity}");
@@ -242,13 +225,11 @@ namespace UnitTest
         [TestMethod]
         public void ConcurrentRentReturn_ThreadSafe()
         {
-            // Arrange
             BufferPool pool = new(capacity: 1000, size: 64);
             int threadCount = 8;
             int allocationsPerThread = 50000;
             List<Exception> exceptions = new();
 
-            // Act
             Thread[] threads = new Thread[threadCount];
             for (int t = 0; t < threadCount; t++)
             {

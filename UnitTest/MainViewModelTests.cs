@@ -1,4 +1,5 @@
 using Moq;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using Slider.ViewModels;
 

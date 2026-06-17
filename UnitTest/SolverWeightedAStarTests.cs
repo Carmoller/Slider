@@ -2,7 +2,7 @@
 using Moq;
 using Slider;
 using Slider.Heuristics;
-using Slider.Interfaces;
+using Slider.Common.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
@@ -80,12 +80,15 @@ namespace UnitTest
             board.Add(new BoardTile { Value = 14, Row = 0, Column = 0 });
             board.Add(new BoardTile { Value = 15, Row = 3, Column = 1 });
 
-            SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true };
+            Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
+            SolverOptions solverOptions = new SolverOptions { UseManhattanDistance = true,  UseLinearConflict = true, UseCornerPattern = true };
+            
             List<byte> puzzle = new() { 14, 12, 13, 11, 5, 4, 2, 0, 9, 6, 8, 7, 10, 15, 3, 1 };
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 4);
             Assert.IsTrue(solvable);
-            WeightedAStarSolver solver = new(new Slider.Options { PdbLocation = @"E:\src\net\Slider" });
-            SolveResult result = solver.Solve(board, options, new HeuristicElementFactory());
+            WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             VerifyMoves(board, result);
@@ -96,6 +99,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             List<BoardTile> board = new();
             board.Add(new BoardTile { Value = 0, Row = 1, Column = 2 });
             board.Add(new BoardTile { Value = 1, Row = 2, Column = 4 });
@@ -127,7 +131,7 @@ namespace UnitTest
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
             Assert.IsTrue(solvable);
 
-            WeightedAStarSolver solver = new(optionsMock.Object);
+            WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true };
             SolveResult result = solver.Solve(board, options, new HeuristicElementFactory());
 
@@ -143,6 +147,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
             List<BoardTile> board = new();
             board.Add(new BoardTile { Value = 0, Row = 0, Column = 3 });
@@ -175,7 +180,7 @@ namespace UnitTest
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
             Assert.IsTrue(solvable);
 
-            WeightedAStarSolver solver = new(optionsMock.Object);
+            WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true };
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
 
@@ -192,6 +197,8 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
+
             List<BoardTile> board = new();
             board.Add(new BoardTile { Value = 0, Row = 1, Column = 1 });
             board.Add(new BoardTile { Value = 1, Row = 1, Column = 2 });
@@ -215,7 +222,7 @@ namespace UnitTest
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
             Assert.IsTrue(solvable);
 
-            WeightedAStarSolver solver = new(optionsMock.Object);
+            WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             //Assert.IsGreaterThan(0, result.Moves.Count);
@@ -254,7 +261,7 @@ namespace UnitTest
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
             Assert.IsTrue(solvable);
 
-            WeightedAStarSolver solver = new(optionsMock.Object);
+            WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             int sprintMoves = result.MoveCount;
@@ -275,6 +282,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             List<BoardTile> board = new();
             board.Add(new BoardTile { Value = 0, Row = 1, Column = 0 });
             board.Add(new BoardTile { Value = 1, Row = 0, Column = 1 });
@@ -286,7 +294,7 @@ namespace UnitTest
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 2);
             Assert.IsTrue(solvable);
 
-            WeightedAStarSolver solver = new(optionsMock.Object);
+            WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             //Assert.IsGreaterThan(0, result.Moves.Count);

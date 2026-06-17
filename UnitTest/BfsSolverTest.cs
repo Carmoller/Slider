@@ -1,5 +1,6 @@
 ﻿using PDBGenerator;
 using Slider.BfsSolver;
+using Slider.Common.Interfaces;
 using Slider.Heuristics;
 using Slider.Interfaces;
 using Slider.Solver;

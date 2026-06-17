@@ -1,4 +1,4 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
@@ -8,9 +8,13 @@ namespace Slider.Heuristics
 {
     public class HeuristicElementFactory : IHeuristicElementFactory
     {
-        public IHeuristicCalculator CreateHeuristicCalculator(IOptions options, SolverOptions solverOptions, int gridSize)
+        public IHeuristicCalculator CreateHeuristicCalculator(IOptions options, ISolverOptions solverOptions, int gridSize)
         {
             return new HeuristicCalculator(solverOptions, gridSize, this, options);
+        }
+        public IHeuristicElement CreateManhattanDistance()
+        {
+            return new ManhattanDistanceCalculator();
         }
 
         public IHeuristicElement CreateLinearConflict()

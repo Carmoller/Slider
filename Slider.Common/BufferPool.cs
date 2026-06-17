@@ -12,21 +12,12 @@ namespace Slider.Common
 
     public class BufferPool
     {
-        // Inner structure to track where to return the memory
-        //public readonly struct Slot
-        //{
-        //    public long Index { get; }
-        //    public byte Size { get; }
-        //    public int Queue { get; }
-        //    public Slot(long index, byte size) { Index = index; Size = size; }
-        //}
-
         public readonly struct Slot
         {
             public readonly byte[] Array;
             public readonly int Offset;
             public readonly int Size;
-            internal readonly long TrackingId; // Used internally for O(1) returns
+            internal readonly long TrackingId; 
 
             public Slot(byte[] array, int offset, int size, long trackingId)
             {
@@ -36,16 +27,13 @@ namespace Slider.Common
                 TrackingId = trackingId;
             }
 
-            // Expose memory natively via modern Span semantics
             public Memory<byte> Memory => Array.AsMemory(Offset, Size);
         }
 
         private readonly int _size;
-        private readonly ConcurrentDictionary<int, byte[]> _bufferList = new();
-        private readonly ConcurrentStack<long> _freeSlots = new();
+        private readonly Stack<long> _freeSlots = new();
         private readonly byte[][] _buffers;
 
-        // Dynamic bit-shift variables configured on initialization
         private readonly int _indexShift;
         private readonly long _itemsPerBuffer;
         private readonly long _indexMask;
@@ -54,7 +42,6 @@ namespace Slider.Common
         {
             _size = size;
 
-            // 1. Calculate the ideal chunk size based on capacity (maxed out at ~2GB limit)
             long targetChunkSize = Math.Min(capacity, 2_000_000_000L / size);
 
             // Handle edge case where a single item size is larger than 2GB
@@ -63,7 +50,7 @@ namespace Slider.Common
                 throw new ArgumentException($"Item size ({size} bytes) is too large for a single standard array block.");
             }
 
-            // 2. Round down to the nearest power of 2 to keep bit-shifting functional
+            // 2. Round down to the nearest power of 2
             _indexShift = 63 - BitOperations.LeadingZeroCount((ulong)targetChunkSize);
 
             // Ensure minimum shift is 1 (protects against capacity = 1 scenarios)
@@ -94,7 +81,6 @@ namespace Slider.Common
             }
         }
 
-        // Example of how cleanly you can resolve a slot using a global index
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Slot Rent()
         {
@@ -114,32 +100,8 @@ namespace Slider.Common
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Return(in Slot pooledBuffer)
         {
-            // Simply return the tracking ID to the lock-free stack
+            // Simply return the tracking ID to the stack
             _freeSlots.Push(pooledBuffer.TrackingId);
         }
-
-        //public Slot Rent()
-        //{
-        //    if (_freeSlots.TryPop(out long index))
-        //    {
-        //        int bufferKey = (int)(index >> IndexShift);
-        //        long localItemIndex = index & IndexMask;
-        //        int byteOffset = (int)(localItemIndex * _size);
-
-        //        return new PooledBuffer(_buffers[bufferKey], byteOffset, _itemSize, globalIndex);
-        //        return new Slot(index, (byte)_size);
-        //    }
-        //    throw new InvalidOperationException($"Pool is empty!");
-        //}
-
-        //public void Return(Slot slot)
-        //{
-        //    _freeSlots.Push(slot.Index);
-        //}
-
-        //public Memory<byte> GetMemory(Slot slot)
-        //{
-        //    return _buffer.AsMemory((int)slot.Offset, slot.Size);
-        //}
     }
 }

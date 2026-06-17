@@ -50,10 +50,6 @@ namespace Slider.Solver
             list.Add(state);
             if (list.Count > MaxLength)
             {
-                if (list.Count > 1)
-                {
-                    int a = 1;
-                }
                 MaxLength = base[hash].Count;
             }
         }

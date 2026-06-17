@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
-using Slider.Interfaces;
+using Slider.Common.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
@@ -21,7 +21,7 @@ namespace Slider
         public string PdbLocation { get => _pdbLocation; set { if (_pdbLocation != value) { _pdbLocation = value; OnPropertyChanged(); } } }
         public TimeSpan SolveTimeout { get => _solveTimeout; set { if (_solveTimeout != value) { _solveTimeout = value; OnPropertyChanged(); } } }
 
-        public SolverOptions SolverOptions { get; set; } = new SolverOptions { UseLinearConflict = true, UseEdgePattern = true, UseCornerPattern = true, UseSprintFinish = true};
+        public ISolverOptions SolverOptions { get; set; } = new SolverOptions { UseManhattanDistance = true, UseLinearConflict = true, UseEdgePattern = true, UseCornerPattern = true, UseSprintFinish = true};
         public Options()
         {
             SolveTimeout = TimeSpan.FromSeconds(30);

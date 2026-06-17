@@ -1,4 +1,4 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,12 +8,14 @@ namespace Slider.Heuristics
 {
     public sealed class LinearConflict : IHeuristicElement
     {
-        public HeuristicStatistics Statistics { get; private set; } = new();
+        public IHeuristicsStatistics Statistics { get; private set; } = new HeuristicsStatistics();
         public string Name { get { return "LinearConflict"; } }
         public bool IsAdditive { get { return true; } }
+        private readonly Stopwatch _stopwatch = new();
+
         public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
         {
-            Stopwatch sw = Stopwatch.StartNew();
+            _stopwatch.Restart();
             int conflictCount = 0;
             for (byte row = 0; row < gridSize; row++)
             {
@@ -59,14 +61,14 @@ namespace Slider.Heuristics
                     }
                 }
             }
-            sw.Stop();
+            _stopwatch.Stop();
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            Statistics.TicksSpent += _stopwatch.ElapsedTicks;
             return conflictCount * 4; // Each conflict adds four moves
         }
         public int Calculate(byte[] board, int gridSize)
         {
-            Stopwatch sw = Stopwatch.StartNew();
+            _stopwatch.Restart();
             int conflictCount = 0;
 
             // Check for row conflicts
@@ -145,9 +147,9 @@ namespace Slider.Heuristics
                 }
             }
 
-            sw.Stop();
+            _stopwatch.Stop();
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            Statistics.TicksSpent += _stopwatch.ElapsedTicks;
             return conflictCount * 4; // Each conflict adds four moves
         }
     }

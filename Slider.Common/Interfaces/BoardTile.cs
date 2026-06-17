@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace Slider.Interfaces
+namespace Slider.Common.Interfaces
 {
     [DebuggerDisplay("{Value} @ ({Row}, {Column})")]
     public class BoardTile

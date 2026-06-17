@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Slider.Common.Interfaces;
 using Slider.Heuristics;
 using Slider.Interfaces;
 using Slider.Solver;
@@ -36,7 +37,9 @@ namespace Slider
                     services.AddSingleton<IGenerator, PuzzleGenerator>();
                     services.AddSingleton<IOptions, Options>();
                     services.AddSingleton<ITileControlViewModelFactory, TileControlViewModelFactory>();
+                    services.AddSingleton<IStateInfoFactory, StateInfoFactory>();
                     services.AddTransient<ISolver, WeightedAStarSolver>();
+                    services.AddTransient<IStateInfoFactory, StateInfoFactory>();
                     services.AddSingleton<IHeuristicElementFactory, HeuristicElementFactory>();
                 })
                 .Build();

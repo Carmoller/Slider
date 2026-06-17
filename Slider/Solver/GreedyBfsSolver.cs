@@ -1,6 +1,8 @@
 ﻿using Slider.Common;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -9,35 +11,49 @@ namespace Slider.Solver
 {
     public class GreedyBfsSolver
     {
-        private PriorityQueue<StateInfo, double> _openQueue = new();
-        private SolveStateDictionary<StateInfo> _closed = new();
+        private readonly PriorityQueue<StateInfo, double> _openQueue = new();
+        private readonly SolveStateDictionary<StateInfo> _closed = new();
         private int _gridSize;
-        private ChunkedObjectPool<StateInfo>? _stateInfoPool;
+        private ChunkedStructPool<StateInfo>? _stateInfoPool;
+        private ChunkedArrayPool<byte>? _arrayPool;
         private IHeuristicCalculator? _heuristicsCalculator;
         private const double H_Scale = 1.2;
         private int _min_h;
         private int _startNodeIndex;
+        private IOptions _options;
+        private IStateInfoFactory _stateInfoFactory;
 
-        public List<Move>? SprintSolve(StateInfo startState, 
-            ChunkedObjectPool<StateInfo> stateInfoPool,
+        public GreedyBfsSolver(IOptions options, IStateInfoFactory stateInfoFactory)
+        {
+            _options = options;
+            _stateInfoFactory = stateInfoFactory;
+        }
+
+        public List<Move>? SprintSolve(
+            SolveResult result,
+            StateInfo startState, 
+            ChunkedStructPool<StateInfo> stateInfoPool,
+            ChunkedArrayPool<byte> arrayPool,
             IHeuristicCalculator heuristicsCalculator,
             int gridSize, 
             int maxNodes = 5000)
         {
             _gridSize = gridSize;
             _stateInfoPool = stateInfoPool;
+            _arrayPool = arrayPool;
             _heuristicsCalculator = heuristicsCalculator;
             _startNodeIndex = startState.NodeIndex;
             _openQueue.Enqueue(startState, startState.CurrentF);
             int nodesExplored = 0;
             _min_h = startState.CurrentH;
-            while (_openQueue.TryDequeue(out StateInfo currentState, out double f_current) && nodesExplored < maxNodes)
+            while (_openQueue.TryDequeue(out StateInfo currentState, out double _) && nodesExplored < maxNodes)
             {
                 bool found = _closed.TryGetState(currentState.Hash, currentState, out StateInfo closedState);
                 if (found)
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
+                        _arrayPool.Release(currentState.BoardArrayIndex);
                         _stateInfoPool.Release(currentState.NodeIndex);
                         continue;
                     }
@@ -51,20 +67,16 @@ namespace Slider.Solver
                     _min_h = currentState.CurrentH;
                 }
                 nodesExplored++;
+                result.TotalStatesConsidered++;
                 if (currentState.CurrentH == 0)
                 {
                     return ReconstructPath(currentState);
-
                 }
 
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
 
-                HandleNewState(currentState, MoveUp(currentState));
-                HandleNewState(currentState, MoveDown(currentState));
-                HandleNewState(currentState, MoveLeft(currentState));
-                HandleNewState(currentState, MoveRight(currentState));
-
+                _stateInfoFactory.GetAvailableMoves(currentState, _gridSize, _stateInfoPool, arrayPool, (ref p) => { HandleNewState(ref currentState, ref p); });
             }
             return null;
         }
@@ -87,7 +99,6 @@ namespace Slider.Solver
                 if (current.ParentIndex == -1)
                 {
                     moves.Reverse();
-  //                  Cleanup();
                     return moves;
                 }
 
@@ -109,22 +120,20 @@ namespace Slider.Solver
             };
         }
 
-        private long GetHashCode(StateInfo state)
+        private static long GetHashCode(StateInfo state)
         {
             return StateHashes.FastHash(state.Board);
         }
 
-        private void HandleNewState(StateInfo currentState, int newStateIndex)
+        private void HandleNewState(ref StateInfo currentState, ref StateInfo newState)
         {
-            if (newStateIndex == ChunkedObjectPool<StateInfo>.NoIndex)
-                return;
-            ref StateInfo newState = ref _stateInfoPool.GetRef(newStateIndex);
             int tentative_g = currentState.CurrentG + 1;
             newState.Hash = GetHashCode(newState);
             if (_closed.TryGetState(newState.Hash, newState, out StateInfo closedNeighbor))
             {
                 if (closedNeighbor.CurrentG <= tentative_g)
                 {
+                    _arrayPool.Release(closedNeighbor.BoardArrayIndex);
                     _stateInfoPool.Release(newState.NodeIndex);
                     return;
                 }
@@ -144,70 +153,6 @@ namespace Slider.Solver
         private int GetHeuristics(byte[] board, int gridSize)
         {
             return _heuristicsCalculator.GetHeuristic(board, gridSize);
-        }
-
-        private void SwapTiles(byte[] board, int tile1, int tile2)
-        {
-            byte temp = board[tile2];
-            board[tile2] = board[tile1];
-            board[tile1] = temp;
-        }
-
-        private int GetNewState(byte newBlankPosition, MoveDirection direction, StateInfo currentState)
-        {
-            int nodeIndex = _stateInfoPool.Get(currentState, (ref StateInfo state, StateInfo currentState) =>
-            {
-                state = currentState;
-            });
-            ref StateInfo newState = ref _stateInfoPool.GetRef(nodeIndex);
-            newState.Board = (byte[])currentState.Board.Clone();
-            SwapTiles(newState.Board, currentState.BlankPos, newBlankPosition);
-            newState.NodeIndex = nodeIndex;
-            newState.ParentIndex = currentState.NodeIndex;
-            newState.BlankPos = newBlankPosition;
-            newState.PreviousMove = direction;
-            return nodeIndex;
-        }
-
-        private int MoveUp(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Down)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankRow = state.BlankPos / _gridSize;
-            if (blankRow == 0)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos - _gridSize);
-            return GetNewState(newBlank, MoveDirection.Up, state);
-        }
-        private int MoveDown(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Up)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankRow = state.BlankPos / _gridSize;
-            if (blankRow == _gridSize - 1)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos + _gridSize);
-            return GetNewState(newBlank, MoveDirection.Down, state);
-        }
-        private int MoveLeft(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Right)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankCol = state.BlankPos % _gridSize;
-            if (blankCol == 0)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos - 1);
-            return GetNewState(newBlank, MoveDirection.Left, state);
-        }
-        private int MoveRight(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Left)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankCol = state.BlankPos % _gridSize;
-            if (blankCol == _gridSize - 1)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos + 1);
-            return GetNewState(newBlank, MoveDirection.Right, state);
         }
 
     }

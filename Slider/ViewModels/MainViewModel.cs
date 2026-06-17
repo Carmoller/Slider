@@ -1,4 +1,5 @@
 ﻿using Prism.Commands;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -132,7 +133,8 @@ namespace Slider.ViewModels
             {
                 SolveMoves.Add(move);
             }
-            SetHighlightedTile(SolveMoves[0].FromRow, SolveMoves[0].FromColumn);
+            if (SolveMoves.Count > 0)
+                SetHighlightedTile(SolveMoves[0].FromRow, SolveMoves[0].FromColumn);
         }
 
         public bool SolveCommand_CanExecute()

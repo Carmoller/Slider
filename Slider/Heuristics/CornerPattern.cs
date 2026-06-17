@@ -1,4 +1,4 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,16 +8,16 @@ namespace Slider.Heuristics
 {
     public sealed class CornerPattern : IHeuristicElement
     {
-        public HeuristicStatistics Statistics { get; private set; }
+        public IHeuristicsStatistics Statistics { get; private set; }
         public string Name { get { return "CornerPattern"; } }
         public bool IsAdditive { get { return true; } }
         private readonly HashSet<byte> _cornerTileValues;
         private readonly (byte row, byte col)[] _corners;
         private readonly byte[] _cornersFlat;
-
+        private readonly Stopwatch _stopWatch = new();
         public CornerPattern(int gridSize)
         {
-            Statistics = new();
+            Statistics = new HeuristicsStatistics();
             // Identify corner tile values
             // For 3×3: corners should have 1, 3, 7, 8
             // For 4×4: corners should have 1, 4, 13, 15
@@ -50,7 +50,7 @@ namespace Slider.Heuristics
 
         public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
         {
-            Stopwatch sw = Stopwatch.StartNew();
+            _stopWatch.Restart();
             int penalty = 0;
 
             // Iterate through each corner
@@ -81,13 +81,14 @@ namespace Slider.Heuristics
                 // Case 3: Correct tile in correct corner (no penalty)
             }
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            _stopWatch.Stop();
+            Statistics.TicksSpent += _stopWatch.ElapsedTicks;
             return penalty;
         }
 
         public int Calculate(byte[] board, int gridSize)
         {
-            Stopwatch sw = Stopwatch.StartNew();
+            _stopWatch.Restart();
             int penalty = 0;
 
             // Iterate through each corner
@@ -118,7 +119,8 @@ namespace Slider.Heuristics
                 // Case 3: Correct tile in correct corner (no penalty)
             }
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            _stopWatch.Stop();
+            Statistics.TicksSpent += _stopWatch.ElapsedTicks;
             return penalty;
         }
 

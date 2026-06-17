@@ -1,13 +1,13 @@
-﻿using Slider.Solver;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Slider.Interfaces
+namespace Slider.Common.Interfaces
 {
     public interface IHeuristicElementFactory
     {
-        IHeuristicCalculator CreateHeuristicCalculator(IOptions options, SolverOptions solverOptions, int gridSize);
+        IHeuristicCalculator CreateHeuristicCalculator(IOptions options, ISolverOptions solverOptions, int gridSize);
+        IHeuristicElement CreateManhattanDistance();
         IHeuristicElement CreateLinearConflict();
         IHeuristicElement CreateCornerPattern(int gridSize);
     }

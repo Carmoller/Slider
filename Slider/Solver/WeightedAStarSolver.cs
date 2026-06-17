@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.ObjectPool;
 using Slider.Common;
 using Slider.Heuristics;
-using Slider.Interfaces;
+using Slider.Common.Interfaces;
 using System;
 using System.Buffers;
 using System.Collections;
@@ -15,6 +15,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Windows.Documents;
 using System.Xml.Linq;
+using Slider.Interfaces;
 
 namespace Slider.Solver
 {
@@ -24,28 +25,25 @@ namespace Slider.Solver
         const int G_Scale = 10;
         private const int H_CutoffForBfs = 10;
 
-        private double w = 2;
+        private double w = 3;
         private PriorityQueue<StateInfo, double> _openQueue = new();
         private SolveStateDictionary<StateInfo> _closed = new();
         private int _gridSize;
         private IHeuristicCalculator? _heuristicCalculator;
         private long _discardedStates = 0;
-        private ChunkedObjectPool<StateInfo>? _stateInfoPool;
+        private ChunkedStructPool<StateInfo>? _stateInfoPool;
+        private ChunkedArrayPool<byte>? _arrayPool;
         private IOptions _options;
+        private IStateInfoFactory _stateInfoFactory;
 
-        public WeightedAStarSolver(IOptions options)
+        public WeightedAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
         {
             _options = options;
+            _stateInfoFactory = stateInfoFactory;
         }
-        public SolveResult Solve(List<BoardTile> board, SolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        {
-            int bestHValueIndex = -1;
-            _stateInfoPool = new(1000000);
-            SolveResult result = new();
-            Stopwatch sw = Stopwatch.StartNew();
-            _gridSize = (int)Math.Sqrt(board.Count);
 
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, _gridSize);    
+        private StateInfo CreateStartState(List<BoardTile> board)
+        {
             byte[] startBoard = new byte[board.Count];
             byte startBlank = byte.MaxValue;
             foreach (BoardTile tile in board)
@@ -57,25 +55,57 @@ namespace Slider.Solver
 
             StateInfo startState = new StateInfo
             {
-                ParentIndex = ChunkedObjectPool<StateInfo>.NoIndex,
+                ParentIndex = ChunkedStructPool<StateInfo>.NoIndex,
                 BlankPos = startBlank,
                 BestG = int.MaxValue,
                 CurrentG = 0,
                 PreviousMove = MoveDirection.None,
                 Board = (byte[])startBoard.Clone()
             };
-            startState.NodeIndex = _stateInfoPool.Get(startState, (ref StateInfo state, StateInfo bluePrint) =>
+            startState.NodeIndex = _stateInfoPool.Get(startState, (ref StateInfo state, StateInfo source) =>
             {
-                state = bluePrint;
+                state = source;
             });
             startBoard.CopyTo(startState.Board);
 
             startState.CurrentH = GetHeuristics(startState.Board, _gridSize);
             startState.CurrentF = (w * startState.CurrentH);
             startState.Hash = GetHashCode(startState);
+            return startState;
+        }
+
+        private void Finalize(bool isTimedOut, int bestHValueIndex, SolveResult result, ref StateInfo currentState)
+        {
+            ref StateInfo bestState = ref currentState;
+            if (isTimedOut)
+            {
+                result.Result = SolveResultType.Timeout;
+                bestState = ref _stateInfoPool!.GetRef(bestHValueIndex);
+            }
+            else
+            {
+                result.Result = SolveResultType.Solved;
+            }
+            result.Moves = ReconstructPath(bestState);
+            Cleanup();
+        }
+
+        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        {
+            _gridSize = (int)Math.Sqrt(board.Count);
+            int bestHValueIndex = -1;
+            _stateInfoPool = new(1000000);
+            _arrayPool = new ChunkedArrayPool<byte>(1000000, _gridSize * _gridSize);
+            SolveResult result = new();
+            Stopwatch sw = Stopwatch.StartNew();
+            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, _gridSize);
+
+            StateInfo startState = CreateStartState(board);
+
             _openQueue.Enqueue(startState, startState.CurrentF);
             int min_h = int.MaxValue;
             int h_previous = int.MaxValue;
+
             while (_openQueue.TryDequeue(out StateInfo currentState, out double f_current))
             {
                 int h_Current = currentState.CurrentH;
@@ -85,14 +115,22 @@ namespace Slider.Solver
                     Debug.WriteLine($"Weighted A*: State #{result.TotalStatesConsidered}: h:{h_Current}");
                     min_h = h_Current;
                 }
+                if ((h_Current == 0) || (sw.Elapsed > _options.SolveTimeout))
+                {
+                    sw.Stop();
+                    result.TimeSpent = sw.Elapsed;
+                    Finalize(sw.Elapsed > _options.SolveTimeout, bestHValueIndex, result, ref currentState);
+                    return result;
+                }
+
                 if (solverOptions.UseSprintFinish)
                 {
                     if ((h_Current < H_CutoffForBfs) && (h_Current >= h_previous))
                     {
                         Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
                         // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
-                        GreedyBfsSolver solver = new();
-                        List<Move>? moves = solver.SprintSolve(currentState, _stateInfoPool, _heuristicCalculator, _gridSize);
+                        GreedyBfsSolver solver = new(_options, _stateInfoFactory);
+                        List<Move>? moves = solver.SprintSolve(result, currentState, _stateInfoPool, _arrayPool, _heuristicCalculator, _gridSize);
                         if (moves != null)
                         {
                             // Finished
@@ -107,47 +145,24 @@ namespace Slider.Solver
                 }
                 // Adjust w to avoid getting stuck at a low h-value, and refusing to climb back up the tree
                 w = h_Current < 30 ? 1 : 2;
-                if ((h_Current == 0) || (sw.Elapsed > _options.SolveTimeout))
-                {
-                    sw.Stop();
-                    result.TimeSpent = sw.Elapsed;
-                    if (h_Current != 0)
-                    {
-                        result.Result = SolveResultType.Timeout;
-                        ref StateInfo bestState = ref _stateInfoPool.GetRef(bestHValueIndex);
-                        result.Moves = ReconstructPath(bestState);
-
-                    }
-                    else
-                    {
-                        result.Result = SolveResultType.Solved;
-                        result.Moves = ReconstructPath(currentState);
-                    }
-                    return result;
-                }
-                if (currentState.Hash == 0)
-                {
-                    throw new InvalidOperationException("Hash is 0");
-                }
                 bool found = _closed.TryGetState(currentState.Hash, currentState, out StateInfo closedState);
                 if (found)
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
+#warning Would be better if StateInfoPool could also release the board
+                        _arrayPool.Release(closedState.BoardArrayIndex);
                         _stateInfoPool.Release(currentState.NodeIndex);
+                        _discardedStates++;
                         continue;
                     }
-                    closedState.ParentIndex = currentState.NodeIndex;
                     closedState.BestG = currentState.CurrentG;
                 }
                 h_previous = h_Current;
                 result.TotalStatesConsidered++;
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
-                HandleNewState(currentState, MoveUp(currentState));
-                HandleNewState(currentState, MoveDown(currentState));
-                HandleNewState(currentState, MoveLeft(currentState));
-                HandleNewState(currentState, MoveRight(currentState));
+                _stateInfoFactory.GetAvailableMoves(currentState, _gridSize, _stateInfoPool, _arrayPool, (ref p) => { HandleNewState(ref currentState, ref p); });
             }
             result.Result = SolveResultType.Unsolvable;
             return result;
@@ -156,10 +171,9 @@ namespace Slider.Solver
         private void Cleanup()
         {
             _openQueue.Clear();
-
             _closed.Clear();
-
             _stateInfoPool = null;
+            _arrayPool = null;
         }
 
 
@@ -192,25 +206,13 @@ namespace Slider.Solver
                 moves.Add(GetMove(parent, current));
                 nodeIndex = parent.NodeIndex;
             }
-            throw new InvalidOperationException("Should get here");
+            throw new InvalidOperationException("Shouldn't get here");
         }
 
-        private void HandleNewState(StateInfo currentState, int newStateIndex)
+        private void HandleNewState(ref StateInfo currentState, ref StateInfo newState)
         {
-            if (newStateIndex == ChunkedObjectPool<StateInfo>.NoIndex)
-                return;
-            ref StateInfo newState = ref _stateInfoPool.GetRef(newStateIndex);
             int tentative_g = currentState.CurrentG + 1;
             newState.Hash = GetHashCode(newState);
-            if (_closed.TryGetState(newState.Hash, newState, out StateInfo closedNeighbor))
-            {
-                if (closedNeighbor.CurrentG <= tentative_g)
-                {
-                    _discardedStates++;
-                    _stateInfoPool.Release(newState.NodeIndex);
-                    return;
-                }
-            }
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
             newState.CurrentH = GetHeuristics(newState.Board, _gridSize);
@@ -224,69 +226,6 @@ namespace Slider.Solver
 
         }
 
-        private int GetNewState(byte newBlankPosition, MoveDirection direction, StateInfo currentState)
-        {
-            int nodeIndex = _stateInfoPool.Get(currentState, (ref StateInfo state, StateInfo currentState) =>
-            {
-                state = currentState;
-            });
-            ref StateInfo newState = ref _stateInfoPool.GetRef(nodeIndex);
-            newState.Board = (byte[])currentState.Board.Clone();
-            SwapTiles(newState.Board, currentState.BlankPos, newBlankPosition);
-            newState.NodeIndex = nodeIndex;
-            newState.ParentIndex = currentState.NodeIndex;
-            newState.BlankPos = newBlankPosition;
-            newState.PreviousMove = direction;
-            return nodeIndex;
-        }
-
-        private int MoveUp(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Down)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankRow = state.BlankPos / _gridSize;
-            if (blankRow == 0)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos - _gridSize);
-            return GetNewState(newBlank, MoveDirection.Up, state);
-        }
-        private int MoveDown(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Up)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankRow = state.BlankPos / _gridSize;
-            if (blankRow == _gridSize - 1)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos + _gridSize);
-            return GetNewState(newBlank, MoveDirection.Down, state);
-        }
-        private int MoveLeft(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Right)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankCol = state.BlankPos % _gridSize;
-            if (blankCol == 0)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos - 1);
-            return GetNewState(newBlank, MoveDirection.Left, state);
-        }
-        private int MoveRight(StateInfo state)
-        {
-            if (state.PreviousMove == MoveDirection.Left)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            int blankCol = state.BlankPos % _gridSize;
-            if (blankCol == _gridSize - 1)
-                return ChunkedObjectPool<StateInfo>.NoIndex;
-            byte newBlank = (byte)(state.BlankPos + 1);
-            return GetNewState(newBlank, MoveDirection.Right, state);
-        }
-
-        private void SwapTiles(byte[] board, int tile1, int tile2)
-        {
-            byte temp = board[tile2];
-            board[tile2] = board[tile1];
-            board[tile1] = temp;
-        }
         private int GetHeuristics(byte[] board, int gridSize)
         {
             if (_heuristicCalculator == null)
@@ -295,41 +234,14 @@ namespace Slider.Solver
         }
         private int GetHeuristics(byte[] board, int gridSize, IHeuristicCalculator customCalculator)
         {
-            return customCalculator.GetHeuristic(board, gridSize);// HeuristicCalculator.ManhattanDistance(board, _gridSize);
+            return customCalculator.GetHeuristic(board, gridSize);
         }
-        //open = priority queue ordered by(f, tie - breakers)
-        //closed = hash map: state → best g seen
-        //g[start] = 0
-        //h[start] = heuristic(start)
-        //f[start] = g[start] + w * h[start]
-        //push start into open
-        //while open is not empty:
-        //    current = pop node with smallest f
-        //    if current is goal:
-        //        return reconstruct_path(current)
-        //    if current in closed and closed[current] ≤ g
-        //            continue
-        //    closed[current] = g[current]
-        //    for each neighbor in expand(current):
-        //        tentative_g = g[current] + 1
-        //        if neighbor in closed and closed[neighbor] ≤ tentative_g:
-        //        continue
-        //        g[neighbor] = tentative_g
-        //        h[neighbor] = heuristic(neighbor)
-        //        f[neighbor] = g[neighbor] + w * h[neighbor]
-        //        push neighbor into open with priority:
-        //            (f[neighbor],
-        //             -g[neighbor],        // prefer deeper nodes
-        //             h[neighbor])         // secondary tie-break
-        //return failure        
-
-
         public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
         {
             byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
             int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(null,
-                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true },
+            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(_options,
+                new SolverOptions {UseManhattanDistance = true, UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true },
                 gridSize);
             return GetHeuristics(byteBoard, gridSize, calculator);
         }

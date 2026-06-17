@@ -1,4 +1,5 @@
 ﻿using PDBGenerator;
+using Slider.Common.Interfaces;
 using Slider.Heuristics;
 using Slider.Interfaces;
 using System;
@@ -72,7 +73,8 @@ namespace Slider.Solver
         private int _min_h = int.MaxValue;
         private int _pdbsLoadedForSize = -1;
         private string _pdbLocation;
-
+        private IOptions _options;
+        private IHeuristicCalculator _heuristicCalculator;
         private Dictionary<int, List<string>> _pdbFilenamesPerSize = new();
 
         private void FillPdbsPerSize()
@@ -128,6 +130,7 @@ namespace Slider.Solver
         }
         public SolverIdaStarPdb(IOptions options)
         {
+            _options = options;
             _pdbLocation = options.PdbLocation;
             FillPdbsPerSize();
             //string[] pdbPaths = new string[]
@@ -179,11 +182,12 @@ namespace Slider.Solver
             }
             return boardData;
         }
-        public SolveResult Solve(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
-            Dictionary<long, List<TranspositionEntry>> transpositionTable = new();
-            Stopwatch sw = Stopwatch.StartNew();
             _gridSize = (int)Math.Sqrt(board.Count);
+            Dictionary<long, List<TranspositionEntry>> transpositionTable = new();
+            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, _gridSize);
+            Stopwatch sw = Stopwatch.StartNew();
             LoadPdbs(_gridSize);
             long loadTime = sw.ElapsedMilliseconds;
             sw.Restart();
@@ -244,10 +248,6 @@ namespace Slider.Solver
             // If the parities don't match, the PDB is mathematically underestimating 
             // by an odd fractional amount, so we safely bump it up by 1.
             int adjustedH = (pdbParity != physicalParity) ? rawPdbH + 1 : rawPdbH;
-            if (adjustedH != rawPdbH)
-            {
-                int a = 1;
-            }
             // 5. Compute the actual f-value used for pruning and the next threshold update
             return adjustedH;
         }
@@ -318,10 +318,6 @@ namespace Slider.Solver
 
             if ((g + h) > bound)
             {
-                if (g + h == 51)
-                {
-                    int a = 1;
-                }
                 return g + h;
             }
             if (h == 0)
@@ -375,7 +371,7 @@ namespace Slider.Solver
             {
                 newMove.G_value = g + 1;
                 newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
-                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
+                newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board, _gridSize);
                 moveArray[0] = newMove;
             }
 
@@ -384,7 +380,7 @@ namespace Slider.Solver
             {
                 newMove.G_value = g + 1;
                 newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
-                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
+                newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board, _gridSize);
                 moveArray[1] = newMove;
             }
             newMove = MoveLeft(previousMove.Board, previousMove.Direction, blankPos);
@@ -392,7 +388,7 @@ namespace Slider.Solver
             {
                 newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
                 newMove.G_value = g + 1;
-                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
+                newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board, _gridSize);
                 moveArray[2] = newMove;
             }
             newMove = MoveRight(previousMove.Board, previousMove.Direction, blankPos);
@@ -400,14 +396,10 @@ namespace Slider.Solver
             {
                 newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
                 newMove.G_value = g + 1;
-                newMove.ManhattanDistance = HeuristicCalculator.ManhattanDistance(newMove.Board, _gridSize);
+                newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board, _gridSize);
                 moveArray[3] = newMove;
             }
             List<MoveRecord> moveList = moveArray.Where(p => p != null).OrderBy(p => p.H_value).ThenBy(p=>p.ManhattanDistance).ToList();
-            if (moveList[0].H_value < 36)
-            {
-                int a = 1;
-            }
             int minNextBound = int.MaxValue;
             foreach (MoveRecord move in moveList)
             //            while (orderedMoves.TryDequeue(out MoveRecord? move, out int _))

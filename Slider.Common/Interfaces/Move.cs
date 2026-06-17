@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace Slider.Interfaces
+namespace Slider.Common.Interfaces
 {
     [DebuggerDisplay("From: ({FromRow}, {FromColumn}), To: ({ToRow}, {ToColumn})")]
     public class Move

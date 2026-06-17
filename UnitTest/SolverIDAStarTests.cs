@@ -1,4 +1,5 @@
 ﻿using Moq;
+using Slider.Common.Interfaces;
 using Slider.Heuristics;
 using Slider.Interfaces;
 using Slider.Solver;
@@ -139,7 +140,7 @@ namespace UnitTest
             TestContext.WriteLine("\tHeuristic breakdown:=================================");
             foreach (IHeuristicElement element1 in solver.Calculator!.ElementCalculators)
             {
-                HeuristicStatistics stats1 = element1.Statistics;
+                IHeuristicsStatistics stats1 = element1.Statistics;
                 TestContext.WriteLine($"\t\t{element1.Name}: {stats1.NumberOfCalls} calls, {stats1.TotalTimeSpentMs} ms, {stats1.AverageTimePerCall} ms/call");
             }
             long totalAllocated = GC.GetTotalAllocatedBytes();
@@ -174,7 +175,7 @@ namespace UnitTest
             TestContext.WriteLine("\tHeuristic breakdown:=================================");
             foreach (IHeuristicElement element2 in solver.Calculator!.ElementCalculators)
             {
-                HeuristicStatistics stats2 = element2.Statistics;
+                IHeuristicsStatistics stats2 = element2.Statistics;
                 TestContext.WriteLine($"\t\t{element2.Name}: {stats2.NumberOfCalls} calls, {stats2.TotalTimeSpentMs} ms, {stats2.AverageTimePerCall} ms/call");
             }
             totalAllocated = GC.GetTotalAllocatedBytes();

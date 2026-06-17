@@ -1,4 +1,4 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,9 +9,12 @@ namespace Slider.Heuristics
     public sealed class EdgePattern : IHeuristicElement
     {
         private readonly int Weight = 1;
-        public HeuristicStatistics Statistics { get; private set; } = new();
+        public IHeuristicsStatistics Statistics { get; private set; } = new HeuristicsStatistics();
         public string Name { get { return "EdgePattern"; } }
         public bool IsAdditive { get { return true; } }
+        private readonly Stopwatch _stopwatch = new();
+
+
         private static bool IsNonEdgeTile(byte tile, byte gridSize)
         {
             // Check if this tile's goal position is in the center (not on any edge)
@@ -24,7 +27,7 @@ namespace Slider.Heuristics
 
         public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
         {
-            Stopwatch sw = Stopwatch.StartNew();
+            _stopwatch.Restart();
             int penalty = 0;
 
             // Penalty for non-edge tiles positioned on any edge (constrained movement)
@@ -62,9 +65,9 @@ namespace Slider.Heuristics
                     penalty += Weight;
             }
 
-            sw.Stop();
+            _stopwatch.Stop();
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            Statistics.TicksSpent += _stopwatch.ElapsedTicks;
             return penalty;
         }
         public int Calculate(byte[] board, int gridSize)

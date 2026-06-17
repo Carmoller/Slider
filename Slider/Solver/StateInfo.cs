@@ -1,15 +1,17 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
+using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Slider.Solver
 {
-    public struct StateInfo
+    public struct StateInfo : IStateInfo
     {
         public int NodeIndex { get; set; }
         public int ParentIndex { get; set; }
         public byte[] Board { get; set; }
+        public int BoardArrayIndex { get; set; }
         public int BlankPos { get; set; }
         public long Hash { get; set; }
         public int BestG { get; set; }

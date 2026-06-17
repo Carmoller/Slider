@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Slider;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using Slider.Solver;
 using System;

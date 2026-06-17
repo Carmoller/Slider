@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Slider.Interfaces
+namespace Slider.Common.Interfaces
 {
     public interface IHeuristicCalculator
     {

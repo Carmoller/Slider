@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Slider.Common.Interfaces;
 
 namespace Slider.Common
 {
-    public delegate void RefInitializer<T, TState>(ref T target, TState state);
-    public class ChunkedObjectPool<T> where T : struct
+    public class ChunkedStructPool<T> : IChunkedStructPool<T>  where T : struct
     {
         public static int NoIndex = -1;
         private int _chunkSize;
         private List<T[]> _chunks = new();
         private Stack<int> _freeIndices = new();
-
-
-        public ChunkedObjectPool(int chunkSize = 100000)
+        public ChunkedStructPool(int chunkSize)
         {
             _chunkSize = chunkSize;
             AllocateChunk();
@@ -28,7 +26,6 @@ namespace Slider.Common
 
             int index = _freeIndices.Pop();
             ref T node = ref GetRef(index);
-
             initializer(ref node, state);
             return index;
         }

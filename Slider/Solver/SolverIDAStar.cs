@@ -1,5 +1,5 @@
 using Microsoft.Windows.Themes;
-using Slider.Interfaces;
+using Slider.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,7 +12,7 @@ namespace Slider.Solver
 {
     public class SolverIDAStar : ISolver
     {
-        private SolverOptions _solverOptions = new();
+        private ISolverOptions _solverOptions;
         private byte _gridSize = 0;
         public IHeuristicCalculator? Calculator { get { return _heuristicsCalculator; } }
         private int _statesCalculatedCount { get; set; }
@@ -59,7 +59,7 @@ namespace Slider.Solver
             }
         }
 
-        public SolveResult Solve(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, ISolverOptions options, IHeuristicElementFactory heuristicElementFactory)
         {
             Stopwatch sw = Stopwatch.StartNew();
             _solverOptions = options;

@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Slider.Common.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Slider.Heuristics
 {
-    public sealed class HeuristicStatistics
+    public sealed class HeuristicsStatistics : IHeuristicsStatistics
     {
         public long TicksSpent{ get; set; }
         public long NumberOfCalls { get; set; }

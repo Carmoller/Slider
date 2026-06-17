@@ -1,11 +1,13 @@
-﻿using System;
+﻿using Slider.Common.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Slider.Solver
 {
-    public class SolverOptions
+    public class SolverOptions : ISolverOptions
     {
+        public bool UseManhattanDistance { get; set; } = true;
         public bool UseLinearConflict { get; set; } = true;
         public bool UseCornerPattern { get; set; } = true;
         public bool UseEdgePattern { get; set; } = false;

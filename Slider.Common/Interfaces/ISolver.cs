@@ -1,13 +1,12 @@
-﻿using Slider.Solver;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Slider.Interfaces
+namespace Slider.Common.Interfaces
 {
     public interface ISolver
     {
-        SolveResult Solve(List<BoardTile> board, SolverOptions options, IHeuristicElementFactory heuristicElementFactory);
+        SolveResult Solve(List<BoardTile> board, ISolverOptions options, IHeuristicElementFactory heuristicElementFactory);
         int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory);
     }
 }

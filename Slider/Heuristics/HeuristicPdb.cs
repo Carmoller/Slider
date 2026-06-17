@@ -1,5 +1,5 @@
 ﻿using PDBGenerator;
-using Slider.Interfaces;
+using Slider.Common.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,11 +52,11 @@ namespace Slider.Heuristics
         public string Name { get { return "Pdb"; } }
         public bool IsAdditive { get { return false; } }
 
-        public HeuristicStatistics Statistics { get; }
+        public IHeuristicsStatistics Statistics { get; }
 
         public HeuristicPdb(IOptions options)
         {
-            Statistics = new();
+            Statistics = new HeuristicsStatistics();
             _pdbLocation = options.PdbLocation;
             FillPdbsPerSize();
         }
