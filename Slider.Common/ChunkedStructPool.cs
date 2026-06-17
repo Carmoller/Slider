@@ -48,11 +48,11 @@ namespace Slider.Common
                 _freeIndices.Push(baseIndex + i);
             }
         }
-        public void Release(int index)
+        public void Release(int index, RefAction<T>? Dispose = null)
         {
             ref T node = ref GetRef(index);
+            Dispose?.Invoke(ref node);
             node = default; // Wipe out data/indices back to default values
-
             _freeIndices.Push(index);
         }
     }

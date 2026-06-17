@@ -27,6 +27,10 @@ namespace Slider.Common
             }
 
             int index = _freeIndices.Pop();
+            if (index == 0)
+            {
+                int a = 1;
+            }
             return index;
         }
 
@@ -54,6 +58,12 @@ namespace Slider.Common
         }
         public void Release(int index)
         {
+            if (index == -1)
+                return;
+            if (index == 0)
+            {
+                int a = 1;
+            }
             _freeIndices.Push(index);
         }
     }

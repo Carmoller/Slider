@@ -44,7 +44,7 @@ namespace Slider.Heuristics
                      (byte)0,
                      (byte)(gridSize - 1),
                      (byte)(gridSize*gridSize - gridSize),
-                     (byte)(gridSize*gridSize - 2)
+                     (byte)(gridSize*gridSize - 1)
                  };
         }
 

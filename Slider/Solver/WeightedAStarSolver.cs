@@ -44,7 +44,13 @@ namespace Slider.Solver
 
         private StateInfo CreateStartState(List<BoardTile> board)
         {
+#if USE_ARRAY_POOL
+            int startBoardArrayIndex = _arrayPool.Get();
+            byte[] startBoard = _arrayPool.GetArray(startBoardArrayIndex);
+#else
+
             byte[] startBoard = new byte[board.Count];
+#endif
             byte startBlank = byte.MaxValue;
             foreach (BoardTile tile in board)
             {
@@ -57,10 +63,11 @@ namespace Slider.Solver
             {
                 ParentIndex = ChunkedStructPool<StateInfo>.NoIndex,
                 BlankPos = startBlank,
-                BestG = int.MaxValue,
+                BestG = 0,
                 CurrentG = 0,
                 PreviousMove = MoveDirection.None,
-                Board = (byte[])startBoard.Clone()
+                //                Board = (byte[])startBoard.Clone()
+                Board = startBoard
             };
             startState.NodeIndex = _stateInfoPool.Get(startState, (ref StateInfo state, StateInfo source) =>
             {
@@ -101,6 +108,12 @@ namespace Slider.Solver
             _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, _gridSize);
 
             StateInfo startState = CreateStartState(board);
+#if DEBUG
+            if (startState.Board.Where(p => p == 0).Count() > 1)
+            {
+                throw new InvalidOperationException("More than one blank!");
+            }
+#endif
 
             _openQueue.Enqueue(startState, startState.CurrentF);
             int min_h = int.MaxValue;
@@ -108,6 +121,16 @@ namespace Slider.Solver
 
             while (_openQueue.TryDequeue(out StateInfo currentState, out double f_current))
             {
+#if DEBUG
+                if (currentState.Board[currentState.BlankPos] != 0)
+                {
+                    throw new InvalidOperationException("Invalid BlankPos");
+                }
+                if (currentState.Board.Where(p => p == 0).Count() > 1)
+                {
+                    throw new InvalidOperationException("More than one blank!");
+                }
+#endif
                 int h_Current = currentState.CurrentH;
                 if (h_Current < min_h)
                 {
@@ -150,9 +173,8 @@ namespace Slider.Solver
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
-#warning Would be better if StateInfoPool could also release the board
                         _arrayPool.Release(closedState.BoardArrayIndex);
-                        _stateInfoPool.Release(currentState.NodeIndex);
+                        _stateInfoPool.Release(currentState.NodeIndex, (ref p) => { _arrayPool.Release(p.BoardArrayIndex); });
                         _discardedStates++;
                         continue;
                     }
@@ -223,7 +245,16 @@ namespace Slider.Solver
             }
             double priority = newState.CurrentF * F_Scale - (-newState.CurrentG * G_Scale) + newState.CurrentH;
             _openQueue.Enqueue(newState, priority);
-
+#if DEBUG
+            if (currentState.Board[currentState.BlankPos] != 0)
+            {
+                throw new InvalidOperationException("Invalid BlankPos");
+            }
+            if (newState.Board.Where(p => p == 0).Count() > 1)
+            {
+                throw new InvalidOperationException("More than one blank!");
+            }
+#endif
         }
 
         private int GetHeuristics(byte[] board, int gridSize)

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -54,5 +55,40 @@ namespace UnitTest.HeuristicElementTests
                 }
             }
         }
+
+        [TestMethod]
+        public void ManhattanDistanceSpeedTest()
+        {
+            Stopwatch sw = new();
+            int loopCount = 1000000;
+            byte gridSize = 12;
+            byte[] board = new byte[gridSize * gridSize];
+            // Set up a 12x12 board where it is in reverse order, which is the worst case for Manhattan distance
+            for (byte row = 0; row < gridSize; row++)
+            {
+                for (byte col = 0; col < gridSize; col++)
+                {
+                    if (row == 0 && col == 0)
+                    {
+                        board[row * gridSize + col] = 0; // Empty tile
+                    }
+                    else
+                    {
+                        board[row *gridSize + col] = (byte)(gridSize*gridSize - (row*gridSize + col));
+                    }
+                }
+            }
+            ManhattanDistanceCalculator calculator = new();
+
+            sw.Start();
+            for (int i = 0; i < loopCount; i++)
+            {
+                int distance = calculator.Calculate(board, gridSize);
+            }
+            sw.Stop();
+            Debug.WriteLine($"ManhattanDistance measurement: {(double)loopCount / sw.ElapsedMilliseconds} calculations / ms");
+        }
+
     }
 }
+

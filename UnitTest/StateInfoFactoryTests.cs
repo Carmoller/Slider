@@ -27,7 +27,7 @@ namespace UnitTest
 
         public ref StateInfo GetRef(int index) => ref _state;
 
-        public void Release(int index) { }
+        public void Release(int index, RefAction<StateInfo>? Dispose = null) { }
     }
     public class FakeArrayPool : IChunkedArrayPool<byte>
     {
@@ -121,6 +121,7 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos - gridSize, newState.BlankPos);
+            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
             Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 0, 3, 4, 2, 6, 7, 8, 5], newState.Board));
         }
         [TestMethod]
@@ -155,6 +156,7 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos + gridSize, newState.BlankPos);
+            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
             Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 2, 3, 4, 8, 6, 7, 0,5], newState.Board));
         }
         [TestMethod]
@@ -189,6 +191,7 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos - 1, newState.BlankPos);
+            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
             Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 2, 3, 0, 4, 6, 7, 8, 5], newState.Board));
         }
         [TestMethod]
@@ -223,6 +226,7 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos + 1, newState.BlankPos);
+            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
             Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 2, 3, 4, 6, 0, 7, 8, 5], newState.Board));
         }
     }

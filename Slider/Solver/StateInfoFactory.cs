@@ -23,10 +23,14 @@ namespace Slider.Solver
                 state = currentState;
             });
             ref StateInfo newState = ref stateInfoPool.GetRef(nodeIndex);
+#if USE_ARRAY_POOL
             newState.BoardArrayIndex = arrayPool.Get();
             newState.Board = arrayPool.GetArray(newState.BoardArrayIndex);
             currentState.Board.CopyTo(newState.Board);
-
+#else
+            newState.Board = (byte[])currentState.Board.Clone();
+            newState.BoardArrayIndex = -1;
+#endif
             // Swap the tiles
             newState.Board[currentState.BlankPos] = currentState.Board[newBlankPosition];
             newState.Board[newBlankPosition] = 0;
@@ -37,6 +41,24 @@ namespace Slider.Solver
             newState.ParentIndex = currentState.NodeIndex;
             newState.BlankPos = newBlankPosition;
             newState.PreviousMove = direction;
+            if (newState.BoardArrayIndex == 63053)
+            {
+                int b = 1;
+            }
+            if (newState.CurrentG == 56 && newState.BlankPos == 13)
+            {
+                int a = 1;
+            }
+#if DEBUG
+            if (newState.Board[newState.BlankPos] != 0)
+            {
+                throw new InvalidOperationException("Invalid BlankPos");
+            }
+            if (newState.Board.Where(p => p == 0).Count() > 1)
+            {
+                throw new InvalidOperationException("More than one blank!");
+            }
+#endif
             return ref newState;
         }
 

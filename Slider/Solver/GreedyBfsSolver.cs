@@ -53,8 +53,7 @@ namespace Slider.Solver
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
-                        _arrayPool.Release(currentState.BoardArrayIndex);
-                        _stateInfoPool.Release(currentState.NodeIndex);
+                        _stateInfoPool.Release(currentState.NodeIndex, (ref p) => { _arrayPool.Release(p.BoardArrayIndex);  });
                         continue;
                     }
                     closedState.ParentIndex = currentState.NodeIndex;
@@ -134,7 +133,7 @@ namespace Slider.Solver
                 if (closedNeighbor.CurrentG <= tentative_g)
                 {
                     _arrayPool.Release(closedNeighbor.BoardArrayIndex);
-                    _stateInfoPool.Release(newState.NodeIndex);
+                    _stateInfoPool.Release(newState.NodeIndex, (ref p) => { _arrayPool.Release(p.BoardArrayIndex); });
                     return;
                 }
             }

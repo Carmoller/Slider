@@ -9,7 +9,7 @@ namespace Slider.Common.Interfaces
     {
         int Get<TState>(TState state, RefInitializer<T, TState> initializer);
         ref T GetRef(int index);
-        public void Release(int index);
+        public void Release(int index, RefAction<T>? Dispose = null);
 
     }
 }
