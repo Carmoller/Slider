@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Slider.Common.Interfaces;
 
@@ -60,10 +61,12 @@ namespace Slider.Common
         {
             if (index == -1)
                 return;
-            if (index == 0)
+#if DEBUG
+            if (_freeIndices.Contains(index))
             {
-                int a = 1;
+                throw new InvalidOperationException($"Releasing index which is already in queue: {index}");
             }
+#endif
             _freeIndices.Push(index);
         }
     }

@@ -173,7 +173,6 @@ namespace Slider.Solver
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
-                        _arrayPool.Release(closedState.BoardArrayIndex);
                         _stateInfoPool.Release(currentState.NodeIndex, (ref p) => { _arrayPool.Release(p.BoardArrayIndex); });
                         _discardedStates++;
                         continue;
@@ -246,7 +245,7 @@ namespace Slider.Solver
             double priority = newState.CurrentF * F_Scale - (-newState.CurrentG * G_Scale) + newState.CurrentH;
             _openQueue.Enqueue(newState, priority);
 #if DEBUG
-            if (currentState.Board[currentState.BlankPos] != 0)
+            if (newState.Board[newState.BlankPos] != 0)
             {
                 throw new InvalidOperationException("Invalid BlankPos");
             }

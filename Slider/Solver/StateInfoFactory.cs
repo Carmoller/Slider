@@ -3,6 +3,7 @@ using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -41,14 +42,6 @@ namespace Slider.Solver
             newState.ParentIndex = currentState.NodeIndex;
             newState.BlankPos = newBlankPosition;
             newState.PreviousMove = direction;
-            if (newState.BoardArrayIndex == 63053)
-            {
-                int b = 1;
-            }
-            if (newState.CurrentG == 56 && newState.BlankPos == 13)
-            {
-                int a = 1;
-            }
 #if DEBUG
             if (newState.Board[newState.BlankPos] != 0)
             {
