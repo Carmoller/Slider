@@ -26,7 +26,7 @@ namespace Slider.Solver
         private const int H_CutoffForBfs = 10;
 
         private double w = 3;
-        private PriorityQueue<StateInfo, double> _openQueue = new();
+        private PriorityQueue<int, double> _openQueue = new();
         private SolveStateDictionary<StateInfo> _closed = new();
         private int _gridSize;
         private IHeuristicCalculator? _heuristicCalculator;
@@ -44,13 +44,8 @@ namespace Slider.Solver
 
         private StateInfo CreateStartState(List<BoardTile> board)
         {
-#if USE_ARRAY_POOL
             int startBoardArrayIndex = _arrayPool.Get();
             byte[] startBoard = _arrayPool.GetArray(startBoardArrayIndex);
-#else
-
-            byte[] startBoard = new byte[board.Count];
-#endif
             byte startBlank = byte.MaxValue;
             foreach (BoardTile tile in board)
             {
@@ -59,6 +54,8 @@ namespace Slider.Solver
                 startBoard[tile.Row * _gridSize + tile.Column] = tile.Value;
             }
 
+            startBoard.CopyTo(startBoard);
+
             StateInfo startState = new StateInfo
             {
                 ParentIndex = ChunkedStructPool<StateInfo>.NoIndex,
@@ -66,18 +63,17 @@ namespace Slider.Solver
                 BestG = 0,
                 CurrentG = 0,
                 PreviousMove = MoveDirection.None,
-                //                Board = (byte[])startBoard.Clone()
-                Board = startBoard
+                Board = startBoard,
+                CurrentH = GetHeuristics(startBoard, _gridSize)
             };
+            startState.CurrentF = (w * startState.CurrentH);
+            startState.Hash = GetHashCode(startState);
+
             startState.NodeIndex = _stateInfoPool.Get(startState, (ref StateInfo state, StateInfo source) =>
             {
                 state = source;
             });
-            startBoard.CopyTo(startState.Board);
 
-            startState.CurrentH = GetHeuristics(startState.Board, _gridSize);
-            startState.CurrentF = (w * startState.CurrentH);
-            startState.Hash = GetHashCode(startState);
             return startState;
         }
 
@@ -115,12 +111,13 @@ namespace Slider.Solver
             }
 #endif
 
-            _openQueue.Enqueue(startState, startState.CurrentF);
+            _openQueue.Enqueue(startState.NodeIndex, startState.CurrentF);
             int min_h = int.MaxValue;
             int h_previous = int.MaxValue;
-
-            while (_openQueue.TryDequeue(out StateInfo currentState, out double f_current))
+            bestHValueIndex = startState.NodeIndex;
+            while (_openQueue.TryDequeue(out int nodeIndex, out double f_current))
             {
+                StateInfo currentState = _stateInfoPool.GetRef(nodeIndex);
 #if DEBUG
                 if (currentState.Board[currentState.BlankPos] != 0)
                 {
@@ -131,6 +128,7 @@ namespace Slider.Solver
                     throw new InvalidOperationException("More than one blank!");
                 }
 #endif
+
                 int h_Current = currentState.CurrentH;
                 if (h_Current < min_h)
                 {
@@ -243,7 +241,7 @@ namespace Slider.Solver
                 newState.BestG = currentState.CurrentG;
             }
             double priority = newState.CurrentF * F_Scale - (-newState.CurrentG * G_Scale) + newState.CurrentH;
-            _openQueue.Enqueue(newState, priority);
+            _openQueue.Enqueue(newState.NodeIndex, priority);
 #if DEBUG
             if (newState.Board[newState.BlankPos] != 0)
             {

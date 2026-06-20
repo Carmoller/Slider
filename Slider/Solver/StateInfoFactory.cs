@@ -24,14 +24,9 @@ namespace Slider.Solver
                 state = currentState;
             });
             ref StateInfo newState = ref stateInfoPool.GetRef(nodeIndex);
-#if USE_ARRAY_POOL
             newState.BoardArrayIndex = arrayPool.Get();
             newState.Board = arrayPool.GetArray(newState.BoardArrayIndex);
             currentState.Board.CopyTo(newState.Board);
-#else
-            newState.Board = (byte[])currentState.Board.Clone();
-            newState.BoardArrayIndex = -1;
-#endif
             // Swap the tiles
             newState.Board[currentState.BlankPos] = currentState.Board[newBlankPosition];
             newState.Board[newBlankPosition] = 0;
