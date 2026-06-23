@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Windows.Media.Animation;
 
 namespace Slider.Solver
 {
@@ -90,10 +91,6 @@ namespace Slider.Solver
                 if (current.NodeIndex == _startNodeIndex)
                 {
                     Debug.WriteLine($"Greedy BFS: Used {moves.Count} moves");
-                    if (moves.Count > 100)
-                    {
-                        int a = 1;
-                    }
                 }
                 if (current.ParentIndex == -1)
                 {

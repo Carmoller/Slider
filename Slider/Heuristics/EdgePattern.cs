@@ -25,51 +25,6 @@ namespace Slider.Heuristics
             return goalRow > 0 && goalRow < gridSize - 1 && goalCol > 0 && goalCol < gridSize - 1;
         }
 
-        public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
-        {
-            _stopwatch.Restart();
-            int penalty = 0;
-
-            // Penalty for non-edge tiles positioned on any edge (constrained movement)
-            // Non-edge tiles have 4-directional freedom in the center, but only 3 on edges
-
-            // Check top edge (row 0, columns 1 to gridSize-2)
-            for (byte col = 1; col < gridSize - 1; col++)
-            {
-                byte tile = board[0, col];
-                if (tile != 0 && IsNonEdgeTile(tile, gridSize))
-                    penalty += Weight;
-            }
-
-            // Check bottom edge (row gridSize-1, columns 1 to gridSize-2)
-            for (byte col = 1; col < gridSize - 1; col++)
-            {
-                byte tile = board[gridSize - 1, col];
-                if (tile != 0 && IsNonEdgeTile(tile, gridSize))
-                    penalty += Weight;
-            }
-
-            // Check left edge (column 0, rows 1 to gridSize-2)
-            for (byte row = 1; row < gridSize - 1; row++)
-            {
-                byte tile = board[row, 0];
-                if (tile != 0 && IsNonEdgeTile(tile, gridSize))
-                    penalty += Weight;
-            }
-
-            // Check right edge (column gridSize-1, rows 1 to gridSize-2)
-            for (byte row = 1; row < gridSize - 1; row++)
-            {
-                byte tile = board[row, gridSize - 1];
-                if (tile != 0 && IsNonEdgeTile(tile, gridSize))
-                    penalty += Weight;
-            }
-
-            _stopwatch.Stop();
-            Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += _stopwatch.ElapsedTicks;
-            return penalty;
-        }
         public int Calculate(byte[] board, int gridSize)
         {
             Stopwatch sw = Stopwatch.StartNew();

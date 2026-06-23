@@ -48,44 +48,6 @@ namespace Slider.Heuristics
                  };
         }
 
-        public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
-        {
-            _stopWatch.Restart();
-            int penalty = 0;
-
-            // Iterate through each corner
-            for (int i = 0; i < _corners.Length; i++)
-            {
-                var (cornerRow, cornerCol) = _corners[i];
-                byte tileAtCorner = board[cornerRow, cornerCol];
-                byte expectedTile = (byte)(cornerRow * gridSize + cornerCol + 1);
-
-                // Special case: bottom-right should be empty or the last numbered tile
-                if (cornerRow == gridSize - 1 && cornerCol == gridSize - 1)
-                {
-                    expectedTile = (byte)(gridSize * gridSize - 1);
-                }
-
-                // Case 1: Non-corner tile in corner = LOCK situation (highest penalty)
-                if (tileAtCorner != 0 && tileAtCorner != expectedTile && !_cornerTileValues.Contains(tileAtCorner))
-                {
-                    // A center/edge tile is blocking a corner - major lock
-                    penalty += 2;
-                }
-                // Case 2: Corner tile in wrong corner (lower penalty)
-                else if (tileAtCorner != expectedTile && _cornerTileValues.Contains(tileAtCorner))
-                {
-                    // Wrong corner tile here - less restrictive but still wrong
-                    penalty += 1;
-                }
-                // Case 3: Correct tile in correct corner (no penalty)
-            }
-            Statistics.NumberOfCalls++;
-            _stopWatch.Stop();
-            Statistics.TicksSpent += _stopWatch.ElapsedTicks;
-            return penalty;
-        }
-
         public int Calculate(byte[] board, int gridSize)
         {
             _stopWatch.Restart();
@@ -96,7 +58,7 @@ namespace Slider.Heuristics
             {
                 byte position = _cornersFlat[i];
                 byte tileAtCorner = board[position];
-                byte expectedTile = (byte)(position+1);
+                byte expectedTile = (byte)(position + 1);
 
                 // Special case: bottom-right should be empty or the last numbered tile
                 if (position == gridSize*gridSize -1)

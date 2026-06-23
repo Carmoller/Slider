@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Options;
+using Moq;
 using Slider.Common.Interfaces;
 using Slider.Heuristics;
 using Slider.Interfaces;
@@ -11,7 +12,7 @@ using System.Text;
 namespace UnitTest
 {
     [TestClass]
-    public class SolverIDAStarTests
+    public class BidirectionalAStarTests
     {
         /// <summary>
         /// Gets or sets the test context which provides
@@ -102,101 +103,6 @@ namespace UnitTest
             Debug.WriteLine($"ManhattanDistanceMath: {(double)loopCount / sw.ElapsedMilliseconds} calculations / ms");
         }
         #endregion
-        #region Performance Test Bench
-        [TestMethod]
-        public void MeasurePerformance()
-        {
-            List<BoardTile> board = new();
-            board.Add(new BoardTile { Value = 0, Row = 1, Column = 3 });
-            board.Add(new BoardTile { Value = 1, Row = 3, Column = 3 });
-            board.Add(new BoardTile { Value = 2, Row = 1, Column = 2 });
-            board.Add(new BoardTile { Value = 3, Row = 3, Column = 2 });
-            board.Add(new BoardTile { Value = 4, Row = 1, Column = 1 });
-            board.Add(new BoardTile { Value = 5, Row = 1, Column = 0 });
-            board.Add(new BoardTile { Value = 6, Row = 2, Column = 1 });
-            board.Add(new BoardTile { Value = 7, Row = 2, Column = 3 });
-            board.Add(new BoardTile { Value = 8, Row = 2, Column = 2 });
-            board.Add(new BoardTile { Value = 9, Row = 2, Column = 0 });
-            board.Add(new BoardTile { Value = 10, Row = 3, Column = 0 });
-            board.Add(new BoardTile { Value = 11, Row = 0, Column = 3 });
-            board.Add(new BoardTile { Value = 12, Row = 0, Column = 1 });
-            board.Add(new BoardTile { Value = 13, Row = 0, Column = 2 });
-            board.Add(new BoardTile { Value = 14, Row = 0, Column = 0 });
-            board.Add(new BoardTile { Value = 15, Row = 3, Column = 1 });
-
-            Mock<IOptions> optionsMock = new();
-            SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true };
-            Stopwatch sw = new();
-            SolverIDAStar solver = new(optionsMock.Object);
-            sw.Start();
-            SolveResult result = solver.Solve(board, options, new HeuristicElementFactory());
-            sw.Stop();
-            TestContext!.WriteLine(options.ToString());
-            TestContext.WriteLine("\tSolved board in " + result.TimeSpent.ToString() + " with " + result.Moves?.Count + " moves");
-            TestContext.WriteLine($"\tConsidered {result.TotalStatesConsidered} board states ({result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} states/ms)");
-            TestContext.WriteLine($"\tCache Hits: {result.ForwardHitCount + result.BackwardHitCount}");
-            TestContext.WriteLine($"\tHash collisions {result.ForwardCollisionCount + result.BackwardCollisionCount}");
-            TestContext.WriteLine($"\tMax List Length: {Math.Max(result.BackwardMaxListLength, result.ForwardMaxListLength)}");
-            TestContext.WriteLine("\tHeuristic breakdown:=================================");
-            foreach (IHeuristicElement element1 in solver.Calculator!.ElementCalculators)
-            {
-                IHeuristicsStatistics stats1 = element1.Statistics;
-                TestContext.WriteLine($"\t\t{element1.Name}: {stats1.NumberOfCalls} calls, {stats1.TotalTimeSpentMs} ms, {stats1.AverageTimePerCall} ms/call");
-            }
-            long totalAllocated = GC.GetTotalAllocatedBytes();
-
-            // Get the count of collections for each generation
-            int gen0Count = GC.CollectionCount(0);
-            int gen1Count = GC.CollectionCount(1);
-            int gen2Count = GC.CollectionCount(2);
-
-            // Check current total memory currently thought to be alive
-            long totalMemory = GC.GetTotalMemory(false);
-            TestContext.WriteLine("GC Stats:=================================");
-            TestContext.WriteLine($"\tTotal Allocated: {totalAllocated} bytes");
-            TestContext.WriteLine($"\tGen 0 Collections: {gen0Count}");
-            TestContext.WriteLine($"\tGen 1 Collections: {gen1Count}");
-            TestContext.WriteLine($"\tGen 2 Collections: {gen2Count}");
-            TestContext.WriteLine($"\tTotal Memory: {totalMemory} bytes");
-            TestContext.WriteLine("GC Stats:=================================");
-
-            options.UseCornerPattern = true;
-            options.UseLinearConflict = true;
-            options.UseEdgePattern = true;
-            sw.Restart();
-            SolveResult result2 = solver.Solve(board, options, new HeuristicElementFactory());
-            sw.Stop();
-            TestContext!.WriteLine(options.ToString());
-            TestContext.WriteLine("\tSolved board in " + result2.TimeSpent.ToString() + " with " + result2.Moves?.Count + " moves");
-            TestContext.WriteLine($"\tConsidered {result2.TotalStatesConsidered} board states ({result2.TotalStatesConsidered / result2.TimeSpent.TotalMilliseconds} states/ms)");
-            TestContext.WriteLine($"\tCache Hits: {result2.ForwardHitCount + result2.BackwardHitCount}");
-            TestContext.WriteLine($"\tHash collisions {result2.ForwardCollisionCount + result2.BackwardCollisionCount}");
-            TestContext.WriteLine($"\tMax List Length: {Math.Max(result2.BackwardMaxListLength, result2.ForwardMaxListLength)}");
-            TestContext.WriteLine("\tHeuristic breakdown:=================================");
-            foreach (IHeuristicElement element2 in solver.Calculator!.ElementCalculators)
-            {
-                IHeuristicsStatistics stats2 = element2.Statistics;
-                TestContext.WriteLine($"\t\t{element2.Name}: {stats2.NumberOfCalls} calls, {stats2.TotalTimeSpentMs} ms, {stats2.AverageTimePerCall} ms/call");
-            }
-            totalAllocated = GC.GetTotalAllocatedBytes();
-
-            // Get the count of collections for each generation
-            gen0Count = GC.CollectionCount(0);
-            gen1Count = GC.CollectionCount(1);
-            gen2Count = GC.CollectionCount(2);
-
-            // Check current total memory currently thought to be alive
-            totalMemory = GC.GetTotalMemory(false);
-            TestContext.WriteLine("GC Stats:=================================");
-            TestContext.WriteLine($"\tTotal Allocated: {totalAllocated} bytes");
-            TestContext.WriteLine($"\tGen 0 Collections: {gen0Count}");
-            TestContext.WriteLine($"\tGen 1 Collections: {gen1Count}");
-            TestContext.WriteLine($"\tGen 2 Collections: {gen2Count}");
-            TestContext.WriteLine($"\tTotal Memory: {totalMemory} bytes");
-            TestContext.WriteLine("GC Stats:=================================");
-
-        }
-        #endregion
 
         #region Solver Tests
         private List<BoardTile> CreateSolvedBoard(int gridSize)
@@ -255,7 +161,7 @@ namespace UnitTest
         {
             // Arrange
             Mock<IOptions> optionsMock = new();
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateSolvedBoard(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             // Act
@@ -270,7 +176,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithSingleMove(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
@@ -289,7 +195,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
@@ -317,10 +223,11 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithSingleMove(2);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
+            calculatorMock.Setup(p => p.GetHeuristic(It.IsAny<byte[]>(), It.IsAny<int>())).Returns(1);
             heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
 
             // Act
@@ -335,7 +242,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory()   );
             List<BoardTile> board = CreateBoardWithSingleMove(4);
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new ();
             Mock<IHeuristicCalculator> calculatorMock = new();
@@ -353,26 +260,17 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            HeuristicElementFactory heuristicsFactory = new ();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                3, heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
+            MoveVerifier.VerifyMoves(board, result);
             // Assert
-            foreach (Move move in result.Moves)
-            {
-                // From and To positions should be adjacent (differ by 1 in either row or column)
-                int rowDiff = Math.Abs(move.FromRow - move.ToRow);
-                int colDiff = Math.Abs(move.FromColumn - move.ToColumn);
-
-                bool isAdjacent = (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
-                Assert.IsTrue(isAdjacent, 
-                    $"Move from ({move.FromRow},{move.FromColumn}) to ({move.ToRow},{move.ToColumn}) is not adjacent");
-            }
         }
 
         [TestMethod]
@@ -380,35 +278,18 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Arrange
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             int gridSize = 3;
             List<BoardTile> board = CreateBoardWithThreeMoves(gridSize);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                3, heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
-
-            // Verify each move is valid (adjacent tiles)
-            foreach (Move move in result.Moves)
-            {
-                int rowDiff = Math.Abs(move.FromRow - move.ToRow);
-                int colDiff = Math.Abs(move.FromColumn - move.ToColumn);
-
-                // Each move should be to an adjacent cell
-                bool isAdjacent = (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1);
-                Assert.IsTrue(isAdjacent, 
-                    $"Move from ({move.FromRow},{move.FromColumn}) to ({move.ToRow},{move.ToColumn}) is not adjacent");
-
-                // Verify positions are in bounds
-                Assert.IsTrue(move.FromRow >= 0 && move.FromRow < gridSize);
-                Assert.IsTrue(move.FromColumn >= 0 && move.FromColumn < gridSize);
-                Assert.IsTrue(move.ToRow >= 0 && move.ToRow < gridSize);
-                Assert.IsTrue(move.ToColumn >= 0 && move.ToColumn < gridSize);
-            }
+            MoveVerifier.VerifyMoves(board, result);
         }
 
         [TestMethod]
@@ -416,7 +297,7 @@ namespace UnitTest
         {
             Mock<IOptions> optionsMock = new();
             // Test multiple board configurations
-            SolverIDAStar solver = new(optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
             Mock<IHeuristicCalculator> calculatorMock = new();
             heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
@@ -437,6 +318,90 @@ namespace UnitTest
                     Assert.IsTrue(move.ToColumn >= 0 && move.ToColumn < gridSize);
                 }
             }
+        }
+        [TestMethod]
+        public void Test2x2Board()
+        {
+            Mock<IOptions> optionsMock = new();
+            List<BoardTile> board = new List<BoardTile>
+            {
+                new BoardTile {Row = 0, Column = 0, Value = 2 },
+                new BoardTile {Row = 0, Column = 1, Value = 3 },
+                new BoardTile {Row = 1, Column = 0, Value = 1 },
+                new BoardTile {Row = 1, Column = 1, Value = 0 },
+            };
+
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                2, heuristicsFactory, optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+
+            // Act
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+
+            // Assert
+            MoveVerifier.VerifyMoves(board, result);
+        }
+        [TestMethod]
+        public void Test3x3Board()
+        {
+            Mock<IOptions> optionsMock = new();
+            List<BoardTile> board = new List<BoardTile>
+            {
+                new BoardTile {Row = 0, Column = 0, Value = 0 },
+                new BoardTile {Row = 0, Column = 1, Value = 8 },
+                new BoardTile {Row = 0, Column = 2, Value = 7 },
+                new BoardTile {Row = 1, Column = 0, Value = 6 },
+                new BoardTile {Row = 1, Column = 1, Value = 5 },
+                new BoardTile {Row = 1, Column = 2, Value = 4 },
+                new BoardTile {Row = 2, Column = 0, Value = 3 },
+                new BoardTile {Row = 2, Column = 1, Value = 2 },
+                new BoardTile {Row = 2, Column = 2, Value = 1 },
+            };
+
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                3, heuristicsFactory, optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+
+            // Act
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+
+            // Assert
+            MoveVerifier.VerifyMoves(board, result);
+        }
+        [TestMethod]
+        public void Test4x4Board()
+        {
+            Mock<IOptions> optionsMock = new();
+            List<BoardTile> board = new List<BoardTile>
+            {
+                new BoardTile {Row = 0, Column = 0, Value = 0 },
+                new BoardTile {Row = 0, Column = 1, Value = 3 },
+                new BoardTile {Row = 0, Column = 2, Value = 7 },
+                new BoardTile {Row = 0, Column = 3, Value = 4 },
+                new BoardTile {Row = 1, Column = 0, Value = 11 },
+                new BoardTile {Row = 1, Column = 1, Value = 5 },
+                new BoardTile {Row = 1, Column = 2, Value = 1 },
+                new BoardTile {Row = 1, Column = 3, Value = 8 },
+                new BoardTile {Row = 2, Column = 0, Value = 2 },
+                new BoardTile {Row = 2, Column = 1, Value = 6 },
+                new BoardTile {Row = 2, Column = 2, Value = 15 },
+                new BoardTile {Row = 2, Column = 3, Value = 10 },
+                new BoardTile {Row = 3, Column = 0, Value = 13 },
+                new BoardTile {Row = 3, Column = 1, Value = 14 },
+                new BoardTile {Row = 3, Column = 2, Value = 12 },
+                new BoardTile {Row = 3, Column = 3, Value = 9 },
+            };
+
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                4, heuristicsFactory, optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+
+            MoveVerifier.VerifyMoves(board, result);
         }
 
         #endregion

@@ -8,6 +8,7 @@ namespace Slider.Solver
 {
     public struct StateInfo : IStateInfo
     {
+        public static readonly StateInfo Empty = default;
         public int NodeIndex { get; set; }
         public int ParentIndex { get; set; }
         public byte[] Board { get; set; }
@@ -31,6 +32,11 @@ namespace Slider.Solver
         public override int GetHashCode()
         {
             return (int)StateHashes.FastHash(Board);
+        }
+
+        public override string ToString()
+        {
+            return $"Nodeindex: {NodeIndex}, ParentIndex: {ParentIndex}, CurrentG: {CurrentG}, CurrentH: {CurrentH},  Board: " + string.Join(',', Board);
         }
     }
 }

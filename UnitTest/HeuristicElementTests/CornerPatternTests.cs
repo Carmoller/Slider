@@ -12,7 +12,9 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(3);
             // Solved 3x3: 1 2 3 / 4 5 6 / 7 8 0
-            byte[] board = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+            byte[] board = [1, 2, 3, 
+                            4, 5, 6, 
+                            7, 8, 0];
 
             int penalty = cornerPattern.Calculate(board, 3);
 
@@ -24,7 +26,9 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(3);
             // Empty tile (0) at top-left corner, non-corner tile 5 at bottom-right
-            byte[] board = [0, 2, 3, 4, 1, 6, 7, 8, 5];
+            byte[] board = [0, 2, 3, 
+                            4, 1, 6, 
+                            7, 8, 5];
 
             int penalty = cornerPattern.Calculate(board, 3);
 
@@ -41,14 +45,16 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(3);
             // Tile 3 (top-right corner) is at top-left corner instead of tile 1
-            // Tile 1 is at bottom-right (where 0 should be, but we'll put it elsewhere)
-            byte[] board = [3, 2, 9, 4, 5, 6, 7, 8, 0];
+            // Tile 8 (non-corner) is at top-right corner
+            byte[] board = [3, 2, 6, 
+                            4, 5, 6, 
+                            7, 8, 0];
 
             int penalty = cornerPattern.Calculate(board, 3);
 
             // Assert - Corner tile (3) is a corner tile value, so penalty is 1
             // Top-left expects 1, has 3 (corner tile in wrong position) = 1 penalty
-            // Top-right expects 3, has 9 (non-corner in corner) = 2 penalty
+            // Top-right expects 3, has 6 (non-corner in corner) = 2 penalty
             // Total = 3
             Assert.AreEqual(3, penalty);
         }
@@ -58,7 +64,9 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(3);
             // Tile 5 (center/non-corner) is at top-left corner
-            byte[] board = [5, 2, 3, 4, 1, 6, 7, 8, 0];
+            byte[] board = [5, 2, 3,
+                            4, 1, 6, 
+                            7, 8, 0];
 
             // Act
             int penalty = cornerPattern.Calculate(board, 3);
@@ -72,7 +80,9 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(3);
             // Non-corner tiles at top-left and top-right corners
-            byte[] board = [5, 2, 6, 4, 1, 3, 7, 8, 0];
+            byte[] board = [5, 2, 6, 
+                            4, 1, 3, 
+                            7, 8, 0];
 
             int penalty = cornerPattern.Calculate(board, 3);
 
@@ -88,7 +98,9 @@ namespace UnitTest.HeuristicElementTests
             // Top-right: tile 3 (corner tile, penalty 1 because expected is 3 but have 3... actually 0)
             // Bottom-left: tile 4 (not a corner tile, but also not matching position... penalty depends)
             // Bottom-right: 0 (correct, no penalty)
-            byte[] board = [5, 2, 3, 4, 1, 6, 7, 8, 0];
+            byte[] board = [5, 2, 3, 
+                            4, 1, 6, 
+                            7, 8, 0];
 
             int penalty = cornerPattern.Calculate(board, 3);
 
@@ -101,7 +113,10 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(4);
             // Solved 4x4: 1 2 3 4 / 5 6 7 8 / 9 10 11 12 / 13 14 15 0
-            byte[] board = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+            byte[] board = [01, 02, 03, 04, 
+                            05, 06, 07, 08, 
+                            09, 10, 11, 12, 
+                            13, 14, 15, 0];
 
             int penalty = cornerPattern.Calculate(board, 4);
 
@@ -113,7 +128,10 @@ namespace UnitTest.HeuristicElementTests
         {
             CornerPattern cornerPattern = new(4);
             // Tile 6 (non-corner) at top-left instead of 1
-            byte[] board = [6, 2, 3, 4, 5, 1, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+            byte[] board = [06, 02, 03, 04, 
+                            05, 01, 07, 08, 
+                            09, 10, 11, 12, 
+                            13, 14, 15, 00];
 
             int penalty = cornerPattern.Calculate(board, 4);
 
@@ -126,7 +144,10 @@ namespace UnitTest.HeuristicElementTests
             CornerPattern cornerPattern = new(4);
             // Tile 4 (top-right corner value) at top-left instead of 1
             // All other corners correct
-            byte[] board = [4, 2, 3, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+            byte[] board = [04, 02, 03, 01, 
+                            05, 06, 07, 08, 
+                            09, 10, 11, 12, 
+                            13, 14, 15, 0];
 
             int penalty = cornerPattern.Calculate(board, 4);
 
@@ -140,7 +161,10 @@ namespace UnitTest.HeuristicElementTests
         public void Calculate_4x4_AllFourCornersWithNonCornerTiles_AccumulatesPenalty()
         {
             CornerPattern cornerPattern = new(4);
-            byte[] board = [6, 2, 3, 5, 4, 1, 8, 7, 9, 10, 11, 12, 14, 13, 15, 0];
+            byte[] board = [06, 02, 03, 05, 
+                            04, 01, 08, 07, 
+                            09, 10, 11, 12, 
+                            14, 13, 15, 00];
 
             int penalty = cornerPattern.Calculate(board, 4);
 
@@ -155,7 +179,9 @@ namespace UnitTest.HeuristicElementTests
         public void Calculate_TrackStatistics_IncrementsNumberOfCalls()
         {
             CornerPattern cornerPattern = new(3);
-            byte[] board = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+            byte[] board = [1, 2, 3, 
+                            4, 5, 6, 
+                            7, 8, 0];
 
             cornerPattern.Calculate(board, 3);
             long callsBefore = cornerPattern.Statistics.NumberOfCalls;
@@ -170,7 +196,9 @@ namespace UnitTest.HeuristicElementTests
         public void Calculate_TrackStatistics_RecordsExecutionTime()
         {
             CornerPattern cornerPattern = new(3);
-            byte[] board = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+            byte[] board = [1, 2, 3, 
+                            4, 5, 6, 
+                            7, 8, 0];
 
             // Act
             long ticksBefore = cornerPattern.Statistics.TicksSpent;
@@ -187,7 +215,9 @@ namespace UnitTest.HeuristicElementTests
             CornerPattern cornerPattern = new(3);
             // Empty (0) at top-left, tile 1 at bottom-right (swapped)
             // Other corners correct
-            byte[] board = [0, 2, 3, 4, 5, 6, 7, 8, 1];
+            byte[] board = [0, 2, 3, 
+                            4, 5, 6, 
+                            7, 8, 1];
 
             int penalty = cornerPattern.Calculate(board, 3);
 

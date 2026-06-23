@@ -7,7 +7,7 @@ using System.Text;
 namespace Slider.Solver
 {
     [DebuggerDisplay("Keys:{Count}, CollisionCount={CollisionCount}, HitCount={HitCount}, MaxLength={MaxLength}")]
-    public class SolveStateDictionary<T> : Dictionary<long, List<T>>
+    public class SolveStateDictionary<T> : Dictionary<long, List<T>> where T: struct
     {
         public long CollisionCount { get; private set; }
         public long HitCount { get; private set; }
@@ -19,9 +19,9 @@ namespace Slider.Solver
         {
             if (TryGetValue(hash, out List<T>? states))
             {
-                foreach (T closedState in states)
+                foreach (T existingState in states)
                 {
-                    if (closedState.Equals(state))
+                    if (existingState.Equals(state))
                     {
                         HitCount++;
                         return true;
@@ -54,7 +54,7 @@ namespace Slider.Solver
             }
         }
 
-        public bool TryGetState(long hash, T queryState, [NotNullWhen(true)]out T? existingState)
+        public bool TryGetState(long hash, T queryState, out T existingState)
         {
             existingState = default(T);
             if (!TryGetValue(hash, out List<T>? existingStates))

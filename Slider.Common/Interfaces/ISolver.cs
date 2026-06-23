@@ -6,7 +6,7 @@ namespace Slider.Common.Interfaces
 {
     public interface ISolver
     {
-        SolveResult Solve(List<BoardTile> board, ISolverOptions options, IHeuristicElementFactory heuristicElementFactory);
+        SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory);
         int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory);
     }
 }

@@ -17,27 +17,6 @@ namespace Slider.Heuristics
         {
             Statistics = new HeuristicsStatistics();
         }
-
-        public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
-        {
-            _stopwatch.Restart();
-            int distance = 0;
-            for (int row = 0; row < gridSize; row++)
-            {
-                for (int col = 0; col < gridSize; col++)
-                {
-                    int value = board[row, col];
-                    if (value == 0) continue;
-
-                    var (goalRow, goalCol) = goalPositions[value];
-                    distance += Math.Abs(row - goalRow) + Math.Abs(col - goalCol);
-                }
-            }
-            _stopwatch.Stop();
-            Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += _stopwatch.ElapsedTicks;
-            return distance;
-        }
         public int Calculate(byte[] board, int gridSize)
         {
             _stopwatch.Restart();

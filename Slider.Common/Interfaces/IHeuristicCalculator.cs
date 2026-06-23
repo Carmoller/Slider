@@ -7,7 +7,6 @@ namespace Slider.Common.Interfaces
     public interface IHeuristicCalculator
     {
         public List<IHeuristicElement> ElementCalculators { get; }
-        int GetHeuristic(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize);
         int GetHeuristic(byte[] board, int gridSize);
     }
 }

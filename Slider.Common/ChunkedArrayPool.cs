@@ -28,10 +28,6 @@ namespace Slider.Common
             }
 
             int index = _freeIndices.Pop();
-            if (index == 0)
-            {
-                int a = 1;
-            }
             return index;
         }
 

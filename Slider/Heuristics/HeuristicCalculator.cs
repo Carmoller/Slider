@@ -37,16 +37,6 @@ namespace Slider.Heuristics
             }
         }
 
-        public int GetHeuristic(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
-        {
-            int distance = 0;
-            foreach (IHeuristicElement heuristicElement in ElementCalculators)
-            {
-                distance += heuristicElement.Calculate(board, goalPositions, gridSize);
-            }
-            return distance;
-        }
-
         public int GetHeuristic(byte[] board, int gridSize)
         {
             int distance = 0;

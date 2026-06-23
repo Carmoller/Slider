@@ -380,7 +380,7 @@ namespace Slider.Solver
             {
                 newMove.G_value = g + 1;
                 newMove.H_value = EvaluateChildNode(GetHeuristics(newMove.Board), newMove.NewBlankPos);
-                newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board, _gridSize);
+                newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board,  _gridSize);
                 moveArray[1] = newMove;
             }
             newMove = MoveLeft(previousMove.Board, previousMove.Direction, blankPos);
