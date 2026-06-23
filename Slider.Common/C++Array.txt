@@ -31,7 +31,9 @@ public unsafe class NativeQueueAllocator
     public void FreeAll() => NativeMemory.Free(_rootPointer);
 }
 Use code with caution.How you use it in your Queues
-Now your queues store a lightweight struct containing a raw pointer, giving you C++ speeds and zero GC footprint.csharp// The C++ style pointer wrapper
+Now your queues store a lightweight struct containing a raw pointer, giving you C++ speeds and zero GC footprint.csharp// 
+The C++ style pointer wrapper
+
 public unsafe readonly struct PointerToken
 {
     public byte* Address { get; }
