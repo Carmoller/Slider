@@ -7,7 +7,7 @@ namespace Slider.Heuristics
 {
     public static class ReverseManhattanCalculator
     {
-        public static int Calculate(byte[] board, byte[] targetPositions, int gridSize)
+        public static int Calculate(Span<byte> board, byte[] targetPositions, int gridSize)
         {
             int distance = 0;
             for (int i = 0; i < board.Length; i++)

@@ -15,7 +15,7 @@ using System.Windows.Controls;
 
 namespace Slider.Solver
 {
-    public class BidirectionalAStarSolver : ISolver
+    public class BidirectionalAStarSolver2 : ISolver
     {
         private int _gridSize = 0;
         public IHeuristicCalculator? Calculator { get { return _heuristicsCalculator; } }
@@ -25,7 +25,7 @@ namespace Slider.Solver
         private IHeuristicCalculator? _heuristicsCalculator;
         private IStateInfoFactory _StateInfoFactory;
         private IOptions _options;
-        public BidirectionalAStarSolver(IOptions options, IStateInfoFactory StateInfoFactory)
+        public BidirectionalAStarSolver2(IOptions options, IStateInfoFactory StateInfoFactory)
         {
             _options = options;
             _StateInfoFactory = StateInfoFactory;
@@ -49,7 +49,7 @@ namespace Slider.Solver
                 }
                 boardArray[index] = tile.Value;
                 startPositions[tile.Value] = (byte)index;
-                goalBoard[tile.Value - 1] = (byte)(tile.Value);
+                goalBoard[tile.Value-1] = (byte)(tile.Value);
             }
         }
         private void SetupBoardAndPositions(
@@ -116,7 +116,7 @@ namespace Slider.Solver
             ref StateInfo startStateActual = ref _objectPool.GetRef(startStateIndex);
             startStateActual.NodeIndex = startStateIndex;
 
-            StateInfo goalState = new StateInfo { CurrentG = 0, CurrentH = goalH, BlankPos = _gridSize * _gridSize - 1 };
+            StateInfo goalState = new StateInfo { CurrentG = 0, CurrentH = goalH, BlankPos = _gridSize*_gridSize -1 };
             int goalStateIndex = _objectPool.Get(startState, (ref StateInfo state, StateInfo source) =>
             {
                 state.ParentIndex = -1;
@@ -165,7 +165,7 @@ namespace Slider.Solver
             while (forwardOpen.Count > 0 && backwardOpen.Count > 0)
             {
                 // Forward step
-                bool forwardResult = StepSearch(forwardOpen, forwardClosed, backwardClosed, ref forwardState, ref backwardState, startPositions, true);
+                bool forwardResult = StepSearch(forwardOpen, forwardClosed, backwardClosed, ref forwardState, ref backwardState,startPositions, true);
                 if (forwardResult)
                 {
                     return ReconstructPath(ref forwardState, ref backwardState);
@@ -198,7 +198,7 @@ namespace Slider.Solver
 #if DIAGNOSE
             Debug.WriteLine($"{(isForward ? "Forward" : "Backward")}: {current.ToString()}");
 #endif
-            long stateHash = StateHashes.FastHash(current.BoardToken.AsSpan());
+            long stateHash =  StateHashes.FastHash(current.BoardToken.AsSpan());
 
             // Check if already in closed set
             if (closed.Exists(stateHash, current))
@@ -234,7 +234,7 @@ namespace Slider.Solver
             // Add current state to closed set
             closed.AddState(stateHash, current);
 
-            _StateInfoFactory.GetAvailableMoves(current, _gridSize, _objectPool, _arrayPool!,
+            _StateInfoFactory.GetAvailableMoves(current, _gridSize, _objectPool, _arrayPool!, 
                 (ref p) => { HandleNewState(ref current, ref p, open, isForward, startPositions); });
             return false;
         }
@@ -258,7 +258,7 @@ namespace Slider.Solver
             {
                 newState.BestG = currentState.CurrentG;
             }
-            double priority = newState.CurrentF + newState.CurrentG;
+            double priority = newState.CurrentF  + newState.CurrentG;
             open.Enqueue(newState.NodeIndex, priority);
 #if DEBUG
             if (newState.BoardToken.AsSpan()[newState.BlankPos] != 0)
@@ -352,4 +352,3 @@ namespace Slider.Solver
         }
     }
 }
-

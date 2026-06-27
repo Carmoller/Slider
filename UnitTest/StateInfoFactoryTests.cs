@@ -3,6 +3,7 @@ using Slider.Common;
 using Slider.Common.Interfaces;
 using Slider.Solver;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -29,7 +30,7 @@ namespace UnitTest
 
         public void Release(int index, RefAction<StateInfo>? Dispose = null) { }
     }
-    public class FakeArrayPool : IChunkedArrayPool<byte>
+    public class FakeArrayPool : IChunkedArrayPoolUnsafe
     {
         int _size;
         public FakeArrayPool(int size)
@@ -37,17 +38,25 @@ namespace UnitTest
             _size = size;
         }
         private int index;
+        public void Dispose()
+        {
+        }
+
         public int Get()
         {
             return index++;
         }
-
-        public byte[] GetArray(int index)
+        public unsafe PointerToken GetToken()
         {
-            return new byte[_size];
+            byte[] board = new byte[_size];
+            fixed (byte* pByte = board)
+            {
+                PointerToken token = new PointerToken(pByte, _size, index++);
+                return token;
+            }
         }
 
-        public void Release(int index)
+        public void Release(PointerToken token)
         {
         }
     }
@@ -57,9 +66,10 @@ namespace UnitTest
         [TestMethod]
         public void StateInfoFactory_MustReturnAllDirections()
         {
-            StateInfo currentState = new StateInfo { PreviousMove = MoveDirection.None, BlankPos = 4, Board = new byte[9] };
+            int length = 9;
             FakeObjectPool objectPool = new();
-            FakeArrayPool arrayPool = new(currentState.Board.Length);
+            FakeArrayPool arrayPool = new(length);
+            StateInfo currentState = new StateInfo { PreviousMove = MoveDirection.None, BlankPos = 4, BoardToken = arrayPool.GetToken()};
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             testObject.GetAvailableMoves(currentState, 3, objectPool, arrayPool, (ref p) => { directions.Add(p.PreviousMove); });
@@ -73,9 +83,10 @@ namespace UnitTest
         [TestMethod]
         public void StateInfoFactory_MustNotReturnInverseOfPreviousMove()
         {
-            StateInfo currentState = new StateInfo { PreviousMove = MoveDirection.Up, BlankPos = 4, Board = new byte[9] };
+            int length = 9;
             FakeObjectPool objectPool = new();
-            FakeArrayPool arrayPool = new(currentState.Board.Length);
+            FakeArrayPool arrayPool = new(length);
+            StateInfo currentState = new StateInfo { PreviousMove = MoveDirection.Up, BlankPos = 4, BoardToken = arrayPool.GetToken() };
             StateInfoFactory testObject = new();
             // Previous move is up
             testObject.GetAvailableMoves(currentState, 3, objectPool, arrayPool, (ref p) => { Assert.AreNotEqual(MoveDirection.Down, p.PreviousMove); });
@@ -97,17 +108,22 @@ namespace UnitTest
             int blankPos = 4;
             int currentIndex = 222;
 
+            int length = 9;
+            FakeObjectPool objectPool = new(currentIndex);
+            FakeArrayPool arrayPool = new(length);
+
+            byte[] board = [1, 2, 3, 4, 0, 6, 7, 8, 5];
+
             StateInfo currentState = new StateInfo
             {
                 PreviousMove = MoveDirection.None,
                 BlankPos = blankPos,
-                Board = [1, 2, 3, 4, 0, 6, 7, 8, 5],
+                BoardToken = arrayPool.GetToken() ,
                 CurrentG = currentG,
                 NodeIndex = nodeIndex
             };
-            int gridSize = (int)(Math.Sqrt(currentState.Board.Length));
-            FakeObjectPool objectPool = new(currentIndex);
-            FakeArrayPool arrayPool = new(currentState.Board.Length);
+            board.CopyTo(currentState.BoardToken.AsSpan());
+            int gridSize = (int)(Math.Sqrt(length));
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
@@ -121,8 +137,8 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos - gridSize, newState.BlankPos);
-            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
-            Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 0, 3, 4, 2, 6, 7, 8, 5], newState.Board));
+            Assert.AreEqual(0, newState.BoardToken.AsSpan()[newState.BlankPos]); // Board at Blankpos must indeed be empty
+            Assert.IsTrue(newState.BoardToken.AsSpan().SequenceEqual<byte>([1, 0, 3, 4, 2, 6, 7, 8, 5]));
         }
         [TestMethod]
         public void StateInfoFactory_ContentsMustBeCorrectForDownMove()
@@ -132,17 +148,22 @@ namespace UnitTest
             int blankPos = 4;
             int currentIndex = 222;
 
+            int length = 9;
+            FakeObjectPool objectPool = new(currentIndex);
+            FakeArrayPool arrayPool = new(length);
             StateInfo currentState = new StateInfo
             {
                 PreviousMove = MoveDirection.None,
                 BlankPos = blankPos,
-                Board = [1, 2, 3, 4, 0, 6, 7, 8, 5],
+                BoardToken = arrayPool.GetToken(),
                 CurrentG = currentG,
                 NodeIndex = nodeIndex
             };
-            int gridSize = (int)(Math.Sqrt(currentState.Board.Length));
-            FakeObjectPool objectPool = new(currentIndex);
-            FakeArrayPool arrayPool = new(currentState.Board.Length);
+            byte[] board = [1, 2, 3,
+                         4, 0, 6,
+                         7, 8, 5];
+            board.CopyTo(currentState.BoardToken.AsSpan());
+            int gridSize = (int)(Math.Sqrt(length));
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
@@ -156,28 +177,29 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos + gridSize, newState.BlankPos);
-            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
-            Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 2, 3, 4, 8, 6, 7, 0,5], newState.Board));
+            Assert.AreEqual(0, newState.BoardToken.AsSpan()[newState.BlankPos]); // Board at Blankpos must indeed be empty
+            Assert.AreEqual(0, newState.BoardToken.AsSpan().SequenceCompareTo((byte[])([1, 2, 3, 4, 8, 6, 7, 0,5])));
         }
         [TestMethod]
         public void StateInfoFactory_ContentsMustBeCorrectForLeftMove()
         {
+            int gridSize = 3;
             int nodeIndex = 123;
             int currentG = 23;
             int blankPos = 4;
             int currentIndex = 222;
 
+            FakeObjectPool objectPool = new(currentIndex);
+            FakeArrayPool arrayPool = new(gridSize*gridSize);
             StateInfo currentState = new StateInfo
             {
                 PreviousMove = MoveDirection.None,
                 BlankPos = blankPos,
-                Board = [1, 2, 3, 4, 0, 6, 7, 8, 5],
+                BoardToken = arrayPool.GetToken(),
                 CurrentG = currentG,
                 NodeIndex = nodeIndex
             };
-            int gridSize = (int)(Math.Sqrt(currentState.Board.Length));
-            FakeObjectPool objectPool = new(currentIndex);
-            FakeArrayPool arrayPool = new(currentState.Board.Length);
+            ((byte[])[1, 2, 3, 4, 0, 6, 7, 8, 5]).CopyTo(currentState.BoardToken.AsSpan());
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
@@ -191,8 +213,8 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos - 1, newState.BlankPos);
-            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
-            Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 2, 3, 0, 4, 6, 7, 8, 5], newState.Board));
+            Assert.AreEqual(0, newState.BoardToken.AsSpan()[newState.BlankPos]); // Board at Blankpos must indeed be empty
+            Assert.AreEqual(0, newState.BoardToken.AsSpan().SequenceCompareTo((byte[])[1, 2, 3, 0, 4, 6, 7, 8, 5]));
         }
         [TestMethod]
         public void StateInfoFactory_ContentsMustBeCorrectForRightMove()
@@ -202,17 +224,18 @@ namespace UnitTest
             int blankPos = 4;
             int currentIndex = 222;
 
+            int gridSize = 3;
+            FakeObjectPool objectPool = new(currentIndex);
+            FakeArrayPool arrayPool = new(gridSize * gridSize);
             StateInfo currentState = new StateInfo
             {
                 PreviousMove = MoveDirection.None,
                 BlankPos = blankPos,
-                Board = [1, 2, 3, 4, 0, 6, 7, 8, 5],
+                BoardToken = arrayPool.GetToken(),
                 CurrentG = currentG,
                 NodeIndex = nodeIndex
             };
-            int gridSize = (int)(Math.Sqrt(currentState.Board.Length));
-            FakeObjectPool objectPool = new(currentIndex);
-            FakeArrayPool arrayPool = new(currentState.Board.Length);
+            ((byte[])[1, 2, 3, 4, 0, 6, 7, 8, 5]).CopyTo(currentState.BoardToken.AsSpan());
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
@@ -226,8 +249,8 @@ namespace UnitTest
             Assert.AreEqual(currentG + 1, newState.CurrentG);
             Assert.AreEqual(currentG, newState.BestG);
             Assert.AreEqual(blankPos + 1, newState.BlankPos);
-            Assert.AreEqual(0, newState.Board[newState.BlankPos]); // Board at Blankpos must indeed be empty
-            Assert.IsTrue(Enumerable.SequenceEqual<byte>([1, 2, 3, 4, 6, 0, 7, 8, 5], newState.Board));
+            Assert.AreEqual(0, newState.BoardToken.AsSpan()[newState.BlankPos]); // Board at Blankpos must indeed be empty
+            Assert.AreEqual(0, newState.BoardToken.AsSpan().SequenceCompareTo((byte[])([1, 2, 3, 4, 6, 0, 7, 8, 5])));
         }
     }
 }

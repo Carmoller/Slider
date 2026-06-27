@@ -20,90 +20,6 @@ namespace UnitTest
         /// </summary>
         public TestContext? TestContext { get; set; }
 
-        #region Manhattan Distance Speed Test
-        private (byte row, byte col)[]? _goalPositions;
-
-        private int ManhattanDistanceMath(byte[,] board, byte gridSize)
-        {
-            int distance = 0;
-            for (byte row = 0; row < gridSize; row++)
-            {
-                for (byte col = 0; col < gridSize; col++)
-                {
-                    byte value = board[row, col];
-                    if (value == 0) continue;
-
-                    byte goalRowMath = (byte)((value - 1) / gridSize);
-                    byte goalColMath = (byte)((value - 1) % gridSize);
-                    distance += Math.Abs(row - goalRowMath) + Math.Abs(col - goalColMath);
-                }
-            }
-            return distance;
-        }
-
-        private int ManhattanDistanceLookup(byte[,] board, byte gridSize)
-        {
-            int distance = 0;
-            for (byte row = 0; row < gridSize; row++)
-            {
-                for (byte col = 0; col < gridSize; col++)
-                {
-                    byte value = board[row, col];
-                    if (value == 0) continue;
-
-                    var (goalRow, goalCol) = _goalPositions![value];
-                    distance += Math.Abs(row - goalRow) + Math.Abs(col - goalCol);
-                }
-            }
-            return distance;
-        }
-
-        [TestMethod]
-        public void ManhattanDistanceSpeedTest()
-        {
-            Stopwatch sw = new();
-            int loopCount = 1000000;
-            byte boardSize = 12;
-            _goalPositions = new (byte row, byte col)[boardSize * boardSize];
-            // Set up a 10x10 board where it is in reverse order, which is the worst case for Manhattan distance
-            byte[,] board = new byte[boardSize, boardSize];
-            for (byte row = 0; row < boardSize; row++)
-            {
-                for (byte col = 0; col < boardSize; col++)
-                {
-                    if (row == 0 && col == 0)
-                    {
-                        board[row, col] = 0; // Empty tile
-                    }
-                    else if (row == boardSize-1 && col == boardSize-1)
-                    {
-                        _goalPositions[0] = (row, col);
-                    }
-                    else
-                    {
-                        board[row, col] = (byte)(boardSize*boardSize - (row * boardSize + col));
-                        int index = row * boardSize+ col;
-                        _goalPositions[index + 1] = (row, col);
-                    }
-                }
-            }
-            sw.Start();
-            for (int i = 0; i < loopCount; i++)
-            {
-                int distance = ManhattanDistanceLookup(board, boardSize);
-            }
-            sw.Stop();
-            Debug.WriteLine($"ManhattanDistanceLookup: {(double)loopCount / sw.ElapsedMilliseconds} calculations / ms");
-            sw.Restart();
-            for (int i = 0; i < loopCount; i++)
-            {
-                int distance = ManhattanDistanceMath(board, boardSize);
-            }
-            sw.Stop();
-            Debug.WriteLine($"ManhattanDistanceMath: {(double)loopCount / sw.ElapsedMilliseconds} calculations / ms");
-        }
-        #endregion
-
         #region Solver Tests
         private List<BoardTile> CreateSolvedBoard(int gridSize)
         {
@@ -175,15 +91,15 @@ namespace UnitTest
         public void Solve_SingleMoveAway_ReturnsSingleMove()
         {
             Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithSingleMove(3);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
-
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                2, heuristicsFactory, optionsMock.Object);
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.Solved, result.Result);
@@ -197,12 +113,12 @@ namespace UnitTest
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                2, heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.Solved, result.Result);
@@ -225,13 +141,12 @@ namespace UnitTest
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithSingleMove(2);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            calculatorMock.Setup(p => p.GetHeuristic(It.IsAny<byte[]>(), It.IsAny<int>())).Returns(1);
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                2, heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.HasCount(1, result.Moves, "2x2 board one move away should have exactly one move");
@@ -241,14 +156,15 @@ namespace UnitTest
         public void Solve_FourByFourBoard_Solves()
         {
             Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory()   );
             List<BoardTile> board = CreateBoardWithSingleMove(4);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new ();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p=>p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            HeuristicElementFactory heuristicsFactory = new ();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                2, heuristicsFactory, optionsMock.Object);
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.Solved, result.Result);
@@ -296,16 +212,17 @@ namespace UnitTest
         public void Solve_VariousBoards_AllReturnsValidMoveList()
         {
             Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             // Test multiple board configurations
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
-            Mock<IHeuristicCalculator> calculatorMock = new();
-            heuristicsFactoryMock.Setup(p => p.CreateHeuristicCalculator(It.IsAny<IOptions>(), It.IsAny<SolverOptions>(), It.IsAny<int>())).Returns(calculatorMock.Object);
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                2, heuristicsFactory, optionsMock.Object);
 
             for (int gridSize = 2; gridSize <= 3; gridSize++)
             {
                 List<BoardTile> board = CreateBoardWithSingleMove(gridSize);
-                SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+                SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
                 Assert.IsGreaterThanOrEqualTo(1, result.Moves.Count, $"Should find at least one move for {gridSize}x{gridSize} board");
 
@@ -376,22 +293,22 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             List<BoardTile> board = new List<BoardTile>
             {
-                new BoardTile {Row = 0, Column = 0, Value = 0 },
-                new BoardTile {Row = 0, Column = 1, Value = 3 },
-                new BoardTile {Row = 0, Column = 2, Value = 7 },
-                new BoardTile {Row = 0, Column = 3, Value = 4 },
-                new BoardTile {Row = 1, Column = 0, Value = 11 },
-                new BoardTile {Row = 1, Column = 1, Value = 5 },
-                new BoardTile {Row = 1, Column = 2, Value = 1 },
-                new BoardTile {Row = 1, Column = 3, Value = 8 },
-                new BoardTile {Row = 2, Column = 0, Value = 2 },
-                new BoardTile {Row = 2, Column = 1, Value = 6 },
-                new BoardTile {Row = 2, Column = 2, Value = 15 },
-                new BoardTile {Row = 2, Column = 3, Value = 10 },
-                new BoardTile {Row = 3, Column = 0, Value = 13 },
-                new BoardTile {Row = 3, Column = 1, Value = 14 },
-                new BoardTile {Row = 3, Column = 2, Value = 12 },
-                new BoardTile {Row = 3, Column = 3, Value = 9 },
+                new BoardTile {Row = 0, Column = 0, Value = 6 },
+                new BoardTile {Row = 0, Column = 1, Value = 14 },
+                new BoardTile {Row = 0, Column = 2, Value = 15 },
+                new BoardTile {Row = 0, Column = 3, Value = 11 },
+                new BoardTile {Row = 1, Column = 0, Value = 0 },
+                new BoardTile {Row = 1, Column = 1, Value = 3 },
+                new BoardTile {Row = 1, Column = 2, Value = 5 },
+                new BoardTile {Row = 1, Column = 3, Value = 7 },
+                new BoardTile {Row = 2, Column = 0, Value = 8 },
+                new BoardTile {Row = 2, Column = 1, Value = 12 },
+                new BoardTile {Row = 2, Column = 2, Value = 10 },
+                new BoardTile {Row = 2, Column = 3, Value = 9 },
+                new BoardTile {Row = 3, Column = 0, Value = 1 },
+                new BoardTile {Row = 3, Column = 1, Value = 2 },
+                new BoardTile {Row = 3, Column = 2, Value = 13 },
+                new BoardTile {Row = 3, Column = 3, Value = 4 },
             };
 
             HeuristicElementFactory heuristicsFactory = new();

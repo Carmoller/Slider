@@ -17,7 +17,7 @@ namespace Slider.Heuristics
         {
             Statistics = new HeuristicsStatistics();
         }
-        public int Calculate(byte[] board, int gridSize)
+        public int Calculate(Span<byte> board, int gridSize)
         {
             _stopwatch.Restart();
             int distance = 0;

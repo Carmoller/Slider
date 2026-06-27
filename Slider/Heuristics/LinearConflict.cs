@@ -13,7 +13,7 @@ namespace Slider.Heuristics
         public bool IsAdditive { get { return true; } }
         private readonly Stopwatch _stopwatch = new();
 
-        public int Calculate(byte[] board, int gridSize)
+        public int Calculate(Span<byte> board, int gridSize)
         {
             _stopwatch.Restart();
             int conflictCount = 0;

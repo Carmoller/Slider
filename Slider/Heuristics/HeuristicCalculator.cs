@@ -37,7 +37,7 @@ namespace Slider.Heuristics
             }
         }
 
-        public int GetHeuristic(byte[] board, int gridSize)
+        public int GetHeuristic(Span<byte> board, int gridSize)
         {
             int distance = 0;
 

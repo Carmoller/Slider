@@ -20,6 +20,18 @@ namespace Slider.Solver
                 return hash;
             }
         }
+        public static long FastHash(Span<byte> board)
+        {
+            unchecked
+            {
+                long hash = 17L;
+                for (int i = 0; i < board.Length; i++)
+                {
+                    hash = hash * 31L + board[i];
+                }
+                return hash;
+            }
+        }
 
         public void InitializeZobrist(int size)
         {

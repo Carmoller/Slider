@@ -1,4 +1,5 @@
-﻿using Slider.Common.Interfaces;
+﻿using Slider.Common;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ namespace Slider.Solver
         public static readonly StateInfo Empty = default;
         public int NodeIndex { get; set; }
         public int ParentIndex { get; set; }
-        public byte[] Board { get; set; }
+        public PointerToken BoardToken { get; set; }
         public int BoardArrayIndex { get; set; }
         public int BlankPos { get; set; }
         public long Hash { get; set; }
@@ -27,16 +28,16 @@ namespace Slider.Solver
                 return false;
             StateInfo other = (StateInfo)obj;
             if (BlankPos != other.BlankPos) return false;
-            return Enumerable.SequenceEqual(Board, other.Board);
+            return BoardToken.AsSpan().SequenceEqual(other.BoardToken.AsSpan());
         }
         public override int GetHashCode()
         {
-            return (int)StateHashes.FastHash(Board);
+            return (int)StateHashes.FastHash(BoardToken.AsSpan());
         }
 
         public override string ToString()
         {
-            return $"Nodeindex: {NodeIndex}, ParentIndex: {ParentIndex}, CurrentG: {CurrentG}, CurrentH: {CurrentH},  Board: " + string.Join(',', Board);
+            return $"Nodeindex: {NodeIndex}, ParentIndex: {ParentIndex}, CurrentG: {CurrentG}, CurrentH: {CurrentH},  Board: " + string.Join(',', BoardToken.AsSpan().ToArray());
         }
     }
 }

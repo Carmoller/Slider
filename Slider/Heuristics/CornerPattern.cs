@@ -48,7 +48,7 @@ namespace Slider.Heuristics
                  };
         }
 
-        public int Calculate(byte[] board, int gridSize)
+        public int Calculate(Span<byte> board, int gridSize)
         {
             _stopWatch.Restart();
             int penalty = 0;
@@ -61,7 +61,7 @@ namespace Slider.Heuristics
                 byte expectedTile = (byte)(position + 1);
 
                 // Special case: bottom-right should be empty or the last numbered tile
-                if (position == gridSize*gridSize -1)
+                if (position == gridSize * gridSize - 1)
                 {
                     expectedTile = 0;
                 }

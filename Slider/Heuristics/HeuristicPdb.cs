@@ -113,7 +113,7 @@ namespace Slider.Heuristics
             _pdbsLoadedForSize = size;
         }
 
-        public int Calculate(byte[] boardData, int gridSize)
+        public int Calculate(Span<byte> boardData, int gridSize)
         {
             if (_pdbsLoadedForSize == -1)
             {
@@ -146,11 +146,6 @@ namespace Slider.Heuristics
             Statistics.NumberOfCalls++;
             Statistics.TicksSpent += sw.ElapsedTicks;
             return h;
-        }
-
-        public int Calculate(byte[,] board, (byte row, byte col)[] goalPositions, byte gridSize)
-        {
-            throw new NotImplementedException();
         }
     }
 }

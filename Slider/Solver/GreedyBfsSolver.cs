@@ -16,7 +16,7 @@ namespace Slider.Solver
         private readonly SolveStateDictionary<StateInfo> _closed = new();
         private int _gridSize;
         private ChunkedStructPool<StateInfo>? _stateInfoPool;
-        private ChunkedArrayPool<byte>? _arrayPool;
+        private ChunkedArrayPoolUnsafe? _arrayPool;
         private IHeuristicCalculator? _heuristicsCalculator;
         private const double H_Scale = 1.2;
         private int _min_h;
@@ -34,7 +34,7 @@ namespace Slider.Solver
             SolveResult result,
             StateInfo startState, 
             ChunkedStructPool<StateInfo> stateInfoPool,
-            ChunkedArrayPool<byte> arrayPool,
+            ChunkedArrayPoolUnsafe arrayPool,
             IHeuristicCalculator heuristicsCalculator,
             int gridSize, 
             int maxNodes = 5000)
@@ -118,7 +118,7 @@ namespace Slider.Solver
 
         private static long GetHashCode(StateInfo state)
         {
-            return StateHashes.FastHash(state.Board);
+            return StateHashes.FastHash(state.BoardToken.AsSpan());
         }
 
         private void HandleNewState(ref StateInfo currentState, ref StateInfo newState)
@@ -136,7 +136,7 @@ namespace Slider.Solver
             }
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
-            newState.CurrentH = GetHeuristics(newState.Board, _gridSize);
+            newState.CurrentH = GetHeuristics(newState.BoardToken.AsSpan(), _gridSize);
             newState.CurrentF = newState.CurrentG + (newState.CurrentH);
             if (newState.BestG > currentState.CurrentG)
             {
@@ -146,7 +146,7 @@ namespace Slider.Solver
             _openQueue.Enqueue(newState, priority);
 
         }
-        private int GetHeuristics(byte[] board, int gridSize)
+        private int GetHeuristics(Span<byte> board, int gridSize)
         {
             return _heuristicsCalculator.GetHeuristic(board, gridSize);
         }

@@ -11,8 +11,8 @@ namespace Slider.Interfaces
     {
         void GetAvailableMoves(StateInfo currentState,
             int gridSize,
-            IChunkedStructPool<StateInfo> stateInfoPool, 
-            IChunkedArrayPool<byte> arrayPool,
+            IChunkedStructPool<StateInfo> stateInfoPool,
+            IChunkedArrayPoolUnsafe arrayPool,
             RefAction<StateInfo> processState);
     }
 }

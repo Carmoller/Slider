@@ -1,4 +1,5 @@
-﻿using Slider.Common.Interfaces;
+﻿using Slider.Common;
+using Slider.Common.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Slider.Interfaces
     {
         int NodeIndex { get; set; }
         int ParentIndex { get; set; }
-        byte[] Board { get; set; }
+        PointerToken BoardToken { get; set; }
         int BlankPos { get; set; }
         long Hash { get; set; }
         int BestG { get; set; }
