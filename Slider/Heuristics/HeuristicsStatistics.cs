@@ -7,9 +7,8 @@ namespace Slider.Heuristics
 {
     public sealed class HeuristicsStatistics : IHeuristicsStatistics
     {
-        public long TicksSpent{ get; set; }
         public long NumberOfCalls { get; set; }
-        public long TotalTimeSpentMs => TicksSpent / 10000;
-        public double AverageTimePerCall => NumberOfCalls > 0 ? (double)TicksSpent / 10000.0 / NumberOfCalls : 0;
+        public double TotalTimeSpentMs {get;set;}
+        public double AverageTimePerCall => NumberOfCalls > 0 ? TotalTimeSpentMs / NumberOfCalls : 0;
     }
 }

@@ -19,7 +19,7 @@ using Slider.Interfaces;
 
 namespace Slider.Solver
 {
-    public class WeightedAStarSolver : ISolver
+    public class MHAStarSolver : ISolver
     {
         const int F_Scale = 1000;
         const int G_Scale = 10;
@@ -29,7 +29,8 @@ namespace Slider.Solver
         private double _initialW = 3;
 
         public double InitialW { get { return _initialW; } set { _initialW = value; w = value; } }
-        private PriorityQueue<int, double> _openQueue = new();
+        private PriorityQueue<int, double> _anchorQueue = new();
+        private PriorityQueue<int, double> _scoutQueue = new();
         private SolveStateDictionary<StateInfo> _closed = new();
         private int _gridSize;
         private IHeuristicCalculator? _heuristicCalculator;
@@ -39,7 +40,7 @@ namespace Slider.Solver
         private IOptions _options;
         private IStateInfoFactory _stateInfoFactory;
 
-        public WeightedAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
+        public MHAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
         {
             _options = options;
             _stateInfoFactory = stateInfoFactory;
@@ -123,23 +124,55 @@ namespace Slider.Solver
             }
 #endif
 
-            _openQueue.Enqueue(startState.NodeIndex, startState.CurrentF);
+            _anchorQueue.Enqueue(startState.NodeIndex, startState.CurrentF);
+            _scoutQueue.Enqueue(startState.NodeIndex, startState.CurrentF);
             int min_h = int.MaxValue;
             int h_previous = int.MaxValue;
             bestHValueIndex = startState.NodeIndex;
-            while (_openQueue.TryDequeue(out int nodeIndex, out double f_current))
+            int current = 0;
+
+            while (true)
             {
+                int nodeIndex = StateInfo.Empty.NodeIndex;
+                double f_current;
+                if (_anchorQueue.Count == 0 && _scoutQueue.Count == 0)
+                    break;
+                bool useAnchor = current++ % 4 == 0;
+                if (useAnchor)
+                {
+                    while (true)
+                    {
+                        if (!_anchorQueue.TryDequeue(out nodeIndex, out f_current))
+                        {
+                            useAnchor = false; // When breaking, we should attempt to use the scout queue
+                            break;
+                        }
+                        ref StateInfo testState = ref _stateInfoPool.GetRef(nodeIndex);
+                        if (!_closed.TryGetState(testState.Hash, testState, out StateInfo _))
+                            break;
+                    }
+                }
+                if (!useAnchor)
+                {
+                    if (!_scoutQueue.TryDequeue(out nodeIndex, out f_current))
+                        break;
+                }
                 StateInfo currentState = _stateInfoPool.GetRef(nodeIndex);
+
                 bool found = _closed.TryGetState(currentState.Hash, currentState, out StateInfo closedState);
                 if (found)
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
-                        _stateInfoPool.Release(currentState.NodeIndex, (ref p) => { _arrayPool.Release(p.BoardArrayIndex); });
+                        _closed.AddState(currentState.Hash, currentState);
                         _discardedStates++;
                         continue;
                     }
-                    closedState.BestG = currentState.CurrentG;
+                    else
+                    {
+                        _closed.ReplaceState(currentState.Hash, closedState, currentState);
+                        _stateInfoPool.Release(closedState.NodeIndex, (ref StateInfo p) => { _arrayPool!.Release(p.BoardArrayIndex); });
+                    }
                 }
 
 #if DIAGNOSE
@@ -167,7 +200,7 @@ namespace Slider.Solver
                 if (h_Current < min_h)
                 {
                     bestHValueIndex = currentState.NodeIndex;
-                    Debug.WriteLine($"Weighted A*: State #{result.TotalStatesConsidered}: h:{h_Current}");
+                    Debug.WriteLine($"MHA* ({(useAnchor ? "Anchor" : "Scout")}): State #{result.TotalStatesConsidered}: h:{h_Current}");
                     min_h = h_Current;
                 }
                 if ((h_Current == 0) || (sw.Elapsed > _options.SolveTimeout))
@@ -196,7 +229,7 @@ namespace Slider.Solver
                     }
                 }
                 // Adjust w to avoid getting stuck at a low h-value, and refusing to climb back up the tree
-                w = h_Current < 30 ? 1 : InitialW;
+                w = /*h_Current < 30 ? 1 :*/ InitialW;
 
                 h_previous = h_Current;
                 result.TotalStatesConsidered++;
@@ -208,9 +241,19 @@ namespace Slider.Solver
             return result;
         }
 
+        private double GetFValue(ref StateInfo state, bool isAnchor)
+        {
+            int heuristic = GetHeuristics(state.BoardToken.AsSpan(), _gridSize);
+            state.CurrentH = heuristic;
+            state.CurrentF = isAnchor ? state.CurrentG + heuristic : state.CurrentG + w * heuristic;
+            return state.CurrentF;
+
+        }
         private void Cleanup()
         {
-            _openQueue.Clear();
+            _anchorQueue.Clear();
+            _scoutQueue.Clear();
+
             _closed.Clear();
             _stateInfoPool = null;
             _arrayPool = null;
@@ -261,8 +304,31 @@ namespace Slider.Solver
             {
                 newState.BestG = currentState.CurrentG;
             }
-            double priority = newState.CurrentF * F_Scale - (-newState.CurrentG * G_Scale) + newState.CurrentH;
-            _openQueue.Enqueue(newState.NodeIndex, priority);
+            //            double priority = newState.CurrentF * F_Scale - (-newState.CurrentG * G_Scale) + newState.CurrentH;
+            int scoutStateIndex = _stateInfoPool.Get(newState, (ref StateInfo state, StateInfo source) =>
+            {
+                /*
+                state.CurrentG = source.CurrentG;
+                state.PreviousMove = source.PreviousMove;
+                state.BlankPos = source.BlankPos;
+                state.BoardToken = _arrayPool.GetToken();
+                state.Hash = StateHashes.FastHash(state.BoardToken.AsSpan());
+                source.BoardToken.AsSpan().CopyTo(state.BoardToken.AsSpan());
+                state.CurrentF = GetFValue(ref state, true);*/
+                state = source;
+            });
+            ref StateInfo scoutState = ref _stateInfoPool.GetRef(scoutStateIndex);
+            scoutState.NodeIndex = scoutStateIndex;
+            if (scoutStateIndex == 649 || scoutState.NodeIndex == 653)
+            {
+                Debug.WriteLine($"ScoutState: {scoutState.NodeIndex}");
+            }
+            if (newState.NodeIndex == scoutState.NodeIndex)
+            {
+                throw new InvalidOperationException("NewState = ScoutState");
+            }
+            _anchorQueue.Enqueue(newState.NodeIndex, GetFValue(ref newState, true));
+            _scoutQueue.Enqueue(scoutStateIndex, GetFValue(ref scoutState, false));
 #if DIAGNOSE
             Span<byte> checkSpan = currentState.BoardToken.AsSpan();
             bool alreadyFound = false;

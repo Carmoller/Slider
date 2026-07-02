@@ -120,7 +120,7 @@ namespace Slider.Heuristics
                 int size = gridSize;
                 LoadPdbs(size);
             }
-            Stopwatch sw = Stopwatch.StartNew();
+            long startTimestamp = Stopwatch.GetTimestamp();
             // Gather the position of the numbers that fit into each PDB
             byte blankPosition = 255;
             for (int i = 0; i < boardData.Length; i++)
@@ -144,7 +144,7 @@ namespace Slider.Heuristics
                 h += _pdbDescriptors[i].Pdb.GetDistance(encoded);
             }
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             return h;
         }
     }

@@ -1,0 +1,315 @@
+﻿Walking distance generator
+
+public class WalkingDistanceGenerator
+{
+    public struct WDState
+    {
+        public byte[,] Grid; // 4x4 matrix counting tile distributions
+        public int BlankRow; // 0 to 3
+
+        // Helper to generate a unique string key for Dictionary lookups
+        public string GetKey()
+        {
+            char[] chars = new char[17];
+            int idx = 0;
+            for (int r = 0; r < 4; r++)
+                for (int g = 0; g < 4; g++)
+                    chars[idx++] = (char)('0' + Grid[r, g]);
+            chars[16] = (char)('0' + BlankRow);
+            return new string(chars);
+        }
+
+        public WDState Clone()
+        {
+            return new WDState { Grid = (byte[,])this.Grid.Clone(), BlankRow = this.BlankRow };
+        }
+    }
+
+    public Dictionary<string, int> GenerateDatabase()
+    {
+        // Maps the abstracted state profile to the exact move distance
+        Dictionary<string, int> wdDatabase = new Dictionary<string, int>();
+        Queue<WDState> queue = new Queue<WDState>();
+
+        // 1. Initialize Goal State
+        WDState goal = new WDState();
+        goal.Grid = new byte[4, 4];
+        goal.Grid[0, 0] = 4;
+        goal.Grid[1, 1] = 4;
+        goal.Grid[2, 2] = 4;
+        goal.Grid[3, 3] = 3; // 3 target tiles + 1 blank
+        goal.BlankRow = 3;
+
+        string goalKey = goal.GetKey();
+        wdDatabase[goalKey] = 0;
+        queue.Enqueue(goal);
+
+        // 2. Backward BFS to map all reachable count configurations
+        while (queue.Count > 0)
+        {
+            WDState current = queue.Dequeue();
+            int currentDistance = wdDatabase[current.GetKey()];
+
+            // The blank tile can move to adjacent rows (Up or Down)
+            int[] possibleMoves = { -1, 1 }; 
+            foreach (int move in possibleMoves)
+            {
+                int nextBlankRow = current.BlankRow + move;
+                
+                // Ensure the row swap stays within the boundaries of our tracked 4x4 window
+                if (nextBlankRow >= 0 && nextBlankRow < 4)
+                {
+                    // Moving the blank up/down means a tile from 'nextBlankRow' 
+                    // is moving into 'current.BlankRow'.
+                    // We must branch for every POSSIBLE type of tile residing in that row.
+                    for (int goalRowIdx = 0; goalRowIdx < 4; goalRowIdx++)
+                    {
+                        // Is there a tile in nextBlankRow that belongs in goalRowIdx?
+                        if (current.Grid[nextBlankRow, goalRowIdx] > 0)
+                        {
+                            WDState nextState = current.Clone();
+
+                            // Simulate the tile swap in the count profile
+                            nextState.Grid[nextBlankRow, goalRowIdx]--; // Tile leaves this row
+                            nextState.Grid[current.BlankRow, goalRowIdx]++; // Tile enters this row
+                            nextState.BlankRow = nextBlankRow; // Blank shifts position
+
+                            string nextKey = nextState.GetKey();
+
+                            // If this unique arrangement hasn't been discovered yet, log it
+                            if (!wdDatabase.ContainsKey(nextKey))
+                            {
+                                wdDatabase[nextKey] = currentDistance + 1;
+                                queue.Enqueue(nextState);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return wdDatabase;
+    }
+}
+
+
+
+Transpose board
+public int[,] TransposeBoard(int[,] originalBoard, int size)
+{
+    int[,] transposed = new int[size, size];
+
+    for (int r = 0; r < size; r++)
+    {
+        for (int c = 0; c < size; c++)
+        {
+            // Swap row index with column index
+            transposed[c, r] = originalBoard[r, c];
+        }
+    }
+
+    return transposed;
+}
+
+Walking distance with blank as wildcard
+public Dictionary<string, int> GenerateSubgoalDatabase()
+{
+    Dictionary<string, int> wdDatabase = new Dictionary<string, int>();
+    Queue<WDState> queue = new Queue<WDState>();
+
+    // Seed the database with ALL VALID BLANK POSITIONS as distance 0
+    // Assume a 4x4 active window for your subgoals
+    for (int bRow = 0; bRow < 4; bRow++)
+    {
+        WDState goalState = new WDState();
+        goalState.Grid = new byte[4, 4];
+        
+        // Define your targets (e.g., Row 0 needs 4 correct tiles)
+        goalState.Grid[0, 0] = 4; 
+        goalState.Grid[1, 1] = 4;
+        goalState.Grid[2, 2] = 4;
+        goalState.Grid[3, 3] = 4;
+
+        // Account for the blank tile removing one count from its current row
+        // It's acting as a wildcard, so wherever it is, that row holds 3 tiles + blank
+        goalState.Grid[bRow, bRow]--; 
+        
+        goalState.BlankRow = bRow;
+
+        string goalKey = goalState.GetKey();
+        if (!wdDatabase.ContainsKey(goalKey))
+        {
+            wdDatabase[goalKey] = 0;
+            queue.Enqueue(goalState);
+        }
+    }
+
+    // ... Run the backward BFS loop exactly as before ...
+    return wdDatabase;
+}
+
+
+
+Lookup: Clamp blank position
+int relativeBlankRow = realBlankRow; 
+if (relativeBlankRow >= 4) {
+    // If the blank is anywhere outside your active 4x4 window, 
+    // clamp it to the edge of the window for the database lookup.
+    relativeBlankRow = 3; 
+}
+
+
+
+
+his is how you calculate the correct goal row index dynamically based on whether you are running a Standard Check (for rows) or a Transposed Check (for columns).
+public class DynamicGoalMapper
+{
+    private int boardSize = 10;
+    
+    // The current reduction offset (e.g., 0 for Phase 1, 1 for Phase 2)
+    public int CurrentOffset { get; set; } = 0; 
+
+    /// <summary>
+    /// Calculates the 0-3 relative destination index for a tile within the active 4x4 window.
+    /// </summary>
+    /// <param name="tileValue">The value written on the puzzle tile</param>
+    /// <param name="isTransposedMode">False for Row checks, True for Column checks</param>
+    /// <returns>Returns 0-3 if the tile belongs in the active window; otherwise returns -1</returns>
+    public int GetGoalBucketForTile(int tileValue, bool isTransposedMode)
+    {
+        // 1. Calculate the true destination (Row, Col) of this tile on a perfect 10x10 board
+        // Assuming tiles are numbered 1 to 99 sequentially, and 0 is the blank
+        int trueGoalRow = (tileValue - 1) / boardSize;
+        int trueGoalCol = (tileValue - 1) % boardSize;
+
+        if (!isTransposedMode)
+        {
+            // === ROW EVALUATION MODE ===
+            // We want to know what row this tile belongs in.
+            // Adjust the true goal row by subtracting the current tracking offset.
+            int relativeGoalRow = trueGoalRow - CurrentOffset;
+
+            // If it belongs within our active 4x4 database chunk, return the 0-3 bucket index
+            if (relativeGoalRow >= 0 && relativeGoalRow < 4)
+            {
+                return relativeGoalRow;
+            }
+        }
+        else
+        {
+            // === COLUMN EVALUATION MODE ===
+            // Since the board matrix is flipped across its diagonal axis,
+            // columns are acting as rows. We want to track what COLUMN this tile belongs in.
+            int relativeGoalCol = trueGoalCol - CurrentOffset;
+
+            if (relativeGoalCol >= 0 && relativeGoalCol < 4)
+            {
+                return relativeGoalCol;
+            }
+        }
+
+        // If the tile belongs to a completely different part of the board, ignore it
+        return -1;
+    }
+}
+
+
+
+3. How to Execute the Twin-Pass Lookup At RuntimeInside your main search algorithm (like Fringe Search), you evaluate each node by passing it through your dynamic mapper twice to get a combined horizontal and vertical walking distance score:
+public int EvaluateWalkingHeuristic(int[,] currentBoard, DynamicGoalMapper mapper, Dictionary<string, int> wdDatabase)
+{
+    // Pass 1: Standard Horizontal Rows
+    int rowDistance = QueryDatabase(currentBoard, mapper, isTransposedMode: false, wdDatabase);
+
+    // Pass 2: Transposed Vertical Columns
+    int[,] transposedBoard = TransposeMatrix(currentBoard);
+    int colDistance = QueryDatabase(transposedBoard, mapper, isTransposedMode: true, wdDatabase);
+
+    // Combine both axis solutions
+    return rowDistance + colDistance;
+}
+
+private int QueryDatabase(int[,] board, DynamicGoalMapper mapper, bool isTransposedMode, Dictionary<string, int> db)
+{
+    byte[,] buckets = new byte[4, 4];
+    int relativeBlankRow = 3;
+
+    // Scan the active 4x4 window relative to our current scaling offset
+    for (int r = 0; r < 4; r++)
+    {
+        for (int c = 0; c < 4; c++)
+        {
+            // Read from the real 10x10 board using our active window coordinates
+            int realRow = r + mapper.CurrentOffset;
+            int realCol = c + mapper.CurrentOffset;
+            int tileValue = board[realRow, realCol];
+
+            if (tileValue == 0) // Track the blank tile position
+            {
+                relativeBlankRow = r;
+                continue;
+            }
+
+            // Get the dynamic 0-3 destination bucket index 
+            int goalBucket = mapper.GetGoalBucketForTile(tileValue, isTransposedMode);
+
+            if (goalBucket != -1)
+            {
+                buckets[r, goalBucket]++;
+            }
+        }
+    }
+
+    string lookupKey = SerialiseProfile(buckets, relativeBlankRow);
+    
+    if (db.TryGetValue(lookupKey, out int distance))
+    {
+        return distance;
+    }
+
+    return 999; // Penalty fallback
+}
+
+
+If bit-shifting looks too complicated or is harder to debug, you can create a custom struct to represent the key. If a struct implements IEquatable<T>, it becomes a value-type key that operates directly on the stack without allocating any memory on the managed heap.To make the comparison fast, you can overlay the 16 bytes of the grid onto two 64-bit integers (long) using memory spans.
+using System;
+using System.Runtime.InteropServices;
+
+public struct OptimizedWDKey : IEquatable<OptimizedWDKey>
+{
+    // Fix the memory layout explicitly so we can easily read them as integers
+    private long _part1;
+    private long _part2;
+    private byte _blankRow;
+
+    public OptimizedWDKey(byte[,] grid, int blankRow)
+    {
+        _blankRow = (byte)blankRow;
+
+        // Turn the 2D grid into a clean, flat 16-byte ReadOnlySpan
+        ReadOnlySpan<byte> flatGrid = MemoryMarshal.CreateReadOnlySpan(ref grid[0, 0], 16);
+
+        // Instantly copy the 16 bytes straight into our two 8-byte (long) fields
+        _part1 = BitConverter.ToInt64(flatGrid.Slice(0, 8));
+        _part2 = BitConverter.ToInt64(flatGrid.Slice(8, 8));
+    }
+
+    public bool Equals(OptimizedWDKey other)
+    {
+        return _part1 == other._part1 && 
+               _part2 == other._part2 && 
+               _blankRow == other._blankRow;
+    }
+
+    public override bool Equals(object obj) => obj is OptimizedWDKey other && Equals(other);
+
+    // Provide a fast hash code by combining the underlying integer fields
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_part1, _part2, _blankRow);
+    }
+}
+
+
+
+

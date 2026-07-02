@@ -87,6 +87,7 @@ namespace UnitTest
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+            solver.InitialW = 2;
             SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true };
             SolveResult result = solver.Solve(board, options, new HeuristicElementFactory());
 
@@ -136,7 +137,7 @@ namespace UnitTest
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true };
+            SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true, UseSprintFinish = true };
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);

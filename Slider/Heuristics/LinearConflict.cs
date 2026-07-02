@@ -11,11 +11,10 @@ namespace Slider.Heuristics
         public IHeuristicsStatistics Statistics { get; private set; } = new HeuristicsStatistics();
         public string Name { get { return "LinearConflict"; } }
         public bool IsAdditive { get { return true; } }
-        private readonly Stopwatch _stopwatch = new();
 
         public int Calculate(Span<byte> board, int gridSize)
         {
-            _stopwatch.Restart();
+            long startTimestamp = Stopwatch.GetTimestamp();
             int conflictCount = 0;
 
             // Check for row conflicts
@@ -94,9 +93,8 @@ namespace Slider.Heuristics
                 }
             }
 
-            _stopwatch.Stop();
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += _stopwatch.ElapsedTicks;
+            Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             return conflictCount * 4; // Each conflict adds four moves
         }
     }

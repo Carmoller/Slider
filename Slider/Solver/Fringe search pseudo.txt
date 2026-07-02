@@ -1,0 +1,134 @@
+﻿public class FringeSearchSolver
+{
+    // Define a node structure for the search tree
+    public class PuzzleNode
+    {
+        public BoardState State { get; set; }
+        public int G { get; set; } // Moves taken from start
+        public int F { get; set; } // G + H
+        public PuzzleNode Parent { get; set; }
+    }
+
+    public List<Move> SolveFirstRow(BoardState initialState)
+    {
+        // Two simple lists instead of a heavy Priority Queue
+        List<PuzzleNode> currentFringe = new List<PuzzleNode>();
+        List<PuzzleNode> nextFringe = new List<PuzzleNode>();
+        
+        // Dictionary to track the lowest G-cost found for any state (avoids loops)
+        Dictionary<BoardState, int> visited = new Dictionary<BoardState, int>();
+
+        // Initialize root node
+        PuzzleNode root = new PuzzleNode
+        {
+            State = initialState,
+            G = 0,
+            F = CalculateMaskedHeuristic(initialState),
+            Parent = null
+        };
+
+        currentFringe.Add(root);
+        visited[initialState] = 0;
+
+        // Start threshold at the root's F-score
+        int threshold = root.F;
+        bool goalFound = false;
+        PuzzleNode goalNode = null;
+
+        while (currentFringe.Count > 0 && !goalFound)
+        {
+            int nextThreshold = int.MaxValue;
+
+            for (int i = 0; i < currentFringe.Count; i++)
+            {
+                PuzzleNode currentNode = currentFringe[i];
+
+                // If this node exceeds the current threshold, defer it to the next pass
+                if (currentNode.F > threshold)
+                {
+                    nextFringe.Add(currentNode);
+                    nextThreshold = Math.Min(nextThreshold, currentNode.F);
+                    continue;
+                }
+
+                // Check if our masked goal (e.g., Row 1 solved) is achieved
+                if (IsSubgoalReached(currentNode.State))
+                {
+                    goalFound = true;
+                    goalNode = currentNode;
+                    break;
+                }
+
+                // Generate legal moves
+                foreach (BoardState neighborState in GetValidMoves(currentNode.State))
+                {
+                    int newG = currentNode.G + 1;
+
+                    // PRUNING STEP: If we found a cheaper way to get to this state, skip it
+                    if (visited.TryGetValue(neighborState, out int existingG) && newG >= existingG)
+                    {
+                        continue;
+                    }
+
+                    int h = CalculateMaskedHeuristic(neighborState);
+                    PuzzleNode neighborNode = new PuzzleNode
+                    {
+                        State = neighborState,
+                        G = newG,
+                        F = newG + h,
+                        Parent = currentNode
+                    };
+
+                    visited[neighborState] = newG;
+                    
+                    // Add directly to the end of the current fringe to inspect immediately
+                    currentFringe.Add(neighborNode);
+                }
+            }
+
+            if (!goalFound)
+            {
+                if (nextFringe.Count == 0)
+                {
+                    return null; // Entire accessible state space exhausted without finding goal
+                }
+
+                // Smoothly step up the threshold to the minimum value that was deferred
+                threshold = nextThreshold;
+                
+                // Swap lists: the deferred nodes become the new starting frontier
+                currentFringe = new List<PuzzleNode>(nextFringe);
+                nextFringe.Clear();
+            }
+        }
+
+        return ReconstructPath(goalNode);
+    }
+
+    private int CalculateMaskedHeuristic(BoardState state)
+    {
+        // 1. Calculate Manhattan distance + Edge/Corner ONLY for Row 1 tiles
+        // 2. Ignore all other tiles (give them a distance of 0)
+        // 3. Return the calculated value
+        return 0; // Placeholder
+    }
+
+    private bool IsSubgoalReached(BoardState state)
+    {
+        // Returns true if all Row 1 tiles are perfectly in their home positions
+        return false; // Placeholder
+    }
+
+    private IEnumerable<BoardState> GetValidMoves(BoardState state)
+    {
+        // CRITICAL PRUNING: Generate moves for the blank tile,
+        // but NEVER allow the blank to swap with a tile in a previously LOCKED row/col.
+        return null; // Placeholder
+    }
+
+    private List<Move> ReconstructPath(PuzzleNode node)
+    {
+        // Walk backwards via node.Parent to assemble the move list
+        return null; // Placeholder
+    }
+}

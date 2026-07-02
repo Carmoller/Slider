@@ -201,9 +201,9 @@ namespace UnitTest.HeuristicElementTests
                             7, 8, 0];
 
             // Act
-            long ticksBefore = cornerPattern.Statistics.TicksSpent;
+            double ticksBefore = cornerPattern.Statistics.TotalTimeSpentMs;
             cornerPattern.Calculate(board, 3);
-            long ticksAfter = cornerPattern.Statistics.TicksSpent;
+            double ticksAfter = cornerPattern.Statistics.TotalTimeSpentMs;
 
             // Assert
             Assert.IsGreaterThan(ticksBefore, ticksAfter);

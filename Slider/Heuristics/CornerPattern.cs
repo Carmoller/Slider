@@ -14,7 +14,6 @@ namespace Slider.Heuristics
         private readonly HashSet<byte> _cornerTileValues;
         private readonly (byte row, byte col)[] _corners;
         private readonly byte[] _cornersFlat;
-        private readonly Stopwatch _stopWatch = new();
         public CornerPattern(int gridSize)
         {
             Statistics = new HeuristicsStatistics();
@@ -50,7 +49,7 @@ namespace Slider.Heuristics
 
         public int Calculate(Span<byte> board, int gridSize)
         {
-            _stopWatch.Restart();
+            long startTimestamp = Stopwatch.GetTimestamp();
             int penalty = 0;
 
             // Iterate through each corner
@@ -81,8 +80,7 @@ namespace Slider.Heuristics
                 // Case 3: Correct tile in correct corner (no penalty)
             }
             Statistics.NumberOfCalls++;
-            _stopWatch.Stop();
-            Statistics.TicksSpent += _stopWatch.ElapsedTicks;
+            Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             return penalty;
         }
 

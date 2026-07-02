@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Policy;
 using System.Text;
 
 namespace Slider.Solver
@@ -68,6 +69,14 @@ namespace Slider.Solver
                 }
             }
             return false;
+        }
+
+        public void ReplaceState(long hash, T stateToRemove, T stateToAdd)
+        {
+            if (!TryGetValue(hash, out List<T>? existingState))
+                return;
+            existingState.Remove(stateToRemove);
+            existingState.Add(stateToAdd);
         }
     }
 }

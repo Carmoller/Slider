@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using Slider.Common;
 using Slider.Common.Interfaces;
 using Slider.Solver;
 using System;
@@ -13,18 +14,26 @@ namespace Slider
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         private int _gridSize = 4;
-        private int _animationDelay= 200;
+        private int _animationDelay = 200;
         private string _pdbLocation = @"E:\src\net\Slider";
         private TimeSpan _solveTimeout = TimeSpan.FromSeconds(30);
         public int GridSize { get => _gridSize; set { if (_gridSize != value) { _gridSize = value; OnPropertyChanged(); } } }
-        public int AnimationDelay{ get => _animationDelay; set { if (_animationDelay != value) { _animationDelay = value; OnPropertyChanged(); } } }
+        public int AnimationDelay { get => _animationDelay; set { if (_animationDelay != value) { _animationDelay = value; OnPropertyChanged(); } } }
         public string PdbLocation { get => _pdbLocation; set { if (_pdbLocation != value) { _pdbLocation = value; OnPropertyChanged(); } } }
         public TimeSpan SolveTimeout { get => _solveTimeout; set { if (_solveTimeout != value) { _solveTimeout = value; OnPropertyChanged(); } } }
 
-        public ISolverOptions SolverOptions { get; set; } = new SolverOptions { UseManhattanDistance = true, UseLinearConflict = true, UseEdgePattern = true, UseCornerPattern = true, UseSprintFinish = true};
+        public ISolverOptions SolverOptions { get; set; } = new SolverOptions { UseManhattanDistance = true, UseLinearConflict = true, UseEdgePattern = true, UseCornerPattern = true, UseSprintFinish = true };
+        public List<SolverDescriptor> SolverSelector { get; } = new();
+
         public Options()
         {
             SolveTimeout = TimeSpan.FromSeconds(30);
+            SolverSelector = [
+                new SolverDescriptor{LowGridSize = 0, HighGridSize = 4, LowHeuristic = 0, HighHeuristic = 50, Solver = typeof(BidirectionalAStarSolver), SolverParameters=[] },
+                new SolverDescriptor{LowGridSize = 4, HighGridSize = 5, LowHeuristic = 51, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[2] },
+                new SolverDescriptor{LowGridSize = 5, HighGridSize = 6, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3] },
+                new SolverDescriptor{LowGridSize = 6, HighGridSize = int.MaxValue, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3.5] },
+                ];
         }
         private void OnPropertyChanged([CallerMemberName] string? name = null)
         {

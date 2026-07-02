@@ -12,8 +12,6 @@ namespace Slider.Heuristics
         public IHeuristicsStatistics Statistics { get; private set; } = new HeuristicsStatistics();
         public string Name { get { return "EdgePattern"; } }
         public bool IsAdditive { get { return true; } }
-        private readonly Stopwatch _stopwatch = new();
-
 
         private static bool IsNonEdgeTile(byte tile, byte gridSize)
         {
@@ -27,7 +25,7 @@ namespace Slider.Heuristics
 
         public int Calculate(Span<byte> board, int gridSize)
         {
-            Stopwatch sw = Stopwatch.StartNew();
+            long startTime = Stopwatch.GetTimestamp();
             int penalty = 0;
 
             // Penalty for non-edge tiles positioned on any edge (constrained movement)
@@ -65,9 +63,8 @@ namespace Slider.Heuristics
                     penalty += Weight;
             }
 
-            sw.Stop();
             Statistics.NumberOfCalls++;
-            Statistics.TicksSpent += sw.ElapsedTicks;
+            Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTime).TotalMilliseconds;
             return penalty;
         }
 

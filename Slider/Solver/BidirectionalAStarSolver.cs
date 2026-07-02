@@ -280,12 +280,12 @@ namespace Slider.Solver
             int forwardStateIndex = forwardState.NodeIndex;
             while (forwardStateIndex != -1)
             {
-                StateInfo forwardStateIteration = _objectPool.GetRef(forwardStateIndex);
+                ref StateInfo forwardStateIteration = ref _objectPool.GetRef(forwardStateIndex);
 
                 forwardStateIndex = forwardStateIteration.ParentIndex;
                 if (forwardStateIndex != -1)
                 {
-                    StateInfo parentIteration = _objectPool.GetRef(forwardStateIteration.ParentIndex);
+                    ref StateInfo parentIteration = ref _objectPool.GetRef(forwardStateIteration.ParentIndex);
                     forwardMoves.Add(new Move
                     {
                         FromRow = forwardStateIteration.BlankPos / _gridSize,
@@ -305,11 +305,11 @@ namespace Slider.Solver
             int backwardStateIndex = backwardState.NodeIndex;
             while (backwardStateIndex != -1)
             {
-                StateInfo backwardStateIteration = _objectPool.GetRef(backwardStateIndex);
+                ref StateInfo backwardStateIteration = ref _objectPool.GetRef(backwardStateIndex);
                 backwardStateIndex = backwardStateIteration.ParentIndex;
                 if (backwardStateIndex != -1)
                 {
-                    StateInfo parentIteration = _objectPool.GetRef(backwardStateIteration.ParentIndex);
+                    ref StateInfo parentIteration = ref _objectPool.GetRef(backwardStateIteration.ParentIndex);
                     backwardMoves.Add(new Move
                     {
                         FromRow = parentIteration.BlankPos / _gridSize,

@@ -38,7 +38,7 @@ namespace Slider
                     services.AddSingleton<IOptions, Options>();
                     services.AddSingleton<ITileControlViewModelFactory, TileControlViewModelFactory>();
                     services.AddSingleton<IStateInfoFactory, StateInfoFactory>();
-                    services.AddTransient<ISolver, BidirectionalAStarSolver>();
+                    services.AddTransient<ISolver, WeightedAStarSolver>();
                     services.AddTransient<IStateInfoFactory, StateInfoFactory>();
                     services.AddSingleton<IHeuristicElementFactory, HeuristicElementFactory>();
                 })

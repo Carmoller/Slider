@@ -6,9 +6,8 @@ namespace Slider.Common.Interfaces
 {
     public interface IHeuristicsStatistics
     {
-        long TicksSpent { get; set; }
         long NumberOfCalls { get; set; }
-        long TotalTimeSpentMs { get; }
+        double TotalTimeSpentMs { get; set; }
         double AverageTimePerCall { get; }
     }
 }

@@ -54,11 +54,9 @@ namespace Slider.Solver
                 {
                     if (closedState.BestG <= currentState.CurrentG)
                     {
-                        _stateInfoPool.Release(currentState.NodeIndex, (ref p) => { _arrayPool.Release(p.BoardArrayIndex);  });
+                        _closed.AddState(currentState.Hash, currentState); // No reason to continue down this road, just mark it as closed
                         continue;
                     }
-                    closedState.ParentIndex = currentState.NodeIndex;
-                    closedState.BestG = currentState.CurrentG;
                 }
 
                 if (currentState.CurrentH < _min_h)
