@@ -16,7 +16,7 @@ namespace Slider
         private int _gridSize = 4;
         private int _animationDelay = 200;
         private string _pdbLocation = @"E:\src\net\Slider";
-        private TimeSpan _solveTimeout = TimeSpan.FromSeconds(30);
+        private TimeSpan _solveTimeout = TimeSpan.MinValue;
         public int GridSize { get => _gridSize; set { if (_gridSize != value) { _gridSize = value; OnPropertyChanged(); } } }
         public int AnimationDelay { get => _animationDelay; set { if (_animationDelay != value) { _animationDelay = value; OnPropertyChanged(); } } }
         public string PdbLocation { get => _pdbLocation; set { if (_pdbLocation != value) { _pdbLocation = value; OnPropertyChanged(); } } }

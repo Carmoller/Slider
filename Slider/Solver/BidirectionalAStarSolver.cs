@@ -15,16 +15,16 @@ using System.Windows.Controls;
 
 namespace Slider.Solver
 {
-    public class BidirectionalAStarSolver : ISolver
+    public sealed class BidirectionalAStarSolver : ISolver
     {
         private int _gridSize = 0;
         public IHeuristicCalculator? Calculator { get { return _heuristicsCalculator; } }
-        private int _statesCalculatedCount { get; set; }
+        private int StatesCalculatedCount { get; set; }
         private ChunkedArrayPoolUnsafe? _arrayPool;
-        private ChunkedStructPool<StateInfo> _objectPool;
+        private ChunkedStructPool<StateInfo>? _objectPool;
         private IHeuristicCalculator? _heuristicsCalculator;
-        private IStateInfoFactory _StateInfoFactory;
-        private IOptions _options;
+        private readonly IStateInfoFactory _StateInfoFactory;
+        private readonly IOptions _options;
         public BidirectionalAStarSolver(IOptions options, IStateInfoFactory StateInfoFactory)
         {
             _options = options;
@@ -74,11 +74,14 @@ namespace Slider.Solver
             }
         }
 
-        [MemberNotNull(nameof(_arrayPool))]
+        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        {
+            throw new NotImplementedException();
+        }
         public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             Stopwatch sw = Stopwatch.StartNew();
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, (int)Math.Sqrt(board.Count));
+            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, (int)Math.Sqrt(board.Count), _options, solverOptions);
 
             _gridSize = (byte)Math.Sqrt(board.Count);
             _arrayPool = new(1000000, board.Count);
@@ -96,15 +99,15 @@ namespace Slider.Solver
 
             // Bidirectional A*
             PriorityQueue<int, double> forwardOpen = new();
-            SolveStateDictionary<StateInfo> forwardClosed = new();
+            SolveStateDictionary<StateInfo> forwardClosed = [];
             PriorityQueue<int, double> backwardOpen = new();
-            SolveStateDictionary<StateInfo> backwardClosed = new();
+            SolveStateDictionary<StateInfo> backwardClosed = [];
 
             int initialH = GetHeuristic(initialToken.AsSpan(), _gridSize);
             int goalH = ReverseManhattanCalculator.Calculate(goalToken.AsSpan(), startPositions, _gridSize);
 
-            StateInfo startState = new StateInfo { CurrentG = 0, CurrentH = initialH, BlankPos = emptyPosition };
-            int startStateIndex = _objectPool.Get(startState, (ref StateInfo state, StateInfo source) =>
+            StateInfo startState = new() { CurrentG = 0, CurrentH = initialH, BlankPos = emptyPosition };
+            int startStateIndex = _objectPool.Get(startState, (ref state, source) =>
             {
                 state.ParentIndex = -1;
                 state.CurrentG = 0;
@@ -116,8 +119,8 @@ namespace Slider.Solver
             ref StateInfo startStateActual = ref _objectPool.GetRef(startStateIndex);
             startStateActual.NodeIndex = startStateIndex;
 
-            StateInfo goalState = new StateInfo { CurrentG = 0, CurrentH = goalH, BlankPos = _gridSize * _gridSize - 1 };
-            int goalStateIndex = _objectPool.Get(startState, (ref StateInfo state, StateInfo source) =>
+            StateInfo goalState = new() { CurrentG = 0, CurrentH = goalH, BlankPos = _gridSize * _gridSize - 1 };
+            int goalStateIndex = _objectPool.Get(startState, (ref state, source) =>
             {
                 state.ParentIndex = -1;
                 state.CurrentG = 0;
@@ -132,16 +135,16 @@ namespace Slider.Solver
             forwardOpen.Enqueue(startStateIndex, startState.CurrentF);
             backwardOpen.Enqueue(goalStateIndex, goalState.CurrentF);
 
-            _statesCalculatedCount = 1;
+            StatesCalculatedCount = 1;
 
-            List<Move> moves = IteratePaths(forwardOpen, backwardOpen, forwardClosed, backwardClosed, startPositions);
+            List<Move> moves = IteratePaths(_objectPool, forwardOpen, backwardOpen, forwardClosed, backwardClosed, startPositions);
 
             sw.Stop();
             return new(moves)
             {
                 Result = SolveResultType.Solved,
                 TimeSpent = TimeSpan.FromTicks(sw.ElapsedTicks),
-                TotalStatesConsidered = _statesCalculatedCount,
+                TotalStatesConsidered = StatesCalculatedCount,
                 ForwardDictonarySize = forwardClosed.Count,
                 BackwardDictonarySize = backwardClosed.Count,
                 ForwardCollisionCount = forwardClosed.CollisionCount,
@@ -154,6 +157,7 @@ namespace Slider.Solver
         }
 
         private List<Move> IteratePaths(
+            ChunkedStructPool<StateInfo> objectPool,
             PriorityQueue<int, double> forwardOpen,
             PriorityQueue<int, double> backwardOpen,
             SolveStateDictionary<StateInfo> forwardClosed,
@@ -165,23 +169,24 @@ namespace Slider.Solver
             while (forwardOpen.Count > 0 && backwardOpen.Count > 0)
             {
                 // Forward step
-                bool forwardResult = StepSearch(forwardOpen, forwardClosed, backwardClosed, ref forwardState, ref backwardState, startPositions, true);
+                bool forwardResult = StepSearch(objectPool, forwardOpen, forwardClosed, backwardClosed, ref forwardState, ref backwardState, startPositions, true);
                 if (forwardResult)
                 {
-                    return ReconstructPath(ref forwardState, ref backwardState);
+                    return ReconstructPath(objectPool, ref forwardState, ref backwardState);
                 }
 
                 // Backward step
-                bool backwardResult = StepSearch(backwardOpen, backwardClosed, forwardClosed, ref forwardState, ref backwardState, startPositions, false);
+                bool backwardResult = StepSearch(objectPool, backwardOpen, backwardClosed, forwardClosed, ref forwardState, ref backwardState, startPositions, false);
                 if (backwardResult)
                 {
-                    return ReconstructPath(ref forwardState, ref backwardState);
+                    return ReconstructPath(objectPool, ref forwardState, ref backwardState);
                 }
             }
             return new();
         }
 
         private bool StepSearch(
+            ChunkedStructPool<StateInfo> objectPool,
             PriorityQueue<int, double> open,
             SolveStateDictionary<StateInfo> closed,
             SolveStateDictionary<StateInfo> oppositeClosed,
@@ -194,7 +199,7 @@ namespace Slider.Solver
                 return false;
 
             int currentIndex = open.Dequeue();
-            StateInfo current = _objectPool.GetRef(currentIndex);
+            StateInfo current = objectPool.GetRef(currentIndex);
 #if DIAGNOSE
             Debug.WriteLine($"{(isForward ? "Forward" : "Backward")}: {current.ToString()}");
 #endif
@@ -206,7 +211,7 @@ namespace Slider.Solver
 #if DIAGNOSE
                 Debug.WriteLine("\tAlready visited");
 #endif
-                _objectPool.Release(currentIndex, (ref StateInfo p) => { _arrayPool!.Release(p.BoardArrayIndex); });
+                objectPool.Release(currentIndex, (ref p) => { _arrayPool!.Release(p.BoardArrayIndex); });
                 return false;
             }
 
@@ -234,7 +239,7 @@ namespace Slider.Solver
             // Add current state to closed set
             closed.AddState(stateHash, current);
 
-            _StateInfoFactory.GetAvailableMoves(current, _gridSize, _objectPool, _arrayPool!,
+            _StateInfoFactory.GetAvailableMoves(current, _gridSize, objectPool, _arrayPool!,
                 (ref p) => { HandleNewState(ref current, ref p, open, isForward, startPositions); });
             return false;
         }
@@ -272,20 +277,20 @@ namespace Slider.Solver
 #endif
         }
 
-        private List<Move> ReconstructPath(ref StateInfo forwardState, ref StateInfo backwardState)
+        private List<Move> ReconstructPath(ChunkedStructPool<StateInfo> objectPool, ref StateInfo forwardState, ref StateInfo backwardState)
         {
-            List<Move> result = new();
+            List<Move> result = [];
 
-            List<Move> forwardMoves = new();
+            List<Move> forwardMoves = [];
             int forwardStateIndex = forwardState.NodeIndex;
             while (forwardStateIndex != -1)
             {
-                ref StateInfo forwardStateIteration = ref _objectPool.GetRef(forwardStateIndex);
+                ref StateInfo forwardStateIteration = ref objectPool.GetRef(forwardStateIndex);
 
                 forwardStateIndex = forwardStateIteration.ParentIndex;
                 if (forwardStateIndex != -1)
                 {
-                    ref StateInfo parentIteration = ref _objectPool.GetRef(forwardStateIteration.ParentIndex);
+                    ref StateInfo parentIteration = ref objectPool.GetRef(forwardStateIteration.ParentIndex);
                     forwardMoves.Add(new Move
                     {
                         FromRow = forwardStateIteration.BlankPos / _gridSize,
@@ -301,15 +306,15 @@ namespace Slider.Solver
             forwardMoves.Reverse();
             result.AddRange(forwardMoves);
 
-            List<Move> backwardMoves = new();
+            List<Move> backwardMoves = [];
             int backwardStateIndex = backwardState.NodeIndex;
             while (backwardStateIndex != -1)
             {
-                ref StateInfo backwardStateIteration = ref _objectPool.GetRef(backwardStateIndex);
+                ref StateInfo backwardStateIteration = ref objectPool.GetRef(backwardStateIndex);
                 backwardStateIndex = backwardStateIteration.ParentIndex;
                 if (backwardStateIndex != -1)
                 {
-                    ref StateInfo parentIteration = ref _objectPool.GetRef(backwardStateIteration.ParentIndex);
+                    ref StateInfo parentIteration = ref objectPool.GetRef(backwardStateIteration.ParentIndex);
                     backwardMoves.Add(new Move
                     {
                         FromRow = parentIteration.BlankPos / _gridSize,
@@ -332,22 +337,22 @@ namespace Slider.Solver
             byte[] boardArray = new byte[board.Count];
             byte[] goalBoard = new byte[board.Count];
             byte[] startPositions = new byte[board.Count];
-            SolverOptions solverOptions = new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true };
+            SolverOptions solverOptions = new() { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true };
             _gridSize = (int)Math.Sqrt(board.Count);
             SetupBoardAndPositions(board, boardArray, goalBoard, startPositions, out int emptyPosition);
 
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, gridSize);
+            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, gridSize, _options, solverOptions);
             return GetHeuristic(boardArray, gridSize);
         }
 
         private int GetHeuristic(byte[] board, int gridSize)
         {
-            _statesCalculatedCount++;
+            StatesCalculatedCount++;
             return _heuristicsCalculator!.GetHeuristic(board, gridSize);
         }
         private int GetHeuristic(Span<byte> board, int gridSize)
         {
-            _statesCalculatedCount++;
+            StatesCalculatedCount++;
             return _heuristicsCalculator!.GetHeuristic(board, gridSize);
         }
     }

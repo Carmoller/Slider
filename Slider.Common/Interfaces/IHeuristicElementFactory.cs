@@ -6,9 +6,9 @@ namespace Slider.Common.Interfaces
 {
     public interface IHeuristicElementFactory
     {
-        IHeuristicCalculator CreateHeuristicCalculator(IOptions options, ISolverOptions solverOptions, int gridSize);
-        IHeuristicElement CreateManhattanDistance();
-        IHeuristicElement CreateLinearConflict();
+        IHeuristicCalculator CreateHeuristicCalculator(Span<int> goalPositions, int gridSize, IOptions options, ISolverOptions solverOptions);
+        IHeuristicElement CreateManhattanDistance(Span<int> goalPositions, int gridSize);
+        IHeuristicElement CreateLinearConflict(int gridSize);
         IHeuristicElement CreateCornerPattern(int gridSize);
     }
 }

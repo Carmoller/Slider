@@ -96,8 +96,8 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithSingleMove(3);
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                2, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
@@ -114,8 +114,8 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                2, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
@@ -142,8 +142,8 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithSingleMove(2);
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                2, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
@@ -161,8 +161,8 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory()   );
             List<BoardTile> board = CreateBoardWithSingleMove(4);
             HeuristicElementFactory heuristicsFactory = new ();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                2, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
@@ -179,13 +179,14 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateBoardWithThreeMoves(3);
             HeuristicElementFactory heuristicsFactory = new ();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                3, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 3, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             // Assert
         }
 
@@ -198,14 +199,15 @@ namespace UnitTest
             int gridSize = 3;
             List<BoardTile> board = CreateBoardWithThreeMoves(gridSize);
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                3, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 3, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                 heuristicsFactory, optionsMock.Object);
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
         }
 
         [TestMethod]
@@ -216,8 +218,8 @@ namespace UnitTest
             // Test multiple board configurations
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                2, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
 
             for (int gridSize = 2; gridSize <= 3; gridSize++)
             {
@@ -249,15 +251,16 @@ namespace UnitTest
             };
 
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                2, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
         }
         [TestMethod]
         public void Test3x3Board()
@@ -277,15 +280,16 @@ namespace UnitTest
             };
 
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                3, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 3, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
 
             // Act
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
             // Assert
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
         }
         [TestMethod]
         public void Test4x4Board()
@@ -312,13 +316,14 @@ namespace UnitTest
             };
 
             HeuristicElementFactory heuristicsFactory = new();
-            HeuristicCalculator calculator = new(new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
-                4, heuristicsFactory, optionsMock.Object);
+            HeuristicCalculator calculator = new(Span<int>.Empty, 4, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
 
             SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
 
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
         }
 
         #endregion

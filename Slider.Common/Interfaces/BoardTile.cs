@@ -6,7 +6,7 @@ using System.Text;
 namespace Slider.Common.Interfaces
 {
     [DebuggerDisplay("{Value} @ ({Row}, {Column})")]
-    public class BoardTile
+    public sealed class BoardTile
     {
         public byte Value { get; set; }
         public int Row { get; set; }

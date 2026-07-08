@@ -24,5 +24,15 @@ namespace Slider
             return string.Join(',', array);
         }
 
+        public static (int row, int column) ToRowAndColumn(this int index, int gridSize)
+        {
+            return Math.DivRem(index, gridSize);
+        }
+
+        extension(byte b)
+        {
+            public byte DontCare => 255;
+            public byte Locked => 255;
+        }
     }
 }

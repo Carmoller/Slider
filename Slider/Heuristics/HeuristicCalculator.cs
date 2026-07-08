@@ -14,18 +14,18 @@ namespace Slider.Heuristics
         public List<IHeuristicElement> ElementCalculators { get; } = new();
         private List<IHeuristicElement> _additiveElements;
         private List<IHeuristicElement> _singularElements;
-        public HeuristicCalculator(ISolverOptions solverOptions, int gridSize, IHeuristicElementFactory elementFactory, IOptions options)
+        public HeuristicCalculator(Span<int> goalPositions, int gridSize, ISolverOptions solverOptions, IHeuristicElementFactory elementFactory, IOptions options)
         {
             _additiveElements = new();
             _singularElements = new();
             _solverOptions = solverOptions;
             if (_solverOptions.UseManhattanDistance)
             {
-                ElementCalculators.Add(elementFactory.CreateManhattanDistance());
+                ElementCalculators.Add(elementFactory.CreateManhattanDistance(Span<int>.Empty, gridSize));
             }
             if (_solverOptions.UseLinearConflict)
             {
-                ElementCalculators.Add(elementFactory.CreateLinearConflict());
+                ElementCalculators.Add(elementFactory.CreateLinearConflict(gridSize));
             }
             if (_solverOptions.UseCornerPattern)
             {
@@ -33,7 +33,7 @@ namespace Slider.Heuristics
             }
             if (_solverOptions.UseEdgePattern)
             {
-                ElementCalculators.Add(new EdgePattern());
+                ElementCalculators.Add(new EdgePattern(gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
             }
             if (_solverOptions.UsePdbs)
             {

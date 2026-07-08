@@ -35,4 +35,12 @@ namespace Slider.Common.Interfaces
         Unsolvable,
         Timeout
     }
+
+    public enum SolverType
+    {
+        BidirectionalAStar,
+        WeightedAStar,
+        MHAStarSolver,
+        PdbSolver
+    }
 }

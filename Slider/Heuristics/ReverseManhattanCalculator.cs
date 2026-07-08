@@ -12,10 +12,7 @@ namespace Slider.Heuristics
             int distance = 0;
             for (int i = 0; i < board.Length; i++)
             {
-                int targetRow;
-                int targetCol;
-                int row = i / gridSize;
-                int col = i % gridSize;
+                (int row, int col) = i.ToRowAndColumn(gridSize);
 
                 byte boardValue = board[i];
                 if (boardValue == 0)
@@ -23,8 +20,7 @@ namespace Slider.Heuristics
                     continue;
                 }
 
-                targetRow = (targetPositions[boardValue]) / gridSize;
-                targetCol = (targetPositions[boardValue]) % gridSize;
+                (int targetRow, int targetCol) = ((int)(targetPositions[boardValue])).ToRowAndColumn(gridSize);
                 distance += Math.Abs(row - targetRow) + Math.Abs(col - targetCol);
             }
             return distance;

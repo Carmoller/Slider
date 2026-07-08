@@ -12,11 +12,12 @@ namespace UnitTest.HeuristicElementTests
     public class ManhattanDistanceTest
     {
         private byte[] goalBoard_4x4 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+        private int[] goalPositions_4x4 = [15, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
         [TestMethod]
         public void ManhattanDistance_GoalBoard_MustReturn0()
         {
-            ManhattanDistanceCalculator calculator = new();
+            ManhattanDistanceCalculator calculator = new(goalPositions_4x4, 4);
 
             int heuristic = calculator.Calculate(goalBoard_4x4, 4);
             Assert.AreEqual(0, heuristic);
@@ -25,7 +26,7 @@ namespace UnitTest.HeuristicElementTests
         [TestMethod]
         public void ManhattanDistance_GoalBoard_Switch2MustReturn2()
         {
-            ManhattanDistanceCalculator calculator = new();
+            ManhattanDistanceCalculator calculator = new(goalPositions_4x4, 4);
 
             byte[] board = (byte[])goalBoard_4x4.Clone();
 
@@ -41,7 +42,7 @@ namespace UnitTest.HeuristicElementTests
             // Make a board consisting of all 0s - we'll be moving tile 1 to each position.
             // (0 doesn't count in the manhattan distance)
             byte[] board = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-            ManhattanDistanceCalculator calculator = new();
+            ManhattanDistanceCalculator calculator = new(goalPositions_4x4, 4);
             int gridSize = (int)Math.Sqrt(board.Length);
             // Now move tile 1 to all positions on the board
             for (int row = 0; row < gridSize; row++)
@@ -57,7 +58,7 @@ namespace UnitTest.HeuristicElementTests
         }
 
         [TestMethod]
-        public void ManhattanDistanceSpeedTest()
+        public void ManhattanDistance_PerformanceTest()
         {
             Stopwatch sw = new();
             int loopCount = 1000000;
@@ -78,7 +79,7 @@ namespace UnitTest.HeuristicElementTests
                     }
                 }
             }
-            ManhattanDistanceCalculator calculator = new();
+            ManhattanDistanceCalculator calculator = new(Span<int>.Empty, gridSize);
 
             sw.Start();
             for (int i = 0; i < loopCount; i++)
@@ -86,7 +87,7 @@ namespace UnitTest.HeuristicElementTests
                 int distance = calculator.Calculate(board, gridSize);
             }
             sw.Stop();
-            Debug.WriteLine($"ManhattanDistance measurement: {(double)loopCount / sw.ElapsedMilliseconds} calculations / ms");
+            Console.WriteLine($"ManhattanDistance measurement: {Math.Round((double)loopCount / sw.ElapsedMilliseconds)} calculations / ms");
         }
 
     }

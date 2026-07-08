@@ -1,6 +1,7 @@
 ﻿using Moq;
 using Slider.Common;
 using Slider.Common.Interfaces;
+using Slider.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,10 @@ namespace UnitTest
                 throw new NotImplementedException();
             }
 
+            public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            {
+                throw new NotImplementedException();
+            }
             public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
@@ -32,6 +37,10 @@ namespace UnitTest
                 throw new NotImplementedException();
             }
 
+            public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            {
+                throw new NotImplementedException();
+            }
             public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
@@ -44,7 +53,10 @@ namespace UnitTest
             {
                 throw new NotImplementedException();
             }
-
+            public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            {
+                throw new NotImplementedException();
+            }
             public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
@@ -60,6 +72,7 @@ namespace UnitTest
             FakeSolver2 solver2 = new();
             FakeSolver3 solver3 = new();
 
+            Mock<IStateInfoFactory> stateInfoFactoryMock = new();
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolverSelector).Returns(
                 [new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(FakeSolver1), SolverParameters = [] },
@@ -67,7 +80,7 @@ namespace UnitTest
                 new SolverDescriptor { LowGridSize = 6, HighGridSize = 8, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(FakeSolver3), SolverParameters = [] }
             ]);
 
-            SolverFactory testObject = new(optionsMock.Object);
+            SolverFactory testObject = new(optionsMock.Object, stateInfoFactoryMock.Object);
 
             for (int i = 2; i < 9; i++)
             {
@@ -88,6 +101,7 @@ namespace UnitTest
             FakeSolver2 solver2 = new();
             FakeSolver3 solver3 = new();
 
+            Mock<IStateInfoFactory> stateInfoFactoryMock = new();
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolverSelector).Returns(
                 [new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 0, HighHeuristic = 29, Solver = typeof(FakeSolver1), SolverParameters = [] },
@@ -95,7 +109,7 @@ namespace UnitTest
                 new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 60, HighHeuristic = int.MaxValue, Solver = typeof(FakeSolver3), SolverParameters = [] }
             ]);
 
-            SolverFactory testObject = new(optionsMock.Object);
+            SolverFactory testObject = new(optionsMock.Object, stateInfoFactoryMock.Object);
 
             for (int i = 0; i < 2; i++)
             {
@@ -116,6 +130,7 @@ namespace UnitTest
             FakeSolver2 solver2 = new();
             FakeSolver3 solver3 = new();
 
+            Mock<IStateInfoFactory> stateInfoFactoryMock = new();
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolverSelector).Returns(
                 [new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 0, HighHeuristic = 29, Solver = typeof(FakeSolver1), SolverParameters = [] },
@@ -123,7 +138,7 @@ namespace UnitTest
                 new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 60, HighHeuristic = int.MaxValue, Solver = typeof(FakeSolver3), SolverParameters = [] }
             ]);
 
-            SolverFactory testObject = new(optionsMock.Object);
+            SolverFactory testObject = new(optionsMock.Object, stateInfoFactoryMock.Object);
 
 
             Assert.ThrowsExactly<InvalidOperationException>(() => { ISolver solver = testObject.Create(3, 30); });
@@ -135,6 +150,7 @@ namespace UnitTest
             FakeSolver2 solver2 = new();
             FakeSolver3 solver3 = new();
 
+            Mock<IStateInfoFactory> stateInfoFactoryMock = new();
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolverSelector).Returns(
                 [new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 0, HighHeuristic = 29, Solver = typeof(FakeSolver1), SolverParameters = [] },
@@ -142,7 +158,7 @@ namespace UnitTest
                 new SolverDescriptor { LowGridSize = 2, HighGridSize = 2, LowHeuristic = 60, HighHeuristic = 90, Solver = typeof(FakeSolver3), SolverParameters = [] }
             ]);
 
-            SolverFactory testObject = new(optionsMock.Object);
+            SolverFactory testObject = new(optionsMock.Object, stateInfoFactoryMock.Object);
 
 
             Assert.ThrowsExactly<InvalidOperationException>(() => { ISolver solver = testObject.Create(2, 91); });

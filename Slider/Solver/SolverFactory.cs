@@ -11,10 +11,12 @@ namespace Slider.Solver
     public class SolverFactory : ISolverFactory
     {
         IOptions _options;
+        IStateInfoFactory _stateInfoFactory;
 
-        public SolverFactory(IOptions options)
+        public SolverFactory(IOptions options, IStateInfoFactory stateInfoFactory)
         {
             _options = options;
+            _stateInfoFactory = stateInfoFactory;
         }
         public ISolver Create(int gridSize, int heuristic)
         {
@@ -30,13 +32,26 @@ namespace Slider.Solver
                     continue;
 
                 // descriptor matches all criteria - we've found the one
-                ISolver? solver = Activator.CreateInstance(descriptor.Solver, descriptor.SolverParameters) as ISolver;
+                ISolver? solver = Activator.CreateInstance(descriptor.Solver, _options, _stateInfoFactory,  descriptor.SolverParameters) as ISolver;
                 if (solver == null)
                     throw new InvalidOperationException($"Could not create solver of type {descriptor.Solver.Name} for gridSize = {gridSize}, heuristic = {heuristic}");
 
                 return solver;
             }
             throw new InvalidOperationException($"No solver found for gridSize = {gridSize}, heuristic = {heuristic}");
+        }
+
+        public ISolver Create(SolverType type)
+        {
+            switch (type)
+            {
+                case SolverType.WeightedAStar:
+                    return new WeightedAStarSolver(_options, _stateInfoFactory);
+                case SolverType.BidirectionalAStar:
+                    return new BidirectionalAStarSolver(_options, _stateInfoFactory);
+                default:
+                    throw new InvalidOperationException($"Requesting unknown solver type: {type.ToString()}");
+            }
         }
     }
 }

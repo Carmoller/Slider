@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Slider.Heuristics;
 using System;
+using System.Diagnostics;
 
 namespace UnitTest.HeuristicElementTests
 {
@@ -226,6 +227,28 @@ namespace UnitTest.HeuristicElementTests
             // Bottom-left expects 7, has 7 (correct, no penalty)
             // Bottom-right expects 8, has 1 (corner tile in wrong corner, penalty 1)
             Assert.AreEqual(1, penalty);
+        }
+        [TestMethod]
+        public void CornerPattern_PerformanceTest()
+        {
+            // Set up a 12x12 board, iterate through it 1 million times, and measure how long it takes
+            int loopCount = 1000000;
+            int gridSize = 12;
+            byte[] board = new byte[gridSize * gridSize];
+            for (int i = 0; i < board.Length; i++)
+            {
+                board[i] = (byte)(board.Length - i - 1);
+            }
+            CornerPattern testObject = new(gridSize);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            for (int i = 0; i < loopCount; i++)
+            {
+                testObject.Calculate(board, gridSize);
+            }
+            sw.Stop();
+            Console.WriteLine($"CornerPatter measurement: {Math.Round((double)loopCount / sw.ElapsedMilliseconds)} calculations / ms");
+            Assert.AreEqual(loopCount, testObject.Statistics.NumberOfCalls);
         }
     }
 }

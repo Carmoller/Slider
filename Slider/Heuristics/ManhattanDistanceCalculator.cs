@@ -6,15 +6,13 @@ using System.Text;
 
 namespace Slider.Heuristics
 {
-    public class ManhattanDistanceCalculator : IHeuristicElement
+    public class ManhattanDistanceCalculator : HeuristicElementBase, IHeuristicElement
     {
         public string Name { get { return "ManhattanDistance"; } }
         public bool IsAdditive { get { return true; } }
-        public IHeuristicsStatistics Statistics { get; }
 
-        public ManhattanDistanceCalculator()
+        public ManhattanDistanceCalculator(Span<int> goalPositions, int gridSize) : base(goalPositions, gridSize)
         {
-            Statistics = new HeuristicsStatistics();
         }
         public int Calculate(Span<byte> board, int gridSize)
         {
@@ -22,18 +20,12 @@ namespace Slider.Heuristics
             int distance = 0;
             for (int i = 0; i < board.Length; i++)
             {
-                int targetRow;
-                int targetCol;
-                int row = i / gridSize;
-                int col = i % gridSize;
-
                 if (board[i] == 0)
                 {
                     continue;
                 }
-
-                targetRow = (board[i] - 1) / gridSize;
-                targetCol = (board[i] - 1) % gridSize;
+                (int row, int col) = base.GetRowAndColumn(i);
+                (int targetRow, int targetCol) = base.GetRowAndColumn(GoalPositions[board[i]]);
                 distance += Math.Abs(row - targetRow) + Math.Abs(col - targetCol);
             }
             Statistics.NumberOfCalls++;

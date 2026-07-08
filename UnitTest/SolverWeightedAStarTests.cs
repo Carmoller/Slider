@@ -46,7 +46,8 @@ namespace UnitTest
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
         }
 
         [TestMethod]
@@ -93,7 +94,8 @@ namespace UnitTest
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -105,36 +107,15 @@ namespace UnitTest
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = new();
-            board.Add(new BoardTile { Value = 0, Row = 0, Column = 3 });
-            board.Add(new BoardTile { Value = 1, Row = 3, Column = 4 });
-            board.Add(new BoardTile { Value = 2, Row = 2, Column = 1 });
-            board.Add(new BoardTile { Value = 3, Row = 4, Column = 3 });
-            board.Add(new BoardTile { Value = 4, Row = 1, Column = 2 });
-            board.Add(new BoardTile { Value = 5, Row = 0, Column = 1 });
-            board.Add(new BoardTile { Value = 6, Row = 4, Column = 2 });
-            board.Add(new BoardTile { Value = 7, Row = 3, Column = 2 });
-            board.Add(new BoardTile { Value = 8, Row = 0, Column = 2 });
-            board.Add(new BoardTile { Value = 9, Row = 2, Column = 3 });
-            board.Add(new BoardTile { Value = 10, Row = 2, Column = 0 });
-            board.Add(new BoardTile { Value = 11, Row = 4, Column = 4 });
-            board.Add(new BoardTile { Value = 12, Row = 2, Column = 2 });
-            board.Add(new BoardTile { Value = 13, Row = 1, Column = 1 });
-            board.Add(new BoardTile { Value = 14, Row = 1, Column = 3 });
-            board.Add(new BoardTile { Value = 15, Row = 2, Column = 4 });
-            board.Add(new BoardTile { Value = 16, Row = 0, Column = 4 });
-            board.Add(new BoardTile { Value = 17, Row = 1, Column = 0 });
-            board.Add(new BoardTile { Value = 18, Row = 3, Column = 3 });
-            board.Add(new BoardTile { Value = 19, Row = 0, Column = 0 });
-            board.Add(new BoardTile { Value = 20, Row = 3, Column = 1 });
-            board.Add(new BoardTile { Value = 21, Row = 4, Column = 0 });
-            board.Add(new BoardTile { Value = 22, Row = 4, Column = 1 });
-            board.Add(new BoardTile { Value = 23, Row = 3, Column = 0 });
-            board.Add(new BoardTile { Value = 24, Row = 1, Column = 4 });
 
-            List<byte> puzzle = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToList();
-            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
-            Assert.IsTrue(solvable);
+            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+                19, 05, 08, 00, 16,
+                17, 13, 04, 14, 24,
+                10, 02, 12, 09, 15,
+                23, 20, 07, 18, 01,
+                21, 22, 06, 03, 11]);
+
+            Assert.IsTrue(BoardHelper.IsSolvable(board));
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true, UseSprintFinish = true };
@@ -142,7 +123,8 @@ namespace UnitTest
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -182,7 +164,8 @@ namespace UnitTest
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -209,7 +192,8 @@ namespace UnitTest
             SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");

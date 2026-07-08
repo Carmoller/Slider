@@ -14,7 +14,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Slider.Solver
 {
-    public class SolverIdaStarPdb : ISolver
+    public sealed class SolverIdaStarPdb : ISolver
     {
         private record MoveRecord
         {
@@ -31,13 +31,13 @@ namespace Slider.Solver
             public byte[] TrackedTiles { get; set; }
             public int BlankIndex { get; set; }
             public Codec Codec { get; private set; }
-            private Dictionary<int, int> _tileToTrackedTileMap = new();
+            private readonly Dictionary<int, int> _tileToTrackedTileMap = [];
 
             public PdbDescriptor(PatternDatabase pdb)
             {
                 Pdb = pdb;
                 TrackedTiles = new byte[pdb.K];
-                _tileToTrackedTileMap = new();
+                _tileToTrackedTileMap = [];
                 Codec = new(pdb.GridSize, pdb.K);
                 BlankIndex = pdb.BlankIndex;
             }
@@ -59,23 +59,23 @@ namespace Slider.Solver
         private class TranspositionEntry
         {
             public int Iteration { get; set; }
-            public Byte[] Board { get; set; }
+            public required Byte[] Board { get; set; }
             public int RemainingDepth { get; set; }
             public int RefinedH { get; set; }
         }
         private PatternDatabase[]? _pdbs;
 
         // _tileToPdbMap, Tuple<int, int>: First int is the index into _pdbs, second int is the index in trackedtiles
-        private Dictionary<byte, Tuple<int, int>> _tileToPdbMap = new();
+        private readonly Dictionary<byte, Tuple<int, int>> _tileToPdbMap = [];
         private PdbDescriptor[]? _pdbDescriptors;
         private int _gridSize;
         private int _max_g = 0;
         private int _min_h = int.MaxValue;
         private int _pdbsLoadedForSize = -1;
-        private string _pdbLocation;
-        private IOptions _options;
+        private readonly string _pdbLocation;
+        private readonly IOptions _options;
         private IHeuristicCalculator _heuristicCalculator;
-        private Dictionary<int, List<string>> _pdbFilenamesPerSize = new();
+        private readonly Dictionary<int, List<string>> _pdbFilenamesPerSize = [];
 
         private void FillPdbsPerSize()
         {
@@ -93,7 +93,7 @@ namespace Slider.Solver
                     }
                     else
                     {
-                        _pdbFilenamesPerSize[size] = new List<string> { possiblePdb };
+                        _pdbFilenamesPerSize[size] = [possiblePdb];
                     }
                 }
             }
@@ -115,7 +115,7 @@ namespace Slider.Solver
                 if (pdb == null)
                     continue; // Not one of our PDB files
                 _pdbs[i] = pdb;
-                PdbDescriptor descriptor = new PdbDescriptor(pdb);
+                PdbDescriptor descriptor = new(pdb);
                 _pdbDescriptors[i] = descriptor;
 
                 for (int j = 0; j < pdb.TrackedTiles.Length; j++)
@@ -182,11 +182,15 @@ namespace Slider.Solver
             }
             return boardData;
         }
+        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        {
+            throw new NotImplementedException();
+        }
         public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Count);
-            Dictionary<long, List<TranspositionEntry>> transpositionTable = new();
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(_options, solverOptions, _gridSize);
+            Dictionary<long, List<TranspositionEntry>> transpositionTable = [];
+            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, _gridSize, _options, solverOptions);
             Stopwatch sw = Stopwatch.StartNew();
             LoadPdbs(_gridSize);
             long loadTime = sw.ElapsedMilliseconds;
@@ -198,7 +202,7 @@ namespace Slider.Solver
             while (true)
             {
                 result.IDAStarIterations++;
-                int t = Search(result.IDAStarIterations, new MoveRecord { Board = boardData, Direction = MoveDirection.None, H_value = bound }, blankPos, 0, bound, result, new(), transpositionTable);
+                int t = Search(result.IDAStarIterations, new MoveRecord { Board = boardData, Direction = MoveDirection.None, H_value = bound }, blankPos, 0, bound, result, [], transpositionTable);
                 if (t == 0)
                 {
                     Console.WriteLine($"Solution found in {result.Moves.Count} moves.");
@@ -217,11 +221,9 @@ namespace Slider.Solver
             return result;
         }
 
-        private void SwapTiles(byte[] board, int pos1, int pos2)
+        private static void SwapTiles(byte[] board, int pos1, int pos2)
         {
-            byte temp = board[pos1];
-            board[pos1] = board[pos2];
-            board[pos2] = temp;
+            (board[pos2], board[pos1]) = (board[pos1], board[pos2]);
         }
 
         private void RowAndColumnFromPosition(int position, out int row, out int column)
@@ -399,7 +401,7 @@ namespace Slider.Solver
                 newMove.ManhattanDistance = _heuristicCalculator.GetHeuristic(newMove.Board, _gridSize);
                 moveArray[3] = newMove;
             }
-            List<MoveRecord> moveList = moveArray.Where(p => p != null).OrderBy(p => p.H_value).ThenBy(p=>p.ManhattanDistance).ToList();
+            List<MoveRecord> moveList = moveArray.Where(p => p != null).OrderBy(p => p.H_value).ThenBy(p => p.ManhattanDistance).ToList();
             int minNextBound = int.MaxValue;
             foreach (MoveRecord move in moveList)
             //            while (orderedMoves.TryDequeue(out MoveRecord? move, out int _))
@@ -415,9 +417,8 @@ namespace Slider.Solver
                 int t = Search(iteration, move, move.NewBlankPos, g + 1, bound, result, newPreviousMoves, transpositionTable);
                 if (t == 0)
                 {
-                    int fromRow, fromCol, toRow, toCol;
-                    RowAndColumnFromPosition(blankPos, out toRow, out toCol);
-                    RowAndColumnFromPosition(move.NewBlankPos, out fromRow, out fromCol);
+                    RowAndColumnFromPosition(blankPos, out int toRow, out int toCol);
+                    RowAndColumnFromPosition(move.NewBlankPos, out int fromRow, out int fromCol);
                     result.Moves.Add(new Move { FromRow = fromRow, FromColumn = fromCol, ToRow = toRow, ToColumn = toCol });
                     return 0;
                 }
@@ -425,7 +426,7 @@ namespace Slider.Solver
             }
             if (hashValues == null)
             {
-                hashValues = new List<TranspositionEntry>();
+                hashValues = [];
                 transpositionTable[hash] = hashValues;
             }
             if (current == null)

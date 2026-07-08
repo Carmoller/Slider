@@ -8,5 +8,6 @@ namespace Slider.Interfaces
     public interface ISolverFactory
     {
         public ISolver Create(int gridSize, int heuristic);
+        public ISolver Create(SolverType type);
     }
 }

@@ -6,11 +6,15 @@ using System.Text;
 
 namespace Slider.Heuristics
 {
-    public sealed class LinearConflict : IHeuristicElement
+    public sealed class LinearConflict : HeuristicElementBase, IHeuristicElement
     {
-        public IHeuristicsStatistics Statistics { get; private set; } = new HeuristicsStatistics();
         public string Name { get { return "LinearConflict"; } }
         public bool IsAdditive { get { return true; } }
+
+        public LinearConflict(int gridSize) : base(Span<int>.Empty, gridSize)
+        {
+            // Note: LinearConflict does not have a goal state
+        }
 
         public int Calculate(Span<byte> board, int gridSize)
         {
@@ -27,9 +31,7 @@ namespace Slider.Heuristics
                     if (value1 == 0) continue;
 
                     // Calculate goal position for value1
-                    byte goalRow1 = (byte)((value1 - 1) / gridSize);
-                    byte goalCol1 = (byte)((value1 - 1) % gridSize);
-
+                    (int goalRow1, int goalCol1) = base.GetRowAndColumn(value1 - 1);
                     // Only consider tiles that belong in this row
                     if (goalRow1 != row) continue;
 
@@ -40,8 +42,7 @@ namespace Slider.Heuristics
                         if (value2 == 0) continue;
 
                         // Calculate goal position for value2
-                        byte goalRow2 = (byte)((value2 - 1) / gridSize);
-                        byte goalCol2 = (byte)((value2 - 1) % gridSize);
+                        (int goalRow2, int goalCol2) = base.GetRowAndColumn(value2 - 1);
 
                         // Only consider tiles that belong in this row
                         if (goalRow2 != row) continue;
@@ -65,8 +66,7 @@ namespace Slider.Heuristics
                     if (value1 == 0) continue;
 
                     // Calculate goal position for value1
-                    byte goalRow1 = (byte)((value1 - 1) / gridSize);
-                    byte goalCol1 = (byte)((value1 - 1) % gridSize);
+                    (int goalRow1, int goalCol1) = base.GetRowAndColumn(value1 - 1);
 
                     // Only consider tiles that belong in this column
                     if (goalCol1 != col) continue;
@@ -78,8 +78,7 @@ namespace Slider.Heuristics
                         if (value2 == 0) continue;
 
                         // Calculate goal position for value2
-                        byte goalRow2 = (byte)((value2 - 1) / gridSize);
-                        byte goalCol2 = (byte)((value2 - 1) % gridSize);
+                        (int goalRow2, int goalCol2) = base.GetRowAndColumn(value2 - 1);
 
                         // Only consider tiles that belong in this column
                         if (goalCol2 != col) continue;

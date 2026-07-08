@@ -8,18 +8,18 @@ namespace Slider.Heuristics
 {
     public class HeuristicElementFactory : IHeuristicElementFactory
     {
-        public IHeuristicCalculator CreateHeuristicCalculator(IOptions options, ISolverOptions solverOptions, int gridSize)
+        public IHeuristicCalculator CreateHeuristicCalculator(Span<int> goalPositions, int gridSize, IOptions options, ISolverOptions solverOptions)
         {
-            return new HeuristicCalculator(solverOptions, gridSize, this, options);
+            return new HeuristicCalculator(goalPositions, gridSize, solverOptions, this, options);
         }
-        public IHeuristicElement CreateManhattanDistance()
+        public IHeuristicElement CreateManhattanDistance(Span<int> goalPositions, int gridSize)
         {
-            return new ManhattanDistanceCalculator();
+            return new ManhattanDistanceCalculator(goalPositions, gridSize);
         }
 
-        public IHeuristicElement CreateLinearConflict()
+        public IHeuristicElement CreateLinearConflict(int gridSize)
         {
-            return new LinearConflict();
+            return new LinearConflict(gridSize);
         }
         public IHeuristicElement CreateCornerPattern(int gridSize)
         {

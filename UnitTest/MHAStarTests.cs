@@ -36,7 +36,8 @@ namespace UnitTest
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -66,7 +67,8 @@ namespace UnitTest
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -94,7 +96,8 @@ namespace UnitTest
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
-            MoveVerifier.VerifyMoves(board, result);
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
