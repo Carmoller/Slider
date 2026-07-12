@@ -8,8 +8,13 @@ namespace Slider.Heuristics
 {
     public class HeuristicElementFactory : IHeuristicElementFactory
     {
-        public IHeuristicCalculator CreateHeuristicCalculator(Span<int> goalPositions, int gridSize, IOptions options, ISolverOptions solverOptions)
+        public IHeuristicCalculator CreateHeuristicCalculator(Span<byte> goalBoard, int gridSize, IOptions options, ISolverOptions solverOptions)
         {
+            int[] goalPositions = new int[gridSize*gridSize];
+            for (int i = 0; i < goalBoard.Length; i++)
+            {
+                goalPositions[goalBoard[i]] = i;
+            }
             return new HeuristicCalculator(goalPositions, gridSize, solverOptions, this, options);
         }
         public IHeuristicElement CreateManhattanDistance(Span<int> goalPositions, int gridSize)
@@ -21,9 +26,9 @@ namespace Slider.Heuristics
         {
             return new LinearConflict(gridSize);
         }
-        public IHeuristicElement CreateCornerPattern(int gridSize)
+        public IHeuristicElement CreateCornerPattern(Span<int> goalPositions, int gridSize)
         {
-            return new CornerPattern(gridSize);
+            return new CornerPattern(goalPositions, gridSize);
         }
     }
 }

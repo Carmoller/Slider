@@ -74,7 +74,7 @@ namespace Slider.Solver
         private int _pdbsLoadedForSize = -1;
         private readonly string _pdbLocation;
         private readonly IOptions _options;
-        private IHeuristicCalculator _heuristicCalculator;
+        private IHeuristicCalculator? _heuristicCalculator;
         private readonly Dictionary<int, List<string>> _pdbFilenamesPerSize = [];
 
         private void FillPdbsPerSize()
@@ -182,15 +182,15 @@ namespace Slider.Solver
             }
             return boardData;
         }
-        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(byte[] board, byte[] targetBoardd, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             throw new NotImplementedException();
         }
-        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Count);
             Dictionary<long, List<TranspositionEntry>> transpositionTable = [];
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, _gridSize, _options, solverOptions);
+            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(_gridSize), _gridSize, _options, solverOptions);
             Stopwatch sw = Stopwatch.StartNew();
             LoadPdbs(_gridSize);
             long loadTime = sw.ElapsedMilliseconds;

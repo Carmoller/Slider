@@ -12,7 +12,7 @@ namespace Slider.Heuristics
         public string Name { get { return "EdgePattern"; } }
         public bool IsAdditive { get { return true; } }
         private bool _ignoreCorners;
-        public EdgePattern(int gridSize, bool ignoreCorners) : base(Span<int>.Empty, gridSize)
+        public EdgePattern(Span<int> targetPositions, int gridSize, bool ignoreCorners) : base(targetPositions, gridSize)
         {
             _ignoreCorners = ignoreCorners;
         }

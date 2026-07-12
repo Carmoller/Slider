@@ -43,56 +43,7 @@ namespace Slider.Solver
             _stateInfoFactory = stateInfoFactory;
         }
 
-        private static byte[] CreateStartBoard(List<BoardTile> board)
-        {
-            int gridSize = (int)Math.Sqrt(board.Count);
-            byte[] startBoard = new byte[board.Count];
-            foreach (BoardTile tile in board)
-            {
-                startBoard[tile.Row * gridSize + tile.Column] = tile.Value;
-            }
-            return startBoard;
-        }
-
-        private StateInfo CreateStateInfoFromBoard(byte[] board, 
-            ChunkedArrayPoolUnsafe arrayPool,
-            ChunkedStructPool<StateInfo> stateInfoPool,
-            int startBlank = -1)
-        {
-            if (startBlank == -1)
-            {
-                for (int i = 0; i < board.Length; i++)
-                {
-                    if (board[i] == 0)
-                    {
-                        startBlank = i;
-                        break;
-                    }
-                }
-            }
-            StateInfo state = new()
-            {
-                ParentIndex = ChunkedStructPool<StateInfo>.NoIndex,
-                BlankPos = startBlank,
-                BestG = 0,
-                CurrentG = 0,
-                PreviousMove = MoveDirection.None,
-                BoardToken = arrayPool.GetToken(),
-                CurrentH = GetHeuristics(board, _gridSize)
-            };
-
-            state.CurrentF = (w * state.CurrentH);
-            state.Hash = GetHashCode(state);
-
-            state.NodeIndex = stateInfoPool.Get(state, (ref state, source) =>
-            {
-                state = source;
-            });
-            board.CopyTo(state.BoardToken.AsSpan());
-            return state;
-        }
-
-        private void Finalize(bool isTimedOut, 
+         private void Finalize(bool isTimedOut, 
             int bestHValueIndex, 
             SolveResult result,
             ChunkedStructPool<StateInfo> stateInfoPool,
@@ -112,12 +63,12 @@ namespace Slider.Solver
             Cleanup();
         }
 
-        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
-            return Solve(CreateStartBoard(board), solverOptions, heuristicElementFactory);
+            return Solve(SolverHelper.CreateStartBoard(board), targetBoard, solverOptions, heuristicElementFactory);
         }
 
-        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         { 
             _gridSize = (int)Math.Sqrt(board.Length);
             int bestHValueIndex = -1;
@@ -125,9 +76,17 @@ namespace Slider.Solver
             ChunkedArrayPoolUnsafe arrayPool = new ChunkedArrayPoolUnsafe(1000000, _gridSize * _gridSize);
             SolveResult result = new();
             Stopwatch sw = Stopwatch.StartNew();
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, _gridSize, _options, solverOptions);
+            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(_gridSize), _gridSize, _options, solverOptions);
 
-            StateInfo startState = CreateStateInfoFromBoard(board, arrayPool, stateInfoPool);
+            StateInfo startState = SolverHelper.CreateStateInfoFromBoard(
+                board, 
+                arrayPool, 
+                stateInfoPool, 
+                _heuristicCalculator,
+                _gridSize, 
+                (StateInfo state) => { return w * state.CurrentF; },
+                GetHeuristics, 
+                GetHashCode);
 #if DIAGNOSE
             bool alreadyFound = false;
             Span<byte> checkSpan = startState.BoardToken.AsSpan();
@@ -203,8 +162,8 @@ namespace Slider.Solver
                 { 
                     Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
                     // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
-                    GreedyBfsSolver solver = new(_options, _stateInfoFactory);
-                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, _heuristicCalculator, _gridSize);
+                    BfsSolver solver = new(_options);
+                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, _heuristicCalculator, _stateInfoFactory, _gridSize);
                     if (moves != null)
                     {
                         // Finished
@@ -276,7 +235,7 @@ namespace Slider.Solver
             newState.Hash = GetHashCode(newState);
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
-            newState.CurrentH = GetHeuristics(newState.BoardToken.AsSpan(), _gridSize);
+            newState.CurrentH = GetHeuristics(_heuristicCalculator, newState.BoardToken.AsSpan(), _gridSize);
             newState.CurrentF = newState.CurrentG + (w * newState.CurrentH);
             if (newState.BestG > currentState.CurrentG)
             {
@@ -305,13 +264,7 @@ namespace Slider.Solver
 #endif
         }
 
-        private int GetHeuristics(Span<byte> board, int gridSize)
-        {
-            if (_heuristicCalculator == null)
-                throw new InvalidOperationException("_heursticCalculator has not been initialized");
-            return GetHeuristics(board, gridSize, _heuristicCalculator);
-        }
-        private static int GetHeuristics(Span<byte> board, int gridSize, IHeuristicCalculator customCalculator)
+        private static int GetHeuristics(IHeuristicCalculator customCalculator, Span<byte> board, int gridSize)
         {
             return customCalculator.GetHeuristic(board, gridSize);
         }
@@ -319,9 +272,9 @@ namespace Slider.Solver
         {
             byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
             int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, gridSize, _options,
+            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(gridSize), gridSize, _options,
                 new SolverOptions {UseManhattanDistance = true, UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true });
-            return GetHeuristics(byteBoard, gridSize, calculator);
+            return GetHeuristics(calculator, byteBoard, gridSize);
         }
 
         private static long GetHashCode(StateInfo state)

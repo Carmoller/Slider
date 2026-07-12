@@ -11,7 +11,7 @@ namespace Slider.Heuristics
         public string Name { get { return "ManhattanDistance"; } }
         public bool IsAdditive { get { return true; } }
 
-        public ManhattanDistanceCalculator(Span<int> goalPositions, int gridSize) : base(goalPositions, gridSize)
+        public ManhattanDistanceCalculator(Span<int> targetPositions, int gridSize) : base(targetPositions, gridSize)
         {
         }
         public int Calculate(Span<byte> board, int gridSize)
@@ -25,7 +25,7 @@ namespace Slider.Heuristics
                     continue;
                 }
                 (int row, int col) = base.GetRowAndColumn(i);
-                (int targetRow, int targetCol) = base.GetRowAndColumn(GoalPositions[board[i]]);
+                (int targetRow, int targetCol) = base.GetRowAndColumn(TargetPositions[board[i]]);
                 distance += Math.Abs(row - targetRow) + Math.Abs(col - targetCol);
             }
             Statistics.NumberOfCalls++;

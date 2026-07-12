@@ -41,6 +41,18 @@ namespace Slider.Common.Interfaces
         BidirectionalAStar,
         WeightedAStar,
         MHAStarSolver,
-        PdbSolver
+        PdbSolver,
+        BFSSolver
+    }
+
+    public enum BfsMode
+    {
+        Greedy,
+        Standard
+    }
+    public enum BfsPurpose
+    {
+        SolveBoard,
+        SolveTopRow,
     }
 }

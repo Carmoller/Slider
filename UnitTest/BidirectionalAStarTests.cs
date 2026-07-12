@@ -79,9 +79,9 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             List<BoardTile> board = CreateSolvedBoard(3);
-            Mock<IHeuristicElementFactory> heuristicsFactoryMock = new Mock<IHeuristicElementFactory>();
+            HeuristicElementFactory heuristicsFactory = new();
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactoryMock.Object);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.AlreadySolved, result.Result);
@@ -99,7 +99,7 @@ namespace UnitTest
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.Solved, result.Result);
@@ -118,7 +118,7 @@ namespace UnitTest
                 heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.Solved, result.Result);
@@ -146,7 +146,7 @@ namespace UnitTest
                 heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.HasCount(1, result.Moves, "2x2 board one move away should have exactly one move");
@@ -164,7 +164,7 @@ namespace UnitTest
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             Assert.AreEqual(SolveResultType.Solved, result.Result);
@@ -183,10 +183,10 @@ namespace UnitTest
                 heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             // Assert
         }
 
@@ -203,11 +203,11 @@ namespace UnitTest
                  heuristicsFactory, optionsMock.Object);
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
         }
 
         [TestMethod]
@@ -224,7 +224,7 @@ namespace UnitTest
             for (int gridSize = 2; gridSize <= 3; gridSize++)
             {
                 List<BoardTile> board = CreateBoardWithSingleMove(gridSize);
-                SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+                SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
                 Assert.IsGreaterThanOrEqualTo(1, result.Moves.Count, $"Should find at least one move for {gridSize}x{gridSize} board");
 
@@ -256,11 +256,11 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
         }
         [TestMethod]
         public void Test3x3Board()
@@ -285,11 +285,11 @@ namespace UnitTest
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
 
             // Act
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             // Assert
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
         }
         [TestMethod]
         public void Test4x4Board()
@@ -320,10 +320,33 @@ namespace UnitTest
                 heuristicsFactory, optionsMock.Object);
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
 
-            SolveResult result = solver.Solve(board, new SolverOptions(), heuristicsFactory);
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
+        }
+        [TestMethod]
+        public void Bidirectional_Slow4x4Board()
+        {
+            Mock<IOptions> optionsMock = new();
+
+            byte[] boardValues = [14, 13, 09, 15,
+                                  06, 04, 07, 11,
+                                  08, 05, 00, 10,
+                                  03, 12, 02, 01];
+
+            
+            List<BoardTile> board = BoardHelper.GetBoardFromArray(boardValues);
+
+            HeuristicElementFactory heuristicsFactory = new();
+            HeuristicCalculator calculator = new(Span<int>.Empty, 4, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
+                heuristicsFactory, optionsMock.Object);
+            BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+
+            SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
+
+            BoardHelper.VerifyMoves(board, result);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
         }
 
         #endregion

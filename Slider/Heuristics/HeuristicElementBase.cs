@@ -9,32 +9,32 @@ namespace Slider.Heuristics
     {
         public IHeuristicsStatistics Statistics { get; }
         protected int _gridSize;
-        protected int[] GoalPositions { get; private set; }
-        protected byte[] GoalValues { get; private set; }
+        protected int[] TargetPositions { get; private set; }
+        protected byte[] TargetValues { get; private set; }
         private (int divisor, int remainder)[] _divremTable;
 
-        public HeuristicElementBase(Span<int> goalPositions, int gridSize)
+        public HeuristicElementBase(Span<int> targetPositions, int gridSize)
         {
             Statistics = new HeuristicsStatistics();
             _gridSize = gridSize;
-            GoalPositions = new int[gridSize * gridSize];
-            GoalValues = new byte[gridSize * gridSize];
-            if (goalPositions == Span<int>.Empty)
+            TargetPositions = new int[gridSize * gridSize];
+            TargetValues = new byte[gridSize * gridSize];
+            if (targetPositions == Span<int>.Empty)
             {
                 for (int i = 1; i < gridSize * gridSize; i++)
                 {
-                    GoalPositions[i] = i - 1;
+                    TargetPositions[i] = i - 1;
                 }
-                GoalPositions[0] = gridSize * gridSize - 1;
+                TargetPositions[0] = gridSize * gridSize - 1;
             }
             else
             {
-                goalPositions.CopyTo(GoalPositions);
+                targetPositions.CopyTo(TargetPositions);
             }
 
-            for (int i = 0; i < GoalPositions.Length; i++)
+            for (int i = 0; i < TargetPositions.Length; i++)
             {
-                GoalValues[GoalPositions[i]] = (byte)i;
+                TargetValues[TargetPositions[i]] = (byte)i;
             }
 
             _divremTable = new (int divisor, int remainder)[gridSize * gridSize];
@@ -46,7 +46,7 @@ namespace Slider.Heuristics
 
         protected int GetTargetPosition(int tileValue)
         {
-            return GoalPositions[tileValue];
+            return TargetPositions[tileValue];
         }
         protected (int row, int col) GetRowAndColumn(int number)
         {
@@ -54,7 +54,7 @@ namespace Slider.Heuristics
         }
         protected int GetValueAtPosition(int index)
         {
-            return GoalValues[index];
+            return TargetValues[index];
         }
     }
 }

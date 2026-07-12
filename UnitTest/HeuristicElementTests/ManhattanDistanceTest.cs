@@ -5,6 +5,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Windows;
+using System.Windows.Media.Animation;
 
 namespace UnitTest.HeuristicElementTests
 {
@@ -54,6 +56,55 @@ namespace UnitTest.HeuristicElementTests
                     Assert.AreEqual(row + col, h);
                     board[row * gridSize + col] = 0;
                 }
+            }
+        }
+
+        [TestMethod]
+        public void ManhattanDistance_CustomTargetMustReturn_Zero()
+        {
+            byte[] targetBoard = [00, 03, 07, 12,
+                                  02, 15, 06, 04,
+                                  13, 09, 10, 08,
+                                  01, 05, 14, 11];
+            int[] targetPositions = BoardHelper.GetBoardPositionsFromBoardValues(targetBoard);
+
+            byte[] currentBoard = (byte[])targetBoard.Clone();
+
+            ManhattanDistanceCalculator testObject = new(targetPositions, 4);
+
+            Assert.AreEqual(0, testObject.Calculate(currentBoard, 4));
+        }
+        [TestMethod]
+        public void ManhattanDistance_CustomTargetMustUpdateWhenMoved()
+        {
+            int gridSize = 4;
+            byte[] targetBoard = [00, 03, 07, 12,
+                                  02, 15, 06, 04,
+                                  13, 09, 10, 08,
+                                  01, 05, 14, 11];
+            int[] targetPositions = new int[targetBoard.Length];
+            for (int i = 0; i < targetBoard.Length; i++)
+            {
+                targetPositions[targetBoard[i]] = i;
+            }
+
+            ManhattanDistanceCalculator testObject = new(targetPositions, gridSize);
+
+            // Swap the blank tile with successive tiles in the same row and verify that the distance increases
+            for (int i = 1; i < gridSize; i++)
+            {
+                byte[] currentBoard = (byte[])targetBoard.Clone();
+                currentBoard[0] = currentBoard[i];
+                currentBoard[i] = 0;
+                Assert.AreEqual(i, testObject.Calculate(currentBoard, gridSize));
+            }
+            // Do the same for the column
+            for (int i = 1; i < gridSize; i++)
+            {
+                byte[] currentBoard = (byte[])targetBoard.Clone();
+                currentBoard[0] = currentBoard[i*gridSize];
+                currentBoard[i] = 0;
+                Assert.AreEqual(i, testObject.Calculate(currentBoard, gridSize));
             }
         }
 

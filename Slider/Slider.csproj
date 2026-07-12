@@ -8,8 +8,6 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'" />
-
   <ItemGroup>
     <Compile Remove="Solver\BidirectionalAStarSolver2.cs" />
   </ItemGroup>

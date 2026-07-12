@@ -23,8 +23,11 @@ namespace Slider.Solver
         private ChunkedArrayPoolUnsafe? _arrayPool;
         private ChunkedStructPool<StateInfo>? _objectPool;
         private IHeuristicCalculator? _heuristicsCalculator;
+        private IHeuristicCalculator? _reverseCalculator;
         private readonly IStateInfoFactory _StateInfoFactory;
         private readonly IOptions _options;
+        private int _minhForward = int.MaxValue;
+        private int _minhBackward =int.MaxValue;
         public BidirectionalAStarSolver(IOptions options, IStateInfoFactory StateInfoFactory)
         {
             _options = options;
@@ -56,7 +59,7 @@ namespace Slider.Solver
             List<BoardTile> board,
             Span<byte> boardArray,
             Span<byte> goalBoard,
-            byte[] startPositions,
+            int[] startPositions,
             out int emptyPosition)
         {
             emptyPosition = 0;
@@ -74,14 +77,14 @@ namespace Slider.Solver
             }
         }
 
-        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             throw new NotImplementedException();
         }
-        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
+            int gridSize = (int)Math.Sqrt(board.Count);
             Stopwatch sw = Stopwatch.StartNew();
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, (int)Math.Sqrt(board.Count), _options, solverOptions);
 
             _gridSize = (byte)Math.Sqrt(board.Count);
             _arrayPool = new(1000000, board.Count);
@@ -90,8 +93,13 @@ namespace Slider.Solver
             PointerToken initialToken = _arrayPool.GetToken();
             PointerToken goalToken = _arrayPool.GetToken();
 
-            byte[] startPositions = new byte[board.Count];
+            int[] startPositions = new int[board.Count];
             SetupBoardAndPositions(board, initialToken.AsSpan(), goalToken.AsSpan(), startPositions, out int emptyPosition);
+
+            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(goalToken.AsSpan(), gridSize, _options, solverOptions);
+
+            _reverseCalculator = heuristicElementFactory.CreateHeuristicCalculator(initialToken.AsSpan(), gridSize, _options,
+                new SolverOptions { UseManhattanDistance = true, UseLinearConflict = false, UseEdgePattern = false, UseCornerPattern = true, UsePdbs = false });
 
             // Check if already solved
             if (initialToken.AsSpan().SequenceCompareTo(goalToken.AsSpan()) == 0)
@@ -104,7 +112,7 @@ namespace Slider.Solver
             SolveStateDictionary<StateInfo> backwardClosed = [];
 
             int initialH = GetHeuristic(initialToken.AsSpan(), _gridSize);
-            int goalH = ReverseManhattanCalculator.Calculate(goalToken.AsSpan(), startPositions, _gridSize);
+            int goalH = _reverseCalculator.GetHeuristic(goalToken.AsSpan(), _gridSize);
 
             StateInfo startState = new() { CurrentG = 0, CurrentH = initialH, BlankPos = emptyPosition };
             int startStateIndex = _objectPool.Get(startState, (ref state, source) =>
@@ -162,7 +170,7 @@ namespace Slider.Solver
             PriorityQueue<int, double> backwardOpen,
             SolveStateDictionary<StateInfo> forwardClosed,
             SolveStateDictionary<StateInfo> backwardClosed,
-            byte[] startPositions)
+            int[] startPositions)
         {
             StateInfo forwardState = StateInfo.Empty;
             StateInfo backwardState = StateInfo.Empty;
@@ -192,7 +200,7 @@ namespace Slider.Solver
             SolveStateDictionary<StateInfo> oppositeClosed,
             ref StateInfo forwardState,
             ref StateInfo backwardState,
-            byte[] startPositions,
+            int[] startPositions,
             bool isForward)
         {
             if (open.Count == 0)
@@ -244,7 +252,7 @@ namespace Slider.Solver
             return false;
         }
 
-        private void HandleNewState(ref StateInfo currentState, ref StateInfo newState, PriorityQueue<int, double> open, bool isForward, byte[] startPositions)
+        private void HandleNewState(ref StateInfo currentState, ref StateInfo newState, PriorityQueue<int, double> open, bool isForward, int[] startPositions)
         {
             int tentative_g = currentState.CurrentG + 1;
             newState.Hash = StateHashes.FastHash(newState.BoardToken.AsSpan());
@@ -253,10 +261,25 @@ namespace Slider.Solver
             if (isForward)
             {
                 newState.CurrentH = GetHeuristic(newState.BoardToken.AsSpan(), _gridSize);
+                if (newState.CurrentH < _minhForward)
+                {
+                    _minhForward = newState.CurrentH;
+                    Console.WriteLine($"Forward: New min h: {_minhForward}, StateCount: {StatesCalculatedCount}");
+                    if (_minhForward == 22 || _minhForward == 21)
+                        Console.WriteLine(newState.BoardToken.AsSpan().ToPrettyPrintedBoardString());
+                }
             }
             else
             {
-                newState.CurrentH = ReverseManhattanCalculator.Calculate(newState.BoardToken.AsSpan(), startPositions, _gridSize);
+                newState.CurrentH = _reverseCalculator!.GetHeuristic(newState.BoardToken.AsSpan(), _gridSize);
+                if (newState.CurrentH < _minhBackward)
+                {
+                    _minhBackward = newState.CurrentH;
+                    Console.WriteLine($"Backward: New  min h: {_minhBackward}, StateCount: {StatesCalculatedCount}");
+                    if (_minhBackward == 24 || _minhBackward == 23)
+                        Console.WriteLine(newState.BoardToken.AsSpan().ToPrettyPrintedBoardString());
+
+                }
             }
             newState.CurrentF = newState.CurrentG + newState.CurrentH;
             if (newState.BestG > currentState.CurrentG)
@@ -303,6 +326,7 @@ namespace Slider.Solver
 #endif
                 }
             }
+            Console.WriteLine($"ForwardMoves has {forwardMoves.Count} entries");
             forwardMoves.Reverse();
             result.AddRange(forwardMoves);
 
@@ -327,6 +351,8 @@ namespace Slider.Solver
 #endif
                 }
             }
+            Console.WriteLine($"BackwardMoves has {backwardMoves.Count} entries");
+
             result.AddRange(backwardMoves);
             return result;
 
@@ -341,14 +367,8 @@ namespace Slider.Solver
             _gridSize = (int)Math.Sqrt(board.Count);
             SetupBoardAndPositions(board, boardArray, goalBoard, startPositions, out int emptyPosition);
 
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, gridSize, _options, solverOptions);
+            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(goalBoard, gridSize, _options, solverOptions);
             return GetHeuristic(boardArray, gridSize);
-        }
-
-        private int GetHeuristic(byte[] board, int gridSize)
-        {
-            StatesCalculatedCount++;
-            return _heuristicsCalculator!.GetHeuristic(board, gridSize);
         }
         private int GetHeuristic(Span<byte> board, int gridSize)
         {

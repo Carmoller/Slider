@@ -43,11 +43,11 @@ namespace UnitTest
             bool solvable = PuzzleGenerator.IsSolvable(puzzle, 4);
             Assert.IsTrue(solvable);
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [], solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
         }
 
         [TestMethod]
@@ -90,12 +90,12 @@ namespace UnitTest
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             solver.InitialW = 2;
             SolverOptions options = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true };
-            SolveResult result = solver.Solve(board, options, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [], options, new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -119,12 +119,12 @@ namespace UnitTest
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true, UseSprintFinish = true };
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [], solverOptions, new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -161,11 +161,11 @@ namespace UnitTest
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [], solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -189,11 +189,11 @@ namespace UnitTest
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [], solverOptions, new HeuristicElementFactory());
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");

@@ -32,12 +32,12 @@ namespace UnitTest
 
             MHAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true, UseSprintFinish = true };
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [],  solverOptions, new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -63,12 +63,12 @@ namespace UnitTest
 
             MHAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true, UseSprintFinish = true };
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [],  solverOptions, new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
@@ -91,13 +91,13 @@ namespace UnitTest
 
             MHAStarSolver solver = new(optionsMock.Object, new StateInfoFactory()) { InitialW = 4 };
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = false, UseSprintFinish = false };
-            SolveResult result = solver.Solve(board, solverOptions, new HeuristicElementFactory());
+            SolveResult result = solver.Solve(board, [],  solverOptions, new HeuristicElementFactory());
             ;
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
             BoardHelper.VerifyMoves(board, result);
-            BoardHelper.VerifySolvedBoard(board);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
             Console.WriteLine($"Iterations: {result.IDAStarIterations}");
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");

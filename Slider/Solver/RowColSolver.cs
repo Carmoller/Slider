@@ -35,11 +35,11 @@ namespace Slider.Solver
                 _getHeuristic = getHeuristic;
 
             }
-            public IHeuristicCalculator CreateHeuristicCalculator(Span<int> goalPositions, int gridSize, IOptions options, ISolverOptions solverOptions)
+            public IHeuristicCalculator CreateHeuristicCalculator(Span<byte> goalBoard, int gridSize, IOptions options, ISolverOptions solverOptions)
             {
                 return new RowColHeuristicCalculator(_getHeuristic);
             }
-            public IHeuristicElement CreateCornerPattern(int gridSize)
+            public IHeuristicElement CreateCornerPattern(Span<int> goalPositions, int gridSize)
             {
                 throw new NotImplementedException();
             }
@@ -54,7 +54,6 @@ namespace Slider.Solver
             }
         }
         private int _gridSize;
-        private IHeuristicCalculator _heuristicCalculator;
         private readonly IOptions _options;
         private readonly IStateInfoFactory _stateInfoFactory;
         private double w = 3;
@@ -93,21 +92,20 @@ namespace Slider.Solver
             }
             ;
 
-            return solver.Solve(board, new SolverOptions { UseSprintFinish = false}, 
+            return solver.Solve(board, [], new SolverOptions { UseSprintFinish = false}, 
                 new RowColHeuristicFactory(GetHeuristics));
         }
 
-        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             throw new NotImplementedException();
         }
 
-        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Count);
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             ChunkedArrayPoolUnsafe arrayPool = new(1000000, _gridSize * _gridSize);
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, _gridSize, _options, solverOptions);
 
             SolveResult result = new();
 
@@ -160,9 +158,6 @@ namespace Slider.Solver
 
         private int GetHeuristics(Span<byte> board, int gridSize)
         {
-            if (_heuristicCalculator == null)
-                throw new InvalidOperationException("_heuristicCalculator has not been initialized");
-
             int manhattanDistance = 0;
             Span<byte> misplacedTiles = stackalloc byte[_goalPositionsActiveCount];
             int misplacedTilesIndex = 1;
@@ -198,7 +193,7 @@ namespace Slider.Solver
         {
             byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
             int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, gridSize, _options,
+            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(Span<byte>.Empty, gridSize, _options,
                 new SolverOptions { UseManhattanDistance = true, UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true });
             return GetHeuristics(byteBoard, gridSize, calculator);
         }

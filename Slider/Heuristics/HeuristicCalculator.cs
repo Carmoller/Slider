@@ -14,14 +14,14 @@ namespace Slider.Heuristics
         public List<IHeuristicElement> ElementCalculators { get; } = new();
         private List<IHeuristicElement> _additiveElements;
         private List<IHeuristicElement> _singularElements;
-        public HeuristicCalculator(Span<int> goalPositions, int gridSize, ISolverOptions solverOptions, IHeuristicElementFactory elementFactory, IOptions options)
+        public HeuristicCalculator(Span<int> targetPositions, int gridSize, ISolverOptions solverOptions, IHeuristicElementFactory elementFactory, IOptions options)
         {
             _additiveElements = new();
             _singularElements = new();
             _solverOptions = solverOptions;
             if (_solverOptions.UseManhattanDistance)
             {
-                ElementCalculators.Add(elementFactory.CreateManhattanDistance(Span<int>.Empty, gridSize));
+                ElementCalculators.Add(elementFactory.CreateManhattanDistance(targetPositions, gridSize));
             }
             if (_solverOptions.UseLinearConflict)
             {
@@ -29,11 +29,11 @@ namespace Slider.Heuristics
             }
             if (_solverOptions.UseCornerPattern)
             {
-                ElementCalculators.Add(elementFactory.CreateCornerPattern(gridSize));
+                ElementCalculators.Add(elementFactory.CreateCornerPattern(targetPositions, gridSize));
             }
             if (_solverOptions.UseEdgePattern)
             {
-                ElementCalculators.Add(new EdgePattern(gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
+                ElementCalculators.Add(new EdgePattern(targetPositions, gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
             }
             if (_solverOptions.UsePdbs)
             {

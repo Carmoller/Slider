@@ -35,7 +35,7 @@ namespace UnitTest
 
             RowColSolver testObject = new(optionsMock.Object, stateInfoFactoryMock.Object, solverFactory);
 
-            SolveResult result = testObject.Solve(board, solverOptionsMock.Object,new HeuristicElementFactory());
+            SolveResult result = testObject.Solve(board, [], solverOptionsMock.Object,new HeuristicElementFactory());
             BoardHelper.VerifyMoves(board, result);
             BoardHelper.VerifySolvedRow(board, 0);
             BoardHelper.VerifySolvedColumn(board, 0);
@@ -65,7 +65,7 @@ namespace UnitTest
 
             RowColSolver testObject = new(optionsMock.Object, stateInfoFactoryMock.Object, solverFactory);
 
-            SolveResult result = testObject.Solve(board, solverOptionsMock.Object, new HeuristicElementFactory());
+            SolveResult result = testObject.Solve(board, [], solverOptionsMock.Object, new HeuristicElementFactory());
             BoardHelper.VerifyMoves(board, result);
             BoardHelper.VerifySolvedRow(board, 0);
             BoardHelper.VerifySolvedColumn(board, 0);

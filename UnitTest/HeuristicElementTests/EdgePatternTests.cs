@@ -19,7 +19,7 @@ namespace UnitTest.HeuristicElementTests
                             13, 14, 15, 0];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Assert.AreEqual(1, testObject.Calculate(board, gridSize));
         }
@@ -33,7 +33,7 @@ namespace UnitTest.HeuristicElementTests
                             13, 10, 15, 0];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Assert.AreEqual(1, testObject.Calculate(board, gridSize));
         }
@@ -47,7 +47,7 @@ namespace UnitTest.HeuristicElementTests
                             13, 14, 15, 0];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Assert.AreEqual(1, testObject.Calculate(board, gridSize));
         }
@@ -61,7 +61,7 @@ namespace UnitTest.HeuristicElementTests
                             13, 15, 15, 0];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Assert.AreEqual(1, testObject.Calculate(board, gridSize));
         }
@@ -75,7 +75,7 @@ namespace UnitTest.HeuristicElementTests
                             13, 09, 15, 0];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Assert.AreEqual(4, testObject.Calculate(board, gridSize));
         }
@@ -89,7 +89,7 @@ namespace UnitTest.HeuristicElementTests
                             10, 14, 15, 11];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, true);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, true);
 
             Assert.AreEqual(0, testObject.Calculate(board, gridSize));
         }
@@ -103,7 +103,7 @@ namespace UnitTest.HeuristicElementTests
                             10, 14, 15, 11];
 
             int gridSize = (int)Math.Sqrt(board.Length);
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Assert.AreEqual(8, testObject.Calculate(board, gridSize));
         }
@@ -119,7 +119,7 @@ namespace UnitTest.HeuristicElementTests
             {
                 board[i] = (byte)(board.Length - i -1);
             }
-            EdgePattern testObject = new(gridSize, false);
+            EdgePattern testObject = new(Span<int>.Empty, gridSize, false);
 
             Stopwatch sw = Stopwatch.StartNew();
             for (int i = 0; i < loopCount; i++)

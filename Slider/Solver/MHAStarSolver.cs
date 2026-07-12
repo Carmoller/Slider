@@ -95,11 +95,20 @@ namespace Slider.Solver
             Cleanup();
         }
 
-        public SolveResult Solve(byte[] board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        private Span<byte> GetGoalBoard(int gridSize)
+        {
+            byte[] goalBoard = new byte[gridSize * gridSize];
+            for (int i = 1; i < goalBoard.Length; i++)
+            {
+                goalBoard[i - 1] = (byte)i;
+            }
+            return goalBoard;
+        }
+        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             throw new NotImplementedException();
         }
-        public SolveResult Solve(List<BoardTile> board, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(List<BoardTile> board, byte[] targetBoardd, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Count);
             int bestHValueIndex = -1;
@@ -107,7 +116,7 @@ namespace Slider.Solver
             ChunkedArrayPoolUnsafe arrayPool = new(1000000, _gridSize * _gridSize);
             SolveResult result = new();
             Stopwatch sw = Stopwatch.StartNew();
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, _gridSize, _options, solverOptions);
+            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(GetGoalBoard(_gridSize), _gridSize, _options, solverOptions);
 
             StateInfo startState = CreateStartState(arrayPool, stateInfoPool, board);
 #if DIAGNOSE
@@ -217,8 +226,8 @@ namespace Slider.Solver
                 { 
                     Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
                     // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
-                    GreedyBfsSolver solver = new(_options, _stateInfoFactory);
-                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, _heuristicCalculator, _gridSize);
+                    BfsSolver solver = new(_options);
+                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, _heuristicCalculator, _stateInfoFactory, _gridSize);
                     if (moves != null)
                     {
                         // Finished
@@ -364,7 +373,7 @@ namespace Slider.Solver
         {
             byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
             int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(Span<int>.Empty, gridSize, _options,
+            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(GetGoalBoard(gridSize), gridSize, _options,
                 new SolverOptions {UseManhattanDistance = true, UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true });
             return GetHeuristics(byteBoard, gridSize, calculator);
         }
