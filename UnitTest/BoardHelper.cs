@@ -8,17 +8,6 @@ namespace UnitTest
 {
     internal class BoardHelper
     {
-        public static List<BoardTile> GetBoardFromArray(byte[] byteBoard)
-        {
-            List<BoardTile> board = new();
-            int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            for (int i = 0; i < byteBoard.Length; i++)
-            {
-                board.Add(new BoardTile { Value = byteBoard[i], Row = i / gridSize, Column = i % gridSize });
-            }
-            return board.OrderBy(p => p.Row).ThenBy(p => p.Column).ToList();
-        }
-
         public static int[] GetBoardPositionsFromBoardValues(Span<byte> boardValues)
         {
             int[] boardPositions = new int[boardValues.Length];
@@ -28,10 +17,10 @@ namespace UnitTest
             }
             return boardPositions;
         }
-        public static bool IsSolvable(List<BoardTile> board)
+        public static bool IsSolvable(byte[] board)
         {
             bool valid = true;
-            foreach (IGrouping<byte, BoardTile> value in board.GroupBy(p => p.Value))
+            foreach (IGrouping<byte, byte> value in board.GroupBy(p => p))
             {
                 if (value.Count() > 1)
                 {
@@ -39,9 +28,9 @@ namespace UnitTest
                     Console.WriteLine($"{value.Key} occurs {value.Count()} times");
                 }
             }
-            for (int i = 0; i < board.Count; i++)
+            for (int i = 0; i < board.Length; i++)
             {
-                if (!board.Any(p => p.Value == i))
+                if (!board.Any(p => p == i))
                 {
                     valid = false;
                     Console.Write($"Tile {i} not found");
@@ -53,41 +42,35 @@ namespace UnitTest
                 return false;
             }
 
-            int gridSize = (int)(Math.Sqrt(board.Count));
-            List<byte> puzzle = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToList();
-            return PuzzleGenerator.IsSolvable(puzzle, gridSize);
+            int gridSize = (int)(Math.Sqrt(board.Length));
+            return PuzzleGenerator.IsSolvable(board, gridSize);
         }
 
-        public static void DoMove(List<BoardTile> board, Move move, int count)
+        public static void DoMove(byte[] board, Move move, int count)
         {
-            BoardTile? fromTile = board.FirstOrDefault(p => p.Row == move.FromRow && p.Column == move.FromColumn);
-            if (fromTile == null)
+            int gridSize = (int)Math.Sqrt(board.Length);
+            int PositionFromRowCol(int row, int column)
             {
-                Assert.Fail($"Move #{count}: Moving from (row={move.FromRow}, col={move.FromColumn}), which is outside of the board");
+                return row * gridSize + column;
             }
-            BoardTile? toTile = board.FirstOrDefault(p => p.Row == move.ToRow && p.Column == move.ToColumn);
-            if (toTile == null)
-            {
-                Assert.Fail($"Move #{count}: Moving from (row={move.FromRow}, col={move.FromColumn}), which is outside of the board");
-            }
+            int fromPosition = PositionFromRowCol(move.FromRow, move.FromColumn);
+            Assert.IsLessThan(board.Length, fromPosition, $"Move #{count}: Moving from (row={move.FromRow}, col={move.FromColumn}), which is outside of the board");
 
-            if (toTile.Value != 0)
+            int toPosition = PositionFromRowCol(move.ToRow, move.ToColumn);
+            Assert.IsLessThan(board.Length, toPosition, $"Move #{count}: Moving from (row={move.FromRow}, col={move.FromColumn}), which is outside of the board");
+
+            if (board[toPosition] != 0)
             {
                 Assert.Fail($"Move #{count}: Moving to (row={move.ToRow}, col={move.ToColumn}), which does not contain the blank");
             }
-            int tempRow = toTile.Row;
-            int tempCol = toTile.Column;
-
-            toTile.Row = fromTile.Row;
-            toTile.Column = fromTile.Column;
-
-            fromTile.Row = tempRow;
-            fromTile.Column = tempCol;
+            byte temp = board[toPosition];
+            board[toPosition] = board[fromPosition];
+            board[fromPosition] = temp;
         }
 
-        public static void VerifyMoves(List<BoardTile> board, SolveResult result)
+        public static void VerifyMoves(byte[] board, SolveResult result)
         {
-            int size = (int)Math.Sqrt(board.Count);
+            int size = (int)Math.Sqrt(board.Length);
             int count = 0;
 
             foreach (Move move in result.Moves)
@@ -106,36 +89,34 @@ namespace UnitTest
             }
             return targetBoard;
         }
-        public static void VerifySolvedBoard(List<BoardTile> board, Span<byte> targetBoard)
+        public static void VerifySolvedBoard(byte[] board, Span<byte> targetBoard)
         {
-            int size = (int)Math.Sqrt(board.Count);
+            int size = (int)Math.Sqrt(board.Length);
             if (targetBoard == Span<byte>.Empty)
             {
-                targetBoard = GetDefaultTargetBoard(board.Count);
+                targetBoard = GetDefaultTargetBoard(board.Length);
             }
 
-            for (int i= 0; i<board.Count; i++)
+            for (int i = 0; i < board.Length; i++)
             {
-                (int row, int col) = Math.DivRem(i, size);
-                BoardTile tile = board.First(p=>p.Row == row && p.Column == col);
-                Assert.AreEqual(tile.Value, targetBoard[i], $"Tile {tile.Value} is not in correct spot");
+                Assert.AreEqual(board[i], targetBoard[i], $"Tile {board[i]} is not in correct spot");
             }
-            Console.Write("Verified board is solved");
+            Console.WriteLine("Verified board is solved");
         }
-        public static void VerifySolvedRow(List<BoardTile> board, int row)
+        public static void VerifySolvedRow(byte[] board, int row)
         {
-            int size = (int)Math.Sqrt(board.Count);
+            int size = (int)Math.Sqrt(board.Length);
             for (int col = 0; col < size; col++)
             {
-                Assert.AreEqual((row*size + col) + 1, board.First(p => p.Row == row && p.Column == col).Value);
+                Assert.AreEqual((row * size + col) + 1, board[row*size + col]);
             }
         }
-        public static void VerifySolvedColumn(List<BoardTile> board, int column)
+        public static void VerifySolvedColumn(byte[] board, int column)
         {
-            int size = (int)Math.Sqrt(board.Count);
+            int size = (int)Math.Sqrt(board.Length);
             for (int row = 0; row < size; row++)
             {
-                Assert.AreEqual((row * size + column) + 1, board.First(p => p.Row == row&& p.Column == column).Value);
+                Assert.AreEqual((row * size + column) + 1, board[row * size + column]);
             }
         }
     }

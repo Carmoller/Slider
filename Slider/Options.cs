@@ -28,12 +28,12 @@ namespace Slider
         public Options()
         {
             SolveTimeout = TimeSpan.FromSeconds(30);
-            SolverSelector = [
-                new SolverDescriptor{LowGridSize = 0, HighGridSize = 4, LowHeuristic = 0, HighHeuristic = 50, Solver = typeof(BidirectionalAStarSolver), SolverParameters=[] },
-                new SolverDescriptor{LowGridSize = 4, HighGridSize = 5, LowHeuristic = 51, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[2] },
-                new SolverDescriptor{LowGridSize = 5, HighGridSize = 6, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3] },
-                new SolverDescriptor{LowGridSize = 6, HighGridSize = int.MaxValue, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3.5] },
-                ];
+            //SolverSelector = [
+            //    new SolverDescriptor{LowGridSize = 0, HighGridSize = 4, LowHeuristic = 0, HighHeuristic = 50, Solver = typeof(BidirectionalAStarSolver), SolverParameters=[] },
+            //    new SolverDescriptor{LowGridSize = 4, HighGridSize = 5, LowHeuristic = 51, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[2] },
+            //    new SolverDescriptor{LowGridSize = 5, HighGridSize = 6, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3] },
+            //    new SolverDescriptor{LowGridSize = 6, HighGridSize = int.MaxValue, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3.5] },
+            //    ];
         }
         private void OnPropertyChanged([CallerMemberName] string? name = null)
         {

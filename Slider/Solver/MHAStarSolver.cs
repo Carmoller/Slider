@@ -44,18 +44,17 @@ namespace Slider.Solver
             _stateInfoFactory = stateInfoFactory;
         }
 
-        private StateInfo CreateStartState(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, List<BoardTile> board)
+        private StateInfo CreateStartState(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, byte[] board)
         {
-            byte[] startBoard = new byte[board.Count];
-            byte startBlank = byte.MaxValue;
-            foreach (BoardTile tile in board)
+            int startBlank = int.MaxValue;
+            for (int i = 0; i < board.Length; i++)
             {
-                if (tile.Value == 0)
-                    startBlank = (byte)(tile.Row * _gridSize + tile.Column);
-                startBoard[tile.Row * _gridSize + tile.Column] = tile.Value;
+                if (board[i] == 0)
+                {
+                    startBlank = i;
+                    break;
+                }
             }
-
-            startBoard.CopyTo(startBoard);
 
             StateInfo startState = new()
             {
@@ -65,7 +64,7 @@ namespace Slider.Solver
                 CurrentG = 0,
                 PreviousMove = MoveDirection.None,
                 BoardToken = arrayPool.GetToken(),
-                CurrentH = GetHeuristics(startBoard, _gridSize)
+                CurrentH = GetHeuristics(board, _gridSize)
             };
 
             startState.CurrentF = (w * startState.CurrentH);
@@ -75,7 +74,7 @@ namespace Slider.Solver
             {
                 state = source;
             });
-            startBoard.CopyTo(startState.BoardToken.AsSpan());
+            board.CopyTo(startState.BoardToken.AsSpan());
             return startState;
         }
 
@@ -106,11 +105,11 @@ namespace Slider.Solver
         }
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
-            throw new NotImplementedException();
-        }
-        public SolveResult Solve(List<BoardTile> board, byte[] targetBoardd, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        {
-            _gridSize = (int)Math.Sqrt(board.Count);
+            _gridSize = (int)Math.Sqrt(board.Length);
+            if (targetBoard.Length == 0)
+            {
+                targetBoard = SolverHelper.CreateGoalBoard(_gridSize);
+            }
             int bestHValueIndex = -1;
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             ChunkedArrayPoolUnsafe arrayPool = new(1000000, _gridSize * _gridSize);
@@ -246,7 +245,7 @@ namespace Slider.Solver
                 result.TotalStatesConsidered++;
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
-                _stateInfoFactory.GetAvailableMoves(currentState, _gridSize, stateInfoPool, arrayPool, (ref p) => { HandleNewState(stateInfoPool, ref currentState, ref p); });
+                _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, (ref p) => { HandleNewState(stateInfoPool, ref currentState, ref p); });
             }
             result.Result = SolveResultType.Unsolvable;
             return result;

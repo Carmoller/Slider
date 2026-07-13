@@ -13,15 +13,15 @@ namespace Slider.Solver
     {
         public class RowColHeuristicCalculator : IHeuristicCalculator
         {
-            private readonly Func<Span<byte>, int, int> _getHeuristic;
+            private readonly Func<IHeuristicCalculator, Span<byte>, int, int> _getHeuristic;
 
             public List<IHeuristicElement> ElementCalculators { get; }
 
             public int GetHeuristic(Span<byte> board, int gridSize)
             {
-                return _getHeuristic(board, gridSize);
+                return _getHeuristic(this, board, gridSize);
             }
-            public RowColHeuristicCalculator(Func<Span<byte>, int, int> getHeuristic)
+            public RowColHeuristicCalculator(Func<IHeuristicCalculator, Span<byte>, int, int> getHeuristic)
             {
                 ElementCalculators = [];
                 _getHeuristic = getHeuristic;
@@ -29,8 +29,8 @@ namespace Slider.Solver
         }
         public class RowColHeuristicFactory : IHeuristicElementFactory
         {
-            private readonly Func<Span<byte>, int, int> _getHeuristic;
-            public RowColHeuristicFactory(Func<Span<byte>, int, int> getHeuristic)
+            private readonly Func<IHeuristicCalculator, Span<byte>, int, int> _getHeuristic;
+            public RowColHeuristicFactory(Func<IHeuristicCalculator, Span<byte>, int, int> getHeuristic)
             {
                 _getHeuristic = getHeuristic;
 
@@ -68,11 +68,11 @@ namespace Slider.Solver
             _stateInfoFactory = stateInfoFactory;
             _solverFactory = solverFactory;
         }
-        private SolveResult SolveOneRowColumn(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, List<BoardTile> board, int rowColNumber)
+        private SolveResult SolveOneRowColumn(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, byte[] board, int rowColNumber)
         {
             _goalPositionsActiveCount = 0;
             SolveResult result = new();
-            _goalPositions = new byte[board.Count];
+            _goalPositions = new byte[board.Length];
             for (int i = 0; i < _goalPositions.Length; i++)
             {
                 if (i == 0)
@@ -84,7 +84,15 @@ namespace Slider.Solver
                 (int row, int col) = (i-1).ToRowAndColumn(_gridSize);
                 _goalPositions[i] = (row == rowColNumber || col == rowColNumber) ? (byte)(i-1) : byte.MaxValue;
             }
-            StateInfo startState = CreateStartState(arrayPool, stateInfoPool, board);
+            StateInfo startState = SolverHelper.CreateStateInfoFromBoard(
+                board,
+                arrayPool,
+                stateInfoPool,
+                new RowColHeuristicCalculator(GetHeuristics),
+                _gridSize,
+                p => p.CurrentG + p.CurrentH,
+                GetHeuristics,
+                GetHashCode);
             ISolver solver = _solverFactory.Create(SolverType.WeightedAStar);
             if (solver is IWeightedAStarSolver weightedSolver)
             {
@@ -98,12 +106,7 @@ namespace Slider.Solver
 
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
-            throw new NotImplementedException();
-        }
-
-        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        {
-            _gridSize = (int)Math.Sqrt(board.Count);
+            _gridSize = (int)Math.Sqrt(board.Length);
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             ChunkedArrayPoolUnsafe arrayPool = new(1000000, _gridSize * _gridSize);
 
@@ -116,47 +119,12 @@ namespace Slider.Solver
             }
             return result;
         }
-        private StateInfo CreateStartState(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, List<BoardTile> board)
-        {
-            byte[] startBoard = new byte[board.Count];
-            byte startBlank = byte.MaxValue;
-            foreach (BoardTile tile in board)
-            {
-                if (tile.Value == 0)
-                    startBlank = (byte)(tile.Row * _gridSize + tile.Column);
-                startBoard[tile.Row * _gridSize + tile.Column] = tile.Value;
-            }
-
-            startBoard.CopyTo(startBoard);
-
-            StateInfo startState = new()
-            {
-                ParentIndex = ChunkedStructPool<StateInfo>.NoIndex,
-                BlankPos = startBlank,
-                BestG = 0,
-                CurrentG = 0,
-                PreviousMove = MoveDirection.None,
-                BoardToken = arrayPool.GetToken(),
-                CurrentH = GetHeuristics(startBoard, _gridSize)
-            };
-
-            startState.CurrentF = (w * startState.CurrentH);
-            startState.Hash = GetHashCode(startState);
-
-            startState.NodeIndex = stateInfoPool.Get(startState, (ref state, source) =>
-            {
-                state = source;
-            });
-            startBoard.CopyTo(startState.BoardToken.AsSpan());
-            return startState;
-        }
-
         private static long GetHashCode(StateInfo state)
         {
             return StateHashes.FastHash(state.BoardToken.AsSpan());
         }
 
-        private int GetHeuristics(Span<byte> board, int gridSize)
+        private int GetHeuristics(IHeuristicCalculator heuristicsCalculator, Span<byte> board, int gridSize)
         {
             int manhattanDistance = 0;
             Span<byte> misplacedTiles = stackalloc byte[_goalPositionsActiveCount];

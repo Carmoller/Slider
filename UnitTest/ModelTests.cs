@@ -378,7 +378,7 @@ namespace UnitTest
             // Arrange
             _model.New();
             SolveResult solveResult = new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.Zero, Moves = new() };
-            _mockSolver.Setup(s => s.Solve(It.IsAny<List<BoardTile>>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()))
+            _mockSolver.Setup(s => s.Solve(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()))
                 .Returns(solveResult);
 
             // Act
@@ -386,7 +386,7 @@ namespace UnitTest
 
             // Assert
             Assert.IsNotNull(result);
-            _mockSolver.Verify(s => s.Solve(It.IsAny<List<BoardTile>>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()), Times.Once);
+            _mockSolver.Verify(s => s.Solve(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()), Times.Once);
         }
 
         [TestMethod]
@@ -395,7 +395,7 @@ namespace UnitTest
             // Arrange
             _model.New();
             SolveResult solveResult = new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.FromSeconds(1), Moves = new() };
-            _mockSolver.Setup(s => s.Solve(It.IsAny<List<BoardTile>>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()))
+            _mockSolver.Setup(s => s.Solve(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()))
                 .Returns(solveResult);
 
             // Act

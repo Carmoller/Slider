@@ -8,16 +8,6 @@ namespace Slider.Solver
 {
     internal class SolverHelper
     {
-        public static byte[] CreateStartBoard(List<BoardTile> board)
-        {
-            int gridSize = (int)Math.Sqrt(board.Count);
-            byte[] startBoard = new byte[board.Count];
-            foreach (BoardTile tile in board)
-            {
-                startBoard[tile.Row * gridSize + tile.Column] = tile.Value;
-            }
-            return startBoard;
-        }
         public static byte[] CreateGoalBoard(int gridSize)
         {
             byte[] goalBoard = new byte[gridSize * gridSize];

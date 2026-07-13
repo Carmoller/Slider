@@ -32,11 +32,7 @@ namespace Slider.Solver
                     continue;
 
                 // descriptor matches all criteria - we've found the one
-                ISolver? solver = Activator.CreateInstance(descriptor.Solver, _options, _stateInfoFactory,  descriptor.SolverParameters) as ISolver;
-                if (solver == null)
-                    throw new InvalidOperationException($"Could not create solver of type {descriptor.Solver.Name} for gridSize = {gridSize}, heuristic = {heuristic}");
-
-                return solver;
+                return descriptor.Solver;
             }
             throw new InvalidOperationException($"No solver found for gridSize = {gridSize}, heuristic = {heuristic}");
         }

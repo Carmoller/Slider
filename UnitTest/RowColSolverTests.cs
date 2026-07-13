@@ -21,11 +21,10 @@ namespace UnitTest
             solverOptionsMock.Setup(p => p.UseSprintFinish).Returns(true);
             Mock<IHeuristicElementFactory> heuristicElementFactoryMock = new();
             SolverFactory solverFactory = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = BoardHelper.GetBoardFromArray(
-                               [00, 14, 13, 04, 
-                                11, 02, 15, 06, 
-                                08, 12, 05, 07, 
-                                09, 01, 10, 03 ]);
+            byte[] board = [00, 14, 13, 04, 
+                           11, 02, 15, 06, 
+                           08, 12, 05, 07, 
+                           09, 01, 10, 03 ];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
             byte[] goalState = [001, 002, 003, 004,
@@ -49,12 +48,11 @@ namespace UnitTest
             solverOptionsMock.Setup(p => p.UseSprintFinish).Returns(true);
             Mock<IHeuristicElementFactory> heuristicElementFactoryMock = new();
             SolverFactory solverFactory = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = BoardHelper.GetBoardFromArray(
-                               [00, 24, 23, 22, 21,
-                                20, 19, 18, 17, 16,
-                                15, 14, 13, 12, 11,
-                                10, 09, 08, 07, 06,
-                                05, 04, 03, 02, 01]);
+            byte[] board = [00, 24, 23, 22, 21,
+                           20, 19, 18, 17, 16,
+                           15, 14, 13, 12, 11,
+                           10, 09, 08, 07, 06,
+                           05, 04, 03, 02, 01];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
             byte[] goalState = [001, 002, 003, 004, 005,

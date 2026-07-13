@@ -19,10 +19,10 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
-                6, 3, 8,
-                0, 7, 1,
-                2, 4, 5]);
+            byte[] board = [
+                            6, 3, 8,
+                            0, 7, 1,
+                            2, 4, 5];
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
             BfsSolver solver = new(optionsMock.Object);
@@ -46,11 +46,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                10, 13, 00, 07,
                12, 14, 01, 03,
                06, 05, 15, 08,
-               09, 04, 11, 02]);
+               09, 04, 11, 02];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
@@ -76,11 +76,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                01, 02, 03, 07,
                00, 08, 10, 04,
                06, 05, 15, 14,
-               09, 13, 11, 12]);
+               09, 13, 11, 12];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
@@ -103,8 +103,7 @@ namespace UnitTest
                 count++;
                 BoardHelper.DoMove(board, move, count);
                 StringBuilder sb = new();
-                List<BoardTile> sortedBoard = board.OrderBy(p=>p.Row).ThenBy(p=>p.Column).ToList();
-                Console.WriteLine(sortedBoard.ToPrettyPrintedBoardString());
+                Console.WriteLine(board.ToPrettyPrintedBoardString());
             }
             Console.WriteLine($"\tMoves: {result.MoveCount}");
             Console.WriteLine($"\tStates visited: {result.TotalStatesConsidered}");
@@ -116,11 +115,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                01, 02, 03, 07,
                08, 00, 10, 04,
                06, 05, 15, 14,
-               09, 13, 11, 12]);
+               09, 13, 11, 12];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
@@ -143,8 +142,7 @@ namespace UnitTest
                 count++;
                 BoardHelper.DoMove(board, move, count);
                 StringBuilder sb = new();
-                List<BoardTile> sortedBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).ToList();
-                Console.WriteLine(sortedBoard.ToPrettyPrintedBoardString());
+                Console.WriteLine(board.ToPrettyPrintedBoardString());
             }
             Console.WriteLine($"\tMoves: {result.MoveCount}");
             Console.WriteLine($"\tStates visited: {result.TotalStatesConsidered}");
@@ -156,11 +154,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                01, 02, 03, 07,
                08, 10, 00, 04,
                06, 05, 15, 14,
-               09, 13, 11, 12]);
+               09, 13, 11, 12];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
@@ -183,8 +181,7 @@ namespace UnitTest
                 count++;
                 BoardHelper.DoMove(board, move, count);
                 StringBuilder sb = new();
-                List<BoardTile> sortedBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).ToList();
-                Console.WriteLine(sortedBoard.ToPrettyPrintedBoardString());
+                Console.WriteLine(board.ToPrettyPrintedBoardString());
             }
             Console.WriteLine($"\tMoves: {result.MoveCount}");
             Console.WriteLine($"\tStates visited: {result.TotalStatesConsidered}");
@@ -196,11 +193,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                01, 02, 03, 07,
                08, 10, 14, 04,
                05, 06, 15, 00,
-               09, 13, 11, 12]);
+               09, 13, 11, 12];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
@@ -223,8 +220,7 @@ namespace UnitTest
                 count++;
                 BoardHelper.DoMove(board, move, count);
                 StringBuilder sb = new();
-                List<BoardTile> sortedBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).ToList();
-                Console.WriteLine(sortedBoard.ToPrettyPrintedBoardString());
+                Console.WriteLine(board.ToPrettyPrintedBoardString());
             }
             Console.WriteLine($"\tMoves: {result.MoveCount}");
             Console.WriteLine($"\tStates visited: {result.TotalStatesConsidered}");
@@ -236,11 +232,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                08, 01, 03, 07,
                02, 05, 00, 14,
                15, 13, 11, 12,
-               10, 06, 09, 04]);
+               10, 06, 09, 04];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 

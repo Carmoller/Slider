@@ -1,5 +1,7 @@
 <Solution>
-  <Folder Name="/Solution Items/" />
+  <Folder Name="/Solution Items/">
+    <File Path="local.runsettings" />
+  </Folder>
   <Project Path="PDBGenerator/PDBGenerator.csproj" Id="c3ba74ac-0453-4ad1-819e-0db7070dcdbc" />
   <Project Path="Slider.Common/Slider.Common.csproj" Id="7542d882-2b04-46ee-ad68-7e3a2c61879e" />
   <Project Path="Slider/Slider.csproj" />

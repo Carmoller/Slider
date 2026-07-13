@@ -4,6 +4,7 @@ using Slider.Solver;
 using Slider.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -158,10 +159,20 @@ namespace Slider
             return true;
         }
 
+        private byte[] ByteArrayFromBoard(List<BoardTile> board)
+        {
+            int gridSize = (int)Math.Sqrt(board.Count);
+            byte[] array = new byte[board.Count];
+            foreach (BoardTile tile in board)
+            {
+                array[tile.Row * gridSize + tile.Column] = tile.Value;
+            }
+            return array;
+        }
         public SolveResult Solve()
         {
             Debug.WriteLine($"{DateTime.Now}: Starting Solve()");
-            SolveResult result = _solver.Solve(Board, [], _options.SolverOptions, _heuristicElementFactory);
+            SolveResult result = _solver.Solve(ByteArrayFromBoard(Board), [], _options.SolverOptions, _heuristicElementFactory);
             if ((result.Result == SolveResultType.Solved) || (result.Result == SolveResultType.Timeout))
                 Debug.WriteLine($"{DateTime.Now}: Finished Solve() in {result.TimeSpent.ToString()}, Using {result.Moves!.Count} moves");
             else 

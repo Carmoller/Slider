@@ -61,15 +61,15 @@ namespace UnitTest.HeuristicElementTests
         public void Calculate_3x3_NonCornerTileInMultipleCorners_AccumulatesPenalty()
         {
             CornerPattern cornerPattern = new(Span<int>.Empty, 3);
-            // Non-corner tiles at top-left and top-right corners
+            // Non-corner tiles at top-left and top-right corners. Top-right is hardlocked for a penalty of 7
             byte[] board = [5, 2, 6,
                             4, 1, 3,
                             7, 8, 0];
 
             int penalty = cornerPattern.Calculate(board, 3);
 
-            // Assert - Two non-corner tiles = 2 + 2 = 4
-            Assert.AreEqual(4, penalty);
+            // Assert - Two non-corner tiles = 2 + 7 = 9
+            Assert.AreEqual(9, penalty);
         }
 
         [TestMethod]
@@ -152,9 +152,9 @@ namespace UnitTest.HeuristicElementTests
 
             // Top-left expects 1, has 6 (non-corner, penalty 2)
             // Top-right expects 4, has 5 (non-corner, penalty 2)
-            // Bottom-left expects 13, has 14 (non-corner, penalty 2)
+            // Bottom-left expects 13, has 14 and is hardlocked (non-corner, penalty 7)
             // Bottom-right expects 15, has 0 (correct for empty, no penalty)
-            Assert.AreEqual(6, penalty);
+            Assert.AreEqual(11, penalty);
         }
 
         [TestMethod]

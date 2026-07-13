@@ -182,13 +182,28 @@ namespace Slider.Solver
             }
             return boardData;
         }
-        public SolveResult Solve(byte[] board, byte[] targetBoardd, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        private void BoardDataFromTileList(Span<byte> board, out int blankPosition)
         {
-            throw new NotImplementedException();
+            if (_pdbDescriptors == null)
+                throw new InvalidOperationException("PDBs not initialized");
+            blankPosition = -1;
+            for (int i=0; i<board.Length; i++)
+            {
+                if (board[i] == 0)
+                {
+                    blankPosition = i;
+                }
+                if (_tileToPdbMap.TryGetValue(board[i], out Tuple<int, int>? pdbInfo))
+                {
+                    _pdbDescriptors[pdbInfo.Item1].MoveTile(board[i], i);
+                }
+            }
         }
-        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
-            _gridSize = (int)Math.Sqrt(board.Count);
+            _gridSize = (int)Math.Sqrt(board.Length);
+            if (targetBoard.Length == 0)
+                targetBoard = SolverHelper.CreateGoalBoard(_gridSize);
             Dictionary<long, List<TranspositionEntry>> transpositionTable = [];
             _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(_gridSize), _gridSize, _options, solverOptions);
             Stopwatch sw = Stopwatch.StartNew();
@@ -197,12 +212,12 @@ namespace Slider.Solver
             sw.Restart();
             int blankPos = -1;
             SolveResult result = new();
-            byte[] boardData = BoardDataFromTileList(board, out blankPos);
-            int bound = GetHeuristics(boardData);
+            BoardDataFromTileList(board, out blankPos);
+            int bound = GetHeuristics(board);
             while (true)
             {
                 result.IDAStarIterations++;
-                int t = Search(result.IDAStarIterations, new MoveRecord { Board = boardData, Direction = MoveDirection.None, H_value = bound }, blankPos, 0, bound, result, [], transpositionTable);
+                int t = Search(result.IDAStarIterations, new MoveRecord { Board = board, Direction = MoveDirection.None, H_value = bound }, blankPos, 0, bound, result, [], transpositionTable);
                 if (t == 0)
                 {
                     Console.WriteLine($"Solution found in {result.Moves.Count} moves.");
@@ -447,13 +462,13 @@ namespace Slider.Solver
             return GetHeuristics(boardData);
         }
 
-        public int GetHeuristics(byte[] boardData)
+        public int GetHeuristics(Span<byte> boardData)
         {
             int h1 = GetHeuristics(boardData, false);
             int h2 = GetHeuristics(boardData, true);
             return Math.Max(h1, h2);
         }
-        public int GetHeuristics(byte[] boardData, bool swap)
+        public int GetHeuristics(Span<byte> boardData, bool swap)
         {
             if (swap)
             {
@@ -484,10 +499,11 @@ namespace Slider.Solver
             return h;
         }
 
-        private int GetSwappedHeuristics(byte[] boardData)
+        private int GetSwappedHeuristics(Span<byte> boardData)
         {
 #warning should be combined!!!
-            byte[] swapBoardData = (byte[])boardData.Clone();
+            byte[] swapBoardData = new byte[boardData.Length];
+            boardData.CopyTo(swapBoardData); 
             for (int i = 0; i < boardData.Length; i++)
             {
                 int reflectedPosition = (i % _gridSize) * _gridSize + i / _gridSize;

@@ -37,36 +37,36 @@ namespace UnitTest
             return board;
         }
 
-        private List<BoardTile> CreateBoardWithSingleMove(int gridSize)
+        private byte[] CreateBoardWithSingleMove(int gridSize)
         {
-            List<BoardTile> board = CreateSolvedBoard(gridSize);
+            byte[] board = SolverHelper.CreateGoalBoard(gridSize);
 
             // Swap empty (0) with the tile to its left
             // Find the empty tile (should be at bottom-right)
-            int emptyIndex = board.FindIndex(b => b.Value == 0);
+            int emptyIndex = board.Length - 1;
             int swapIndex = emptyIndex - 1; // Tile to the left
 
             // Swap the values
-            (board[emptyIndex].Value, board[swapIndex].Value) = (board[swapIndex].Value, board[emptyIndex].Value);
+            (board[emptyIndex], board[swapIndex]) = (board[swapIndex], board[emptyIndex]);
 
             return board;
         }
 
-        private List<BoardTile> CreateBoardWithThreeMoves(int gridSize)
+        private byte[] CreateBoardWithThreeMoves(int gridSize)
         {
             // For simplicity and reliability, just use a 2-move version
             // which we know works from the single move tests
-            List<BoardTile> board = CreateSolvedBoard(gridSize);
+            byte[] board = SolverHelper.CreateGoalBoard(gridSize);
 
             // Perform 2 swaps to create a more complex puzzle
             // Swap empty with tile to left
-            int emptyIndex = board.FindIndex(b => b.Value == 0);
+            int emptyIndex = board.Length - 1;
             int swapIndex = emptyIndex - 1;
             if (swapIndex >= 0 && (emptyIndex % gridSize) != 0)
             {
-                byte temp = board[emptyIndex].Value;
-                board[emptyIndex].Value = board[swapIndex].Value;
-                board[swapIndex].Value = temp;
+                byte temp = board[emptyIndex];
+                board[emptyIndex] = board[swapIndex];
+                board[swapIndex] = temp;
             }
 
             return board;
@@ -78,7 +78,7 @@ namespace UnitTest
             // Arrange
             Mock<IOptions> optionsMock = new();
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = CreateSolvedBoard(3);
+            byte[] board = SolverHelper.CreateGoalBoard(3);
             HeuristicElementFactory heuristicsFactory = new();
             // Act
             SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
@@ -94,7 +94,7 @@ namespace UnitTest
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = CreateBoardWithSingleMove(3);
+            byte[] board = CreateBoardWithSingleMove(3);
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -112,7 +112,7 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = CreateBoardWithThreeMoves(3);
+            byte[] board = CreateBoardWithThreeMoves(3);
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -140,7 +140,7 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = CreateBoardWithSingleMove(2);
+            byte[] board = CreateBoardWithSingleMove(2);
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -159,7 +159,7 @@ namespace UnitTest
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory()   );
-            List<BoardTile> board = CreateBoardWithSingleMove(4);
+            byte[] board = CreateBoardWithSingleMove(4);
             HeuristicElementFactory heuristicsFactory = new ();
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -177,7 +177,7 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            List<BoardTile> board = CreateBoardWithThreeMoves(3);
+            byte[] board = CreateBoardWithThreeMoves(3);
             HeuristicElementFactory heuristicsFactory = new ();
             HeuristicCalculator calculator = new(Span<int>.Empty, 3, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -197,7 +197,7 @@ namespace UnitTest
             // Arrange
             BidirectionalAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             int gridSize = 3;
-            List<BoardTile> board = CreateBoardWithThreeMoves(gridSize);
+            byte[] board = CreateBoardWithThreeMoves(gridSize);
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 3, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                  heuristicsFactory, optionsMock.Object);
@@ -223,7 +223,7 @@ namespace UnitTest
 
             for (int gridSize = 2; gridSize <= 3; gridSize++)
             {
-                List<BoardTile> board = CreateBoardWithSingleMove(gridSize);
+                byte[] board = CreateBoardWithSingleMove(gridSize);
                 SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
                 Assert.IsGreaterThanOrEqualTo(1, result.Moves.Count, $"Should find at least one move for {gridSize}x{gridSize} board");
@@ -242,14 +242,9 @@ namespace UnitTest
         public void Test2x2Board()
         {
             Mock<IOptions> optionsMock = new();
-            List<BoardTile> board = new List<BoardTile>
-            {
-                new BoardTile {Row = 0, Column = 0, Value = 2 },
-                new BoardTile {Row = 0, Column = 1, Value = 3 },
-                new BoardTile {Row = 1, Column = 0, Value = 1 },
-                new BoardTile {Row = 1, Column = 1, Value = 0 },
-            };
-
+            byte[] board = [
+                            2, 3,
+                            1, 0];
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 2, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -266,18 +261,11 @@ namespace UnitTest
         public void Test3x3Board()
         {
             Mock<IOptions> optionsMock = new();
-            List<BoardTile> board = new List<BoardTile>
-            {
-                new BoardTile {Row = 0, Column = 0, Value = 0 },
-                new BoardTile {Row = 0, Column = 1, Value = 8 },
-                new BoardTile {Row = 0, Column = 2, Value = 7 },
-                new BoardTile {Row = 1, Column = 0, Value = 6 },
-                new BoardTile {Row = 1, Column = 1, Value = 5 },
-                new BoardTile {Row = 1, Column = 2, Value = 4 },
-                new BoardTile {Row = 2, Column = 0, Value = 3 },
-                new BoardTile {Row = 2, Column = 1, Value = 2 },
-                new BoardTile {Row = 2, Column = 2, Value = 1 },
-            };
+
+            byte[] board = [
+                            0, 8, 7,
+                            6, 5, 4,
+                            3, 2, 1];
 
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 3, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
@@ -295,26 +283,11 @@ namespace UnitTest
         public void Test4x4Board()
         {
             Mock<IOptions> optionsMock = new();
-            List<BoardTile> board = new List<BoardTile>
-            {
-                new BoardTile {Row = 0, Column = 0, Value = 6 },
-                new BoardTile {Row = 0, Column = 1, Value = 14 },
-                new BoardTile {Row = 0, Column = 2, Value = 15 },
-                new BoardTile {Row = 0, Column = 3, Value = 11 },
-                new BoardTile {Row = 1, Column = 0, Value = 0 },
-                new BoardTile {Row = 1, Column = 1, Value = 3 },
-                new BoardTile {Row = 1, Column = 2, Value = 5 },
-                new BoardTile {Row = 1, Column = 3, Value = 7 },
-                new BoardTile {Row = 2, Column = 0, Value = 8 },
-                new BoardTile {Row = 2, Column = 1, Value = 12 },
-                new BoardTile {Row = 2, Column = 2, Value = 10 },
-                new BoardTile {Row = 2, Column = 3, Value = 9 },
-                new BoardTile {Row = 3, Column = 0, Value = 1 },
-                new BoardTile {Row = 3, Column = 1, Value = 2 },
-                new BoardTile {Row = 3, Column = 2, Value = 13 },
-                new BoardTile {Row = 3, Column = 3, Value = 4 },
-            };
-
+            byte[] board = [
+                            06, 14, 15, 11, 
+                            00, 03, 05, 07,
+                            08, 12, 10, 09,
+                            01, 02, 13, 04];
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 4, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
@@ -324,20 +297,20 @@ namespace UnitTest
 
             BoardHelper.VerifyMoves(board, result);
             BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
+            Console.WriteLine($"States considered: {result.TotalStatesConsidered}");
         }
         [TestMethod]
         public void Bidirectional_Slow4x4Board()
         {
             Mock<IOptions> optionsMock = new();
 
-            byte[] boardValues = [14, 13, 09, 15,
-                                  06, 04, 07, 11,
-                                  08, 05, 00, 10,
-                                  03, 12, 02, 01];
+            byte[] board = [14, 13, 09, 15,
+                            06, 04, 07, 11,
+                            08, 05, 00, 10,
+                            03, 12, 02, 01];
 
-            
-            List<BoardTile> board = BoardHelper.GetBoardFromArray(boardValues);
 
+            Assert.IsTrue(BoardHelper.IsSolvable(board));
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 4, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);

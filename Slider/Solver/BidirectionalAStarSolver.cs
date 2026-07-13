@@ -35,65 +35,43 @@ namespace Slider.Solver
         }
 
         private void SetupBoardAndPositions(
-            List<BoardTile> board,
-            byte[] boardArray,
-            byte[] goalBoard,
-            byte[] startPositions,
-            out int emptyPosition)
-        {
-            emptyPosition = 0;
-            foreach (BoardTile tile in board)
-            {
-                int index = tile.Row * _gridSize + tile.Column;
-                if (tile.Value == 0)
-                {
-                    emptyPosition = index;
-                    continue;
-                }
-                boardArray[index] = tile.Value;
-                startPositions[tile.Value] = (byte)index;
-                goalBoard[tile.Value - 1] = (byte)(tile.Value);
-            }
-        }
-        private void SetupBoardAndPositions(
-            List<BoardTile> board,
+            Span<byte> board,
             Span<byte> boardArray,
             Span<byte> goalBoard,
             int[] startPositions,
             out int emptyPosition)
         {
             emptyPosition = 0;
-            foreach (BoardTile tile in board)
+            for (int i=0; i<board.Length; i++)
             {
-                int index = tile.Row * _gridSize + tile.Column;
-                if (tile.Value == 0)
+                if (board[i] == 0)
                 {
-                    emptyPosition = index;
+                    emptyPosition = i;
                     continue;
                 }
-                boardArray[index] = tile.Value;
-                startPositions[tile.Value] = (byte)index;
-                goalBoard[tile.Value - 1] = (byte)(tile.Value);
+                boardArray[i] = board[i];
+                startPositions[board[i]] = (byte)i;
+                goalBoard[board[i]-1] = (byte)(board[i]);
             }
         }
 
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
-            throw new NotImplementedException();
-        }
-        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        {
-            int gridSize = (int)Math.Sqrt(board.Count);
+            int gridSize = (int)Math.Sqrt(board.Length);
+            if (targetBoard.Length == 0)
+            {
+                targetBoard = SolverHelper.CreateGoalBoard(gridSize);
+            }
             Stopwatch sw = Stopwatch.StartNew();
 
-            _gridSize = (byte)Math.Sqrt(board.Count);
-            _arrayPool = new(1000000, board.Count);
+            _gridSize = (byte)Math.Sqrt(board.Length);
+            _arrayPool = new(1000000, board.Length);
             _objectPool = new(1000000);
 
             PointerToken initialToken = _arrayPool.GetToken();
             PointerToken goalToken = _arrayPool.GetToken();
 
-            int[] startPositions = new int[board.Count];
+            int[] startPositions = new int[board.Length];
             SetupBoardAndPositions(board, initialToken.AsSpan(), goalToken.AsSpan(), startPositions, out int emptyPosition);
 
             _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(goalToken.AsSpan(), gridSize, _options, solverOptions);
@@ -207,14 +185,14 @@ namespace Slider.Solver
                 return false;
 
             int currentIndex = open.Dequeue();
-            StateInfo current = objectPool.GetRef(currentIndex);
+            ref StateInfo currentState = ref objectPool.GetRef(currentIndex);
 #if DIAGNOSE
             Debug.WriteLine($"{(isForward ? "Forward" : "Backward")}: {current.ToString()}");
 #endif
-            long stateHash = StateHashes.FastHash(current.BoardToken.AsSpan());
+            long stateHash = StateHashes.FastHash(currentState.BoardToken.AsSpan());
 
-            // Check if already in closed set
-            if (closed.Exists(stateHash, current))
+            //f Check if already in closed set
+            if (closed.Exists(stateHash, currentState))
             {
 #if DIAGNOSE
                 Debug.WriteLine("\tAlready visited");
@@ -224,7 +202,7 @@ namespace Slider.Solver
             }
 
             // Check if this state was reached from opposite direction before adding to closed
-            if (oppositeClosed.TryGetState(stateHash, current, out StateInfo oppositeState))
+            if (oppositeClosed.TryGetState(stateHash, currentState, out StateInfo oppositeState))
             {
 #if DIAGNOSE
                 Debug.WriteLine($"{(isForward ? "Forward" : "Backward")}. Found in oppositeClosed: {oppositeState.ToString()}");
@@ -232,23 +210,30 @@ namespace Slider.Solver
                 // Found meeting point!
                 if (isForward)
                 {
-                    forwardState = current;
+                    forwardState = currentState;
                     backwardState = oppositeState;
                     return true;
                 }
                 else
                 {
                     forwardState = oppositeState;
-                    backwardState = current;
+                    backwardState = currentState;
                     return true;
                 }
             }
 
             // Add current state to closed set
-            closed.AddState(stateHash, current);
+            closed.AddState(stateHash, currentState);
 
-            _StateInfoFactory.GetAvailableMoves(current, _gridSize, objectPool, _arrayPool!,
-                (ref p) => { HandleNewState(ref current, ref p, open, isForward, startPositions); });
+            // store index into a regular local to capture in the lambda
+            int currentIdxForLambda = currentIndex;
+            _StateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, objectPool, _arrayPool!,
+                (ref StateInfo p) =>
+                {
+                    // retrieve the ref inside the lambda (no ref-capture)
+                    ref StateInfo csRef = ref objectPool.GetRef(currentIdxForLambda);
+                    HandleNewState(ref csRef, ref p, open, isForward, startPositions);
+                });
             return false;
         }
 
@@ -264,9 +249,7 @@ namespace Slider.Solver
                 if (newState.CurrentH < _minhForward)
                 {
                     _minhForward = newState.CurrentH;
-                    Console.WriteLine($"Forward: New min h: {_minhForward}, StateCount: {StatesCalculatedCount}");
-                    if (_minhForward == 22 || _minhForward == 21)
-                        Console.WriteLine(newState.BoardToken.AsSpan().ToPrettyPrintedBoardString());
+                    Debug.WriteLine($"Forward: New min h: {_minhForward}, StateCount: {StatesCalculatedCount}");
                 }
             }
             else
@@ -275,10 +258,7 @@ namespace Slider.Solver
                 if (newState.CurrentH < _minhBackward)
                 {
                     _minhBackward = newState.CurrentH;
-                    Console.WriteLine($"Backward: New  min h: {_minhBackward}, StateCount: {StatesCalculatedCount}");
-                    if (_minhBackward == 24 || _minhBackward == 23)
-                        Console.WriteLine(newState.BoardToken.AsSpan().ToPrettyPrintedBoardString());
-
+                    Debug.WriteLine($"Backward: New  min h: {_minhBackward}, StateCount: {StatesCalculatedCount}");
                 }
             }
             newState.CurrentF = newState.CurrentG + newState.CurrentH;
@@ -362,10 +342,10 @@ namespace Slider.Solver
             int gridSize = (int)Math.Sqrt(board.Count);
             byte[] boardArray = new byte[board.Count];
             byte[] goalBoard = new byte[board.Count];
-            byte[] startPositions = new byte[board.Count];
+            int[] startPositions = new int[board.Count];
             SolverOptions solverOptions = new() { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true };
             _gridSize = (int)Math.Sqrt(board.Count);
-            SetupBoardAndPositions(board, boardArray, goalBoard, startPositions, out int emptyPosition);
+            SetupBoardAndPositions(board.ToByteArray(), boardArray, goalBoard, startPositions, out int emptyPosition);
 
             _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(goalBoard, gridSize, _options, solverOptions);
             return GetHeuristic(boardArray, gridSize);

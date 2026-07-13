@@ -63,14 +63,13 @@ namespace Slider.Solver
             Cleanup();
         }
 
-        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        {
-            return Solve(SolverHelper.CreateStartBoard(board), targetBoard, solverOptions, heuristicElementFactory);
-        }
-
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         { 
             _gridSize = (int)Math.Sqrt(board.Length);
+            if (targetBoard.Length == 0)
+            {
+                targetBoard = SolverHelper.CreateGoalBoard(_gridSize);
+            }
             int bestHValueIndex = -1;
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             ChunkedArrayPoolUnsafe arrayPool = new ChunkedArrayPoolUnsafe(1000000, _gridSize * _gridSize);
@@ -146,6 +145,11 @@ namespace Slider.Solver
                 int h_Current = currentState.CurrentH;
                 if (h_Current < min_h)
                 {
+                    if (h_Current == 0)
+                    {
+                        int a = 1;
+                    }
+
                     bestHValueIndex = currentState.NodeIndex;
                     Debug.WriteLine($"Weighted A*: State #{result.TotalStatesConsidered}: h:{h_Current}");
                     min_h = h_Current;
@@ -184,7 +188,7 @@ namespace Slider.Solver
                 result.TotalStatesConsidered++;
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
-                _stateInfoFactory.GetAvailableMoves(currentState, _gridSize, stateInfoPool, arrayPool, (ref p) => { HandleNewState(ref currentState, ref p); });
+                _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, (ref p) => { HandleNewState(ref currentState, ref p); });
             }
             result.Result = SolveResultType.Unsolvable;
             return result;
@@ -236,6 +240,10 @@ namespace Slider.Solver
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
             newState.CurrentH = GetHeuristics(_heuristicCalculator, newState.BoardToken.AsSpan(), _gridSize);
+            if (newState.CurrentH == 1)
+            {
+                int a = 1;
+                }
             newState.CurrentF = newState.CurrentG + (w * newState.CurrentH);
             if (newState.BestG > currentState.CurrentG)
             {

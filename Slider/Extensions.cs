@@ -33,7 +33,7 @@ namespace Slider
             {
                 for (int j = 0; j < (int)Math.Sqrt(array.Length); j++)
                 {
-                    if (array[i+ j] == 0)
+                    if (array[i + j] == 0)
                     {
                         sb.Append("  ");
                     }
@@ -69,6 +69,16 @@ namespace Slider
             return sb.ToString();
         }
 
+        public static byte[] ToByteArray(this List<BoardTile> board)
+        {
+            int gridSize = (int)Math.Sqrt(board.Count);
+            byte[] boardArray = new byte[board.Count];
+            foreach (BoardTile tile in board)
+            {
+                boardArray[tile.Row * gridSize + tile.Column] = tile.Value;
+            }
+            return boardArray;
+        }
         extension(byte b)
         {
             public byte DontCare => 255;

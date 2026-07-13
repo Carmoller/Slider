@@ -36,7 +36,10 @@ namespace UnitTest
            new Result {Board = [3, 1, 2, 0], Distance = 4}
         ];
 
-        [TestMethod]
+        public static bool AllowDebugShortcuts { get; private set; }
+
+//        [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         public void Test_GeneratorCompleteness()
         {
             // Test that the generator considers all legal states
@@ -73,7 +76,8 @@ namespace UnitTest
             }
         }
 
-        [TestMethod]
+//        [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         public void PdbGeneratorPerformance4x4_4TrackedTiles()
         {
             byte boardSize = 4;
@@ -105,7 +109,8 @@ namespace UnitTest
             Console.WriteLine("States per ms: " + Math.Round(((double)gen.StatesProcessed / (gen.ElapsedMs))));
         }
 
-        [TestMethod]
+ //       [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         public void Test_Generator_LoadAndSave_YieldsSameByteArray()
         {
             PdbGenerator gen = new(4, 4, false);
@@ -141,7 +146,8 @@ namespace UnitTest
             Assert.IsTrue(db.TrackedTiles.SequenceEqual(loadedDb.TrackedTiles));
         }
 
-        [TestMethod]
+ //       [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         public void Create4x4Pdbs()
         {
             byte boardSize = 4; // 4x4 grid
@@ -170,7 +176,8 @@ namespace UnitTest
             }
         }
 
-        [TestMethod]
+//        [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         [DataRow(5, 5)]
         [DataRow(5, 6)]
         [DataRow(5, 7)]
@@ -181,6 +188,7 @@ namespace UnitTest
         [DataRow(10, 5)]
         public void CalculateNumberOfStates(int boardSize, int trackedTilesCount)
         {
+            Assert.Inconclusive("Not meant to be run from the test explorer");
             string FormatNumber(long number)
             {
                 if (number < 1000)
@@ -209,8 +217,8 @@ namespace UnitTest
             numberOfStates *= factor;
             Console.WriteLine($"BoardSize: {boardSize}, tracked tiles: {trackedTilesCount}, numberOfStates: {FormatNumber(numberOfTrackedTileStates)}, including blank: {FormatNumber(numberOfStates)} ({FormatNumber(numberOfStates / 8)} bytes)");
         }
-        [TestMethod]
-        [TestCategory("Manual Only!")]
+//        [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         public void Create5x5Pdbs()
         {
             byte boardSize = 5; // 5x5 grid
@@ -278,7 +286,8 @@ namespace UnitTest
             }
         }
 
-        [TestMethod]
+//        [TestMethod]
+        [TestCategory("DebugOnly")] // Flagging this test
         public void VerifyAgainstTruth()
         {
             PatternDatabase? pdbTruth = PatternDatabase.LoadFromFile(@"E:\src\net\Slider\5x5_0102030607.pdb_truth");

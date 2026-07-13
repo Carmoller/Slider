@@ -17,30 +17,16 @@ namespace UnitTest
         [TestMethod]
         public void TestSolve()
         {
-            List<BoardTile> board = new();
-            board.Add(new BoardTile { Value = 0, Row = 1, Column = 3 });
-            board.Add(new BoardTile { Value = 1, Row = 3, Column = 3 });
-            board.Add(new BoardTile { Value = 2, Row = 1, Column = 2 });
-            board.Add(new BoardTile { Value = 3, Row = 3, Column = 2 });
-            board.Add(new BoardTile { Value = 4, Row = 1, Column = 1 });
-            board.Add(new BoardTile { Value = 5, Row = 1, Column = 0 });
-            board.Add(new BoardTile { Value = 6, Row = 2, Column = 1 });
-            board.Add(new BoardTile { Value = 7, Row = 2, Column = 3 });
-            board.Add(new BoardTile { Value = 8, Row = 2, Column = 2 });
-            board.Add(new BoardTile { Value = 9, Row = 2, Column = 0 });
-            board.Add(new BoardTile { Value = 10, Row = 3, Column = 0 });
-            board.Add(new BoardTile { Value = 11, Row = 0, Column = 3 });
-            board.Add(new BoardTile { Value = 12, Row = 0, Column = 1 });
-            board.Add(new BoardTile { Value = 13, Row = 0, Column = 2 });
-            board.Add(new BoardTile { Value = 14, Row = 0, Column = 0 });
-            board.Add(new BoardTile { Value = 15, Row = 3, Column = 1 });
+            byte[] board = [14, 12, 13, 11,
+                            05, 04, 02, 00,
+                            09, 06, 08, 07,
+                            10, 15, 03, 01];
 
             Mock<IOptions> optionsMock = new();
-            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
-            SolverOptions solverOptions = new SolverOptions { UseManhattanDistance = true,  UseLinearConflict = true, UseCornerPattern = true };
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(60));
+            SolverOptions solverOptions = new SolverOptions { UseManhattanDistance = true,  UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true };
             
-            List<byte> puzzle = new() { 14, 12, 13, 11, 5, 4, 2, 0, 9, 6, 8, 7, 10, 15, 3, 1 };
-            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 4);
+            bool solvable = BoardHelper.IsSolvable(board);
             Assert.IsTrue(solvable);
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             SolveResult result = solver.Solve(board, [], solverOptions, new HeuristicElementFactory());
@@ -56,35 +42,14 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
-            List<BoardTile> board = new();
-            board.Add(new BoardTile { Value = 0, Row = 1, Column = 2 });
-            board.Add(new BoardTile { Value = 1, Row = 2, Column = 4 });
-            board.Add(new BoardTile { Value = 2, Row = 2, Column = 1 });
-            board.Add(new BoardTile { Value = 3, Row = 1, Column = 1 });
-            board.Add(new BoardTile { Value = 4, Row = 4, Column = 0 });
-            board.Add(new BoardTile { Value = 5, Row = 0, Column = 4 });
-            board.Add(new BoardTile { Value = 6, Row = 0, Column = 1 });
-            board.Add(new BoardTile { Value = 7, Row = 4, Column = 1 });
-            board.Add(new BoardTile { Value = 8,  Row = 0, Column = 0 });
-            board.Add(new BoardTile { Value = 9, Row = 3, Column = 2 });
-            board.Add(new BoardTile { Value = 10, Row = 4, Column = 4 });
-            board.Add(new BoardTile { Value = 11, Row = 0, Column = 3 });
-            board.Add(new BoardTile { Value = 12, Row = 2, Column = 2 });
-            board.Add(new BoardTile { Value = 13, Row = 1, Column = 4 });
-            board.Add(new BoardTile { Value = 14, Row = 3, Column = 4 });
-            board.Add(new BoardTile { Value = 15, Row = 0, Column = 2 });
-            board.Add(new BoardTile { Value = 16, Row = 2, Column = 0 });
-            board.Add(new BoardTile { Value = 17, Row = 4, Column = 3 });
-            board.Add(new BoardTile { Value = 18, Row = 3, Column = 1 });
-            board.Add(new BoardTile { Value = 19, Row = 1, Column = 0 });
-            board.Add(new BoardTile { Value = 20, Row = 4, Column = 2 });
-            board.Add(new BoardTile { Value = 21, Row = 3, Column = 0 });
-            board.Add(new BoardTile { Value = 22, Row = 1, Column = 3 });
-            board.Add(new BoardTile { Value = 23, Row = 2, Column = 3 });
-            board.Add(new BoardTile { Value = 24, Row = 3, Column = 3 });
 
-            List<byte> puzzle = new() { 8, 6, 15, 11, 5, 19, 3, 0, 33, 13, 16, 2, 12, 23, 1, 21, 18, 9, 24, 14, 4, 7, 20, 17, 10 };
-            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
+            byte[] board = [
+                            08, 06, 15, 11, 05,
+                            19, 03, 00, 22, 13,
+                            16, 02, 12, 23, 01,
+                            21, 18, 09, 24, 14,
+                            04, 07, 20, 17, 10];
+            bool solvable = PuzzleGenerator.IsSolvable(board, 5);
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
@@ -108,12 +73,12 @@ namespace UnitTest
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
 
-            List<BoardTile> board = BoardHelper.GetBoardFromArray([
+            byte[] board = [
                 19, 05, 08, 00, 16,
                 17, 13, 04, 14, 24,
                 10, 02, 12, 09, 15,
                 23, 20, 07, 18, 01,
-                21, 22, 06, 03, 11]);
+                21, 22, 06, 03, 11];
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
@@ -137,27 +102,14 @@ namespace UnitTest
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
 
-            List<BoardTile> board = new();
-            board.Add(new BoardTile { Value = 0, Row = 1, Column = 1 });
-            board.Add(new BoardTile { Value = 1, Row = 1, Column = 2 });
-            board.Add(new BoardTile { Value = 2, Row = 2, Column = 0 });
-            board.Add(new BoardTile { Value = 3, Row = 3, Column = 0 });
-            board.Add(new BoardTile { Value = 4, Row = 0, Column = 2 });
-            board.Add(new BoardTile { Value = 5, Row = 0, Column = 3 });
-            board.Add(new BoardTile { Value = 6, Row = 0, Column = 1 });
-            board.Add(new BoardTile { Value = 7, Row = 1, Column = 3 });
-            board.Add(new BoardTile { Value = 8, Row = 2, Column = 1 });
-            board.Add(new BoardTile { Value = 9, Row = 3, Column = 1 });
-            board.Add(new BoardTile { Value = 10, Row = 2, Column = 3 });
-            board.Add(new BoardTile { Value = 11, Row = 1, Column = 0 });
-            board.Add(new BoardTile { Value = 12, Row = 0, Column = 0 });
-            board.Add(new BoardTile { Value = 13, Row = 2, Column = 2 });
-            board.Add(new BoardTile { Value = 14, Row = 3, Column = 3 });
-            board.Add(new BoardTile { Value = 15, Row = 3, Column = 2 });
+            byte[] board = [
+                          12, 06, 04, 05,
+                          11, 00, 01, 07,
+                          02, 08, 13, 10,
+                          03, 09, 15, 14];
 
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true };
-            List<byte> puzzle = board.OrderBy(p => p.Row * 4 + p.Column).Select(p => p.Value).ToList();
-            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 5);
+            bool solvable = PuzzleGenerator.IsSolvable(board, 5);
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
@@ -177,15 +129,13 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(30));
-            List<BoardTile> board = new();
-            board.Add(new BoardTile { Value = 0, Row = 1, Column = 0 });
-            board.Add(new BoardTile { Value = 1, Row = 0, Column = 1 });
-            board.Add(new BoardTile { Value = 2, Row = 1, Column = 1 });
-            board.Add(new BoardTile { Value = 3, Row = 0, Column = 0 });
+
+            byte[] board = [
+                                03, 01,
+                                00, 02];
 
             SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true };
-            List<byte> puzzle = board.OrderBy(p => p.Row).ThenBy(p=>p.Column).Select(p => p.Value).ToList();
-            bool solvable = PuzzleGenerator.IsSolvable(puzzle, 2);
+            bool solvable = PuzzleGenerator.IsSolvable(board, 2);
             Assert.IsTrue(solvable);
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());

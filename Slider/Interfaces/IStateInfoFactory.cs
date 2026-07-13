@@ -9,7 +9,7 @@ namespace Slider.Interfaces
 {
     public interface IStateInfoFactory
     {
-        void GetAvailableMoves(StateInfo currentState,
+        void GetAvailableMoves(ref StateInfo currentState,
             int gridSize,
             IChunkedStructPool<StateInfo> stateInfoPool,
             IChunkedArrayPoolUnsafe arrayPool,

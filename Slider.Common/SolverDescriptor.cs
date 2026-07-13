@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Slider.Common.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,7 +11,7 @@ namespace Slider.Common
         public int HighGridSize { get; set; }
         public int LowHeuristic { get; set; }
         public int HighHeuristic { get; set; }
-        public required Type Solver { get; set; }
+        public required ISolver Solver { get; set; }
         public required object[] SolverParameters { get; set; }
 
     }

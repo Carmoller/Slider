@@ -51,7 +51,7 @@ namespace Slider.Solver
             return ref newState;
         }
 
-        public void GetAvailableMoves(StateInfo currentState,
+        public void GetAvailableMoves(ref StateInfo currentState,
             int gridSize,
             IChunkedStructPool<StateInfo> stateInfoPool,
             IChunkedArrayPoolUnsafe arrayPool,

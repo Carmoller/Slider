@@ -28,11 +28,6 @@ namespace Slider.Solver
             _options = options;
         }
 
-        public SolveResult Solve(List<BoardTile> board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        {
-            return Solve(SolverHelper.CreateStartBoard(board), targetBoard, solverOptions, heuristicElementFactory);
-        }
-
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Length);
@@ -112,7 +107,7 @@ namespace Slider.Solver
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
 
-                stateInfoFactory.GetAvailableMoves(currentState, _gridSize, stateInfoPool, arrayPool, 
+                stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, 
                     (ref p) => { 
                     HandleNewState(arrayPool, stateInfoPool, heuristicsCalculator, ref currentState, ref p); });
             }
