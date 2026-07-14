@@ -97,10 +97,6 @@ namespace Slider.Common
         {
             if (index == -1)
                 return;
-            if (index == 24746)
-            {
-                int a = 1;
-            }
 #if DEBUG
             if (_freeIndices.Contains(index))
             {

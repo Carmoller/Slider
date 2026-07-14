@@ -1,4 +1,5 @@
-﻿using Slider.Common;
+﻿using Microsoft.Extensions.ObjectPool;
+using Slider.Common;
 using Slider.Common.Interfaces;
 using Slider.Heuristics;
 using Slider.Interfaces;
@@ -13,6 +14,14 @@ namespace Slider.Solver
 {
     public sealed class BfsSolver : ISolver
     {
+        private struct BfsSolverContext
+        {
+            public required IChunkedStructPool<StateInfo> ObjectPool { get; set; }
+            public required IChunkedArrayPoolUnsafe ArrayPool { get; set; }
+            public required IHeuristicCalculator Calculator { get; set; }
+            public required int CurrentStepIndex { get; set; }
+        }
+
         private readonly PriorityQueue<StateInfo, double> _openQueue = new();
         private readonly SolveStateDictionary<StateInfo> _closed = [];
         private int _gridSize;
@@ -20,12 +29,15 @@ namespace Slider.Solver
         private int _min_h;
         private int _startNodeIndex;
         private readonly IOptions _options;
+        private RefAction<StateInfo, BfsSolverContext>? _cachedProcessNewStateHandler;
+
         public BfsMode BfsMode { get; set; } = BfsMode.Greedy;
         public BfsPurpose BfsPurpose { get; set; } = BfsPurpose.SolveBoard;
 
         public BfsSolver(IOptions options)
         {
             _options = options;
+            _cachedProcessNewStateHandler = ProcessNewState;
         }
 
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
@@ -107,9 +119,13 @@ namespace Slider.Solver
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
 
-                stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, 
-                    (ref p) => { 
-                    HandleNewState(arrayPool, stateInfoPool, heuristicsCalculator, ref currentState, ref p); });
+                BfsSolverContext context = new BfsSolverContext { 
+                    ArrayPool = arrayPool , 
+                    ObjectPool= stateInfoPool, 
+                    Calculator =heuristicsCalculator, 
+                    CurrentStepIndex = currentState.NodeIndex};
+
+                stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, ref context, _cachedProcessNewStateHandler!);
             }
             if (nodesExplored >= maxNodes)
             {
@@ -157,10 +173,16 @@ namespace Slider.Solver
         {
             return StateHashes.FastHash(state.BoardToken.AsSpan());
         }
+        private void ProcessNewState(ref StateInfo newState, ref BfsSolverContext context)
+        {
+            ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
+            HandleNewState(context.ArrayPool, context.ObjectPool, context.Calculator, ref csRef, ref newState);
+        }
+
 
         private void HandleNewState(
-            ChunkedArrayPoolUnsafe arrayPool, 
-            ChunkedStructPool<StateInfo> stateInfoPool, 
+            IChunkedArrayPoolUnsafe arrayPool, 
+            IChunkedStructPool<StateInfo> stateInfoPool, 
             IHeuristicCalculator heuristicsCalculator,
             ref StateInfo currentState, 
             ref StateInfo newState)

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Slider.Solver
 {
-    public class SolveState
+    public struct SolveState
     {
         [DebuggerDisplay("{Board.ToCommaSeparatedString()} (G={GCost}, H={HCost}, F={FCost})")]
         public byte[] Board { get; }
@@ -15,7 +15,6 @@ namespace Slider.Solver
         public int HCost { get; }
         public int FCost => GCost + HCost;
         public int EmptyPosition { get; }
-        public SolveState? Parent { get; }
         public int ParentMoveFromPosition { get; set; } = -1;
         public int ParentMoveToPosition { get; set; } = -1;
         public MoveDirection MoveDirectionFromParent { get; set; }
@@ -26,12 +25,10 @@ namespace Slider.Solver
             GCost = gCost;
             HCost = hCost;
             EmptyPosition = emptyPosition;
-            Parent = parent;
         }
 
-        public bool Equals(SolveState? other)
+        public bool Equals(SolveState other)
         {
-            if (other == null) return false;
             if (EmptyPosition != other.EmptyPosition) return false;
             return BoardEquals(other.Board);
         }

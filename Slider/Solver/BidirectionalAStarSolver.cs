@@ -17,6 +17,15 @@ namespace Slider.Solver
 {
     public sealed class BidirectionalAStarSolver : ISolver
     {
+        private struct BidirectionalContext
+        {
+            public int CurrentStepIndex;
+            public required PriorityQueue<int, double> CurrentOpen;
+            public bool CurrentIsForward;
+            public required int[] CurrentStartPositions;
+            public ChunkedStructPool<StateInfo> ObjectPool;
+        }
+
         private int _gridSize = 0;
         public IHeuristicCalculator? Calculator { get { return _heuristicsCalculator; } }
         private int StatesCalculatedCount { get; set; }
@@ -24,14 +33,16 @@ namespace Slider.Solver
         private ChunkedStructPool<StateInfo>? _objectPool;
         private IHeuristicCalculator? _heuristicsCalculator;
         private IHeuristicCalculator? _reverseCalculator;
-        private readonly IStateInfoFactory _StateInfoFactory;
+        private readonly IStateInfoFactory _stateInfoFactory;
         private readonly IOptions _options;
         private int _minhForward = int.MaxValue;
-        private int _minhBackward =int.MaxValue;
+        private int _minhBackward = int.MaxValue;
+        private RefAction<StateInfo, BidirectionalContext>? _cachedProcessNewStateHandler;
+
         public BidirectionalAStarSolver(IOptions options, IStateInfoFactory StateInfoFactory)
         {
             _options = options;
-            _StateInfoFactory = StateInfoFactory;
+            _stateInfoFactory = StateInfoFactory;
         }
 
         private void SetupBoardAndPositions(
@@ -67,6 +78,9 @@ namespace Slider.Solver
             _gridSize = (byte)Math.Sqrt(board.Length);
             _arrayPool = new(1000000, board.Length);
             _objectPool = new(1000000);
+
+            // Initialize the cached delegate once per solve
+            _cachedProcessNewStateHandler = ProcessNewState;
 
             PointerToken initialToken = _arrayPool.GetToken();
             PointerToken goalToken = _arrayPool.GetToken();
@@ -225,16 +239,23 @@ namespace Slider.Solver
             // Add current state to closed set
             closed.AddState(stateHash, currentState);
 
-            // store index into a regular local to capture in the lambda
-            int currentIdxForLambda = currentIndex;
-            _StateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, objectPool, _arrayPool!,
-                (ref StateInfo p) =>
-                {
-                    // retrieve the ref inside the lambda (no ref-capture)
-                    ref StateInfo csRef = ref objectPool.GetRef(currentIdxForLambda);
-                    HandleNewState(ref csRef, ref p, open, isForward, startPositions);
-                });
+            // Set up context for the cached handler
+            BidirectionalContext context = new BidirectionalContext
+            {
+                CurrentStepIndex = currentIndex,
+                CurrentOpen = open,
+                CurrentStartPositions = startPositions,
+                CurrentIsForward = isForward,
+                ObjectPool = _objectPool!,
+            };
+            _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, objectPool, _arrayPool!, ref context, _cachedProcessNewStateHandler!);
             return false;
+        }
+
+        private void ProcessNewState(ref StateInfo newState, ref BidirectionalContext context)
+        {
+            ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
+            HandleNewState(ref csRef, ref newState, context.CurrentOpen, context.CurrentIsForward, context.CurrentStartPositions);
         }
 
         private void HandleNewState(ref StateInfo currentState, ref StateInfo newState, PriorityQueue<int, double> open, bool isForward, int[] startPositions)

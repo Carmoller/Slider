@@ -9,10 +9,11 @@ namespace Slider.Interfaces
 {
     public interface IStateInfoFactory
     {
-        void GetAvailableMoves(ref StateInfo currentState,
+        void GetAvailableMoves<TContext>(ref StateInfo currentState,
             int gridSize,
             IChunkedStructPool<StateInfo> stateInfoPool,
             IChunkedArrayPoolUnsafe arrayPool,
-            RefAction<StateInfo> processState);
+            ref TContext context,
+            RefAction<StateInfo, TContext> processState) where TContext : struct;
     }
 }

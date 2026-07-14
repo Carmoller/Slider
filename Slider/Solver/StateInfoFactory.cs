@@ -51,30 +51,31 @@ namespace Slider.Solver
             return ref newState;
         }
 
-        public void GetAvailableMoves(ref StateInfo currentState,
+        public void GetAvailableMoves<TContext>(ref StateInfo currentState,
             int gridSize,
             IChunkedStructPool<StateInfo> stateInfoPool,
             IChunkedArrayPoolUnsafe arrayPool,
-            RefAction<StateInfo> processState)
+            ref TContext context,
+            RefAction<StateInfo, TContext> processState) where TContext : struct
         {
             int blankRow = currentState.BlankPos / gridSize;
             int blankCol = currentState.BlankPos % gridSize;
 
             if ((currentState.PreviousMove != MoveDirection.Down) && (blankRow != 0))
             {
-                processState(ref GetNewState((byte)(currentState.BlankPos - gridSize), MoveDirection.Up, ref currentState, stateInfoPool, arrayPool));
+                processState(ref GetNewState((byte)(currentState.BlankPos - gridSize), MoveDirection.Up, ref currentState, stateInfoPool, arrayPool), ref context);
             }
             if ((currentState.PreviousMove != MoveDirection.Up) && (blankRow != gridSize - 1))
             {
-                processState(ref GetNewState((byte)(currentState.BlankPos + gridSize), MoveDirection.Down, ref currentState, stateInfoPool, arrayPool));
+                processState(ref GetNewState((byte)(currentState.BlankPos + gridSize), MoveDirection.Down, ref currentState, stateInfoPool, arrayPool), ref context);
             }
             if ((currentState.PreviousMove != MoveDirection.Left) && (blankCol != gridSize - 1))
             {
-                processState(ref GetNewState((byte)(currentState.BlankPos + 1), MoveDirection.Right, ref currentState, stateInfoPool, arrayPool));
+                processState(ref GetNewState((byte)(currentState.BlankPos + 1), MoveDirection.Right, ref currentState, stateInfoPool, arrayPool), ref context);
             }
             if ((currentState.PreviousMove != MoveDirection.Right) && (blankCol != 0))
             {
-                processState(ref GetNewState((byte)(currentState.BlankPos - 1), MoveDirection.Left, ref currentState, stateInfoPool, arrayPool));
+                processState(ref GetNewState((byte)(currentState.BlankPos - 1), MoveDirection.Left, ref currentState, stateInfoPool, arrayPool), ref context);
             }
         }
     }

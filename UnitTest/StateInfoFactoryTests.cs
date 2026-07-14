@@ -55,6 +55,9 @@ namespace UnitTest
                 return token;
             }
         }
+        public void Release(int index)
+        {
+        }
 
         public void Release(PointerToken token)
         {
@@ -63,6 +66,11 @@ namespace UnitTest
     [TestClass]
     public class StateInfoFactoryTests
     {
+        private struct UnitTestContext
+        {
+            public int Value;
+        }
+
         [TestMethod]
         public void StateInfoFactory_MustReturnAllDirections()
         {
@@ -72,7 +80,8 @@ namespace UnitTest
             StateInfo currentState = new StateInfo { PreviousMove = MoveDirection.None, BlankPos = 4, BoardToken = arrayPool.GetToken()};
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
-            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, (ref p) => { directions.Add(p.PreviousMove); });
+            UnitTestContext context = new UnitTestContext { Value = 4 };
+            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, ref context, (ref p, ref context) => { directions.Add(p.PreviousMove); });
 
             Assert.HasCount(4, directions);
             Assert.Contains(MoveDirection.Up, directions);
@@ -86,19 +95,20 @@ namespace UnitTest
             int length = 9;
             FakeObjectPool objectPool = new();
             FakeArrayPool arrayPool = new(length);
+            UnitTestContext context = new UnitTestContext { Value = 4 };
             StateInfo currentState = new StateInfo { PreviousMove = MoveDirection.Up, BlankPos = 4, BoardToken = arrayPool.GetToken() };
             StateInfoFactory testObject = new();
             // Previous move is up
-            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, (ref p) => { Assert.AreNotEqual(MoveDirection.Down, p.PreviousMove); });
+            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, ref context, (ref p, ref context) => { Assert.AreNotEqual(MoveDirection.Down, p.PreviousMove); });
             // Previous move is down
             currentState.PreviousMove = MoveDirection.Down;
-            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, (ref p) => { Assert.AreNotEqual(MoveDirection.Up, p.PreviousMove); });
+            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, ref context, (ref p, ref context) => { Assert.AreNotEqual(MoveDirection.Up, p.PreviousMove); });
             // Previous move is left
             currentState.PreviousMove = MoveDirection.Left;
-            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, (ref p) => { Assert.AreNotEqual(MoveDirection.Right, p.PreviousMove); });
+            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, ref context, (ref p, ref context) => { Assert.AreNotEqual(MoveDirection.Right, p.PreviousMove); });
             // Previous move is right
             currentState.PreviousMove = MoveDirection.Right;
-            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, (ref p) => { Assert.AreNotEqual(MoveDirection.Left, p.PreviousMove); });
+            testObject.GetAvailableMoves(ref currentState, 3, objectPool, arrayPool, ref context, (ref p, ref context) => { Assert.AreNotEqual(MoveDirection.Left, p.PreviousMove); });
         }
         [TestMethod]
         public void StateInfoFactory_ContentsMustBeCorrectForUpMove()
@@ -111,6 +121,8 @@ namespace UnitTest
             int length = 9;
             FakeObjectPool objectPool = new(currentIndex);
             FakeArrayPool arrayPool = new(length);
+
+            UnitTestContext context = new UnitTestContext { Value = 4 };
 
             byte[] board = [1, 2, 3, 4, 0, 6, 7, 8, 5];
 
@@ -127,7 +139,7 @@ namespace UnitTest
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
-            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, (ref p) => { if (p.PreviousMove == MoveDirection.Up) { newState = p; }; });
+            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, ref context, (ref p, ref context) => { if (p.PreviousMove == MoveDirection.Up) { newState = p; }; });
 
             Assert.AreEqual(MoveDirection.Up, newState.PreviousMove);
             // We don't know the which order the new states are allocated, so NodeIndex can be between currentIndex and currentIndex + 4
@@ -167,7 +179,8 @@ namespace UnitTest
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
-            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, (ref p) => { if (p.PreviousMove == MoveDirection.Down) { newState = p; }; });
+            UnitTestContext context = new UnitTestContext { Value = 23 };
+            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, ref context, (ref p, ref context) => { if (p.PreviousMove == MoveDirection.Down) { newState = p; }; });
 
             Assert.AreEqual(MoveDirection.Down, newState.PreviousMove);
             // We don't know the which order the new states are allocated, so NodeIndex can be between currentIndex and currentIndex + 4
@@ -203,7 +216,8 @@ namespace UnitTest
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
-            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, (ref p) => { if (p.PreviousMove == MoveDirection.Left) { newState = p; }; });
+            UnitTestContext context = new UnitTestContext { Value = 45 };
+            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, ref context, (ref p, ref context) => { if (p.PreviousMove == MoveDirection.Left) { newState = p; }; });
 
             Assert.AreEqual(MoveDirection.Left, newState.PreviousMove);
             // We don't know the which order the new states are allocated, so NodeIndex can be between currentIndex and currentIndex + 4
@@ -239,7 +253,8 @@ namespace UnitTest
             List<MoveDirection> directions = new();
             StateInfoFactory testObject = new();
             StateInfo newState = new();
-            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, (ref p) => { if (p.PreviousMove == MoveDirection.Right) { newState = p; }; });
+            UnitTestContext context = new UnitTestContext { Value = 76 };
+            testObject.GetAvailableMoves(ref currentState, gridSize, objectPool, arrayPool, ref context, (ref p, ref context) => { if (p.PreviousMove == MoveDirection.Right) { newState = p; }; });
 
             Assert.AreEqual(MoveDirection.Right, newState.PreviousMove);
             // We don't know the which order the new states are allocated, so NodeIndex can be between currentIndex and currentIndex + 4

@@ -21,6 +21,13 @@ namespace Slider.Solver
 {
     public sealed class WeightedAStarSolver : IWeightedAStarSolver
     {
+        private struct WeightedAStarContext
+        {
+            public int CurrentStepIndex { get; set; }
+            public required ChunkedStructPool<StateInfo> ObjectPool { get; set; }
+            public required IHeuristicCalculator HeuristicCalculator { get; set; }
+        }
+
         const int F_Scale = 1000;
         const int G_Scale = 10;
         private const int H_CutoffForBfs = 10;
@@ -32,18 +39,19 @@ namespace Slider.Solver
         private readonly PriorityQueue<int, double> _openQueue = new();
         private readonly SolveStateDictionary<StateInfo> _closed = [];
         private int _gridSize;
-        private IHeuristicCalculator? _heuristicCalculator;
         private long _discardedStates = 0;
         private readonly IOptions _options;
         private readonly IStateInfoFactory _stateInfoFactory;
+        private RefAction<StateInfo, WeightedAStarContext> _cachedProcessNewStateHandler;
 
         public WeightedAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
         {
             _options = options;
             _stateInfoFactory = stateInfoFactory;
+            _cachedProcessNewStateHandler = ProcessNewState;
         }
 
-         private void Finalize(bool isTimedOut, 
+        private void Finalize(bool isTimedOut, 
             int bestHValueIndex, 
             SolveResult result,
             ChunkedStructPool<StateInfo> stateInfoPool,
@@ -64,7 +72,9 @@ namespace Slider.Solver
         }
 
         public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
-        { 
+        {
+            // Initialize the cached delegate once per solve
+
             _gridSize = (int)Math.Sqrt(board.Length);
             if (targetBoard.Length == 0)
             {
@@ -75,13 +85,13 @@ namespace Slider.Solver
             ChunkedArrayPoolUnsafe arrayPool = new ChunkedArrayPoolUnsafe(1000000, _gridSize * _gridSize);
             SolveResult result = new();
             Stopwatch sw = Stopwatch.StartNew();
-            _heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(_gridSize), _gridSize, _options, solverOptions);
+            IHeuristicCalculator heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(_gridSize), _gridSize, _options, solverOptions);
 
             StateInfo startState = SolverHelper.CreateStateInfoFromBoard(
                 board, 
                 arrayPool, 
                 stateInfoPool, 
-                _heuristicCalculator,
+                heuristicCalculator,
                 _gridSize, 
                 (StateInfo state) => { return w * state.CurrentF; },
                 GetHeuristics, 
@@ -106,9 +116,9 @@ namespace Slider.Solver
             int min_h = int.MaxValue;
             int h_previous = int.MaxValue;
             bestHValueIndex = startState.NodeIndex;
-            while (_openQueue.TryDequeue(out int nodeIndex, out double f_current))
+            while (_openQueue.TryDequeue(out int currentIndex, out double f_current))
             {
-                StateInfo currentState = stateInfoPool.GetRef(nodeIndex);
+                ref StateInfo currentState = ref stateInfoPool.GetRef(currentIndex);
                 bool found = _closed.TryGetState(currentState.Hash, currentState, out StateInfo closedState);
                 if (found)
                 {
@@ -145,11 +155,6 @@ namespace Slider.Solver
                 int h_Current = currentState.CurrentH;
                 if (h_Current < min_h)
                 {
-                    if (h_Current == 0)
-                    {
-                        int a = 1;
-                    }
-
                     bestHValueIndex = currentState.NodeIndex;
                     Debug.WriteLine($"Weighted A*: State #{result.TotalStatesConsidered}: h:{h_Current}");
                     min_h = h_Current;
@@ -167,7 +172,7 @@ namespace Slider.Solver
                     Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
                     // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
                     BfsSolver solver = new(_options);
-                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, _heuristicCalculator, _stateInfoFactory, _gridSize);
+                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, heuristicCalculator, _stateInfoFactory, _gridSize);
                     if (moves != null)
                     {
                         // Finished
@@ -188,7 +193,15 @@ namespace Slider.Solver
                 result.TotalStatesConsidered++;
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
-                _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, (ref p) => { HandleNewState(ref currentState, ref p); });
+
+                WeightedAStarContext context = new WeightedAStarContext
+                {
+                    CurrentStepIndex = currentIndex,
+                    ObjectPool = stateInfoPool,
+                    HeuristicCalculator = heuristicCalculator,
+                };
+
+                _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool!, ref context, _cachedProcessNewStateHandler);
             }
             result.Result = SolveResultType.Unsolvable;
             return result;
@@ -232,18 +245,19 @@ namespace Slider.Solver
             }
             throw new InvalidOperationException("Shouldn't get here");
         }
+        private void ProcessNewState(ref StateInfo newState, ref WeightedAStarContext context)
+        {
+            ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
+            HandleNewState(ref csRef, ref newState, context.HeuristicCalculator);
+        }
 
-        private void HandleNewState(ref StateInfo currentState, ref StateInfo newState)
+        private void HandleNewState(ref StateInfo currentState, ref StateInfo newState, IHeuristicCalculator heuristicCalculator)
         {
             int tentative_g = currentState.CurrentG + 1;
             newState.Hash = GetHashCode(newState);
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
-            newState.CurrentH = GetHeuristics(_heuristicCalculator, newState.BoardToken.AsSpan(), _gridSize);
-            if (newState.CurrentH == 1)
-            {
-                int a = 1;
-                }
+            newState.CurrentH = GetHeuristics( heuristicCalculator, newState.BoardToken.AsSpan(), _gridSize);
             newState.CurrentF = newState.CurrentG + (w * newState.CurrentH);
             if (newState.BestG > currentState.CurrentG)
             {

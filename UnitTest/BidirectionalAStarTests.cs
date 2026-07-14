@@ -256,6 +256,7 @@ namespace UnitTest
             // Assert
             BoardHelper.VerifyMoves(board, result);
             BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
+            Console.WriteLine($"States considered: {result.TotalStatesConsidered}");
         }
         [TestMethod]
         public void Test3x3Board()
@@ -278,6 +279,7 @@ namespace UnitTest
             // Assert
             BoardHelper.VerifyMoves(board, result);
             BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
+            Console.WriteLine($"States considered: {result.TotalStatesConsidered}");
         }
         [TestMethod]
         public void Test4x4Board()

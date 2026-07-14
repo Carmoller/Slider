@@ -176,7 +176,7 @@ namespace UnitTest
             }
         }
 
-//        [TestMethod]
+        [TestMethod]
         [TestCategory("DebugOnly")] // Flagging this test
         [DataRow(5, 5)]
         [DataRow(5, 6)]

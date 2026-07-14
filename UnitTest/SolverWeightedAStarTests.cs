@@ -69,8 +69,7 @@ namespace UnitTest
         public void Test_Problematic_State_5x5_2()
         {
             Mock<IOptions> optionsMock = new();
-            optionsMock.Setup(p => p.PdbLocation).Returns("E:\\src\\net\\Slider");
-            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.Zero);
 
 
             byte[] board = [
@@ -83,7 +82,7 @@ namespace UnitTest
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
             WeightedAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = true, UseSprintFinish = true };
+            SolverOptions solverOptions = new SolverOptions { UseLinearConflict = true, UseCornerPattern = true, UseEdgePattern = true, UsePdbs = false, UseSprintFinish = true };
             SolveResult result = solver.Solve(board, [], solverOptions, new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);

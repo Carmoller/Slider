@@ -58,7 +58,6 @@ namespace Slider.Solver
         private readonly IStateInfoFactory _stateInfoFactory;
         private double w = 3;
         private readonly ISolverFactory _solverFactory;
-        private byte[] _goalPositions;
         private int _goalPositionsActiveCount;
 
         private readonly MinimumSpanningTree _mst = new();
@@ -72,17 +71,17 @@ namespace Slider.Solver
         {
             _goalPositionsActiveCount = 0;
             SolveResult result = new();
-            _goalPositions = new byte[board.Length];
-            for (int i = 0; i < _goalPositions.Length; i++)
+            byte[] goalPositions = new byte[board.Length];
+            for (int i = 0; i < goalPositions.Length; i++)
             {
                 if (i == 0)
                 {
-                    _goalPositions[i] = byte.MaxValue;
+                    goalPositions[i] = byte.MaxValue;
                     continue;
                 }
                 _goalPositionsActiveCount++;
                 (int row, int col) = (i-1).ToRowAndColumn(_gridSize);
-                _goalPositions[i] = (row == rowColNumber || col == rowColNumber) ? (byte)(i-1) : byte.MaxValue;
+                goalPositions[i] = (row == rowColNumber || col == rowColNumber) ? (byte)(i-1) : byte.MaxValue;
             }
             StateInfo startState = SolverHelper.CreateStateInfoFromBoard(
                 board,

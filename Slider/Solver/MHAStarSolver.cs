@@ -21,6 +21,12 @@ namespace Slider.Solver
 {
     public sealed class MHAStarSolver : ISolver
     {
+        private struct MHAStarSolverContext
+        {
+            public required IChunkedStructPool<StateInfo> ObjectPool { get; set; }
+            public required int CurrentStepIndex { get; set; }
+        }
+
         const int F_Scale = 1000;
         const int G_Scale = 10;
         private const int H_CutoffForBfs = 10;
@@ -37,11 +43,13 @@ namespace Slider.Solver
         private long _discardedStates = 0;
         private readonly IOptions _options;
         private readonly IStateInfoFactory _stateInfoFactory;
+        private RefAction<StateInfo, MHAStarSolverContext> _cachedProcessNewStateHandler;
 
         public MHAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
         {
             _options = options;
             _stateInfoFactory = stateInfoFactory;
+            _cachedProcessNewStateHandler = ProcessNewState;
         }
 
         private StateInfo CreateStartState(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, byte[] board)
@@ -245,7 +253,15 @@ namespace Slider.Solver
                 result.TotalStatesConsidered++;
                 if (!found)
                     _closed.AddState(currentState.Hash, currentState);
-                _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, (ref p) => { HandleNewState(stateInfoPool, ref currentState, ref p); });
+
+                MHAStarSolverContext context = new MHAStarSolverContext
+                {
+                    ObjectPool = stateInfoPool,
+                    CurrentStepIndex = currentState.NodeIndex
+                };
+
+                _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, ref context, _cachedProcessNewStateHandler!);
+
             }
             result.Result = SolveResultType.Unsolvable;
             return result;
@@ -299,8 +315,14 @@ namespace Slider.Solver
             }
             throw new InvalidOperationException("Shouldn't get here");
         }
+        private void ProcessNewState(ref StateInfo newState, ref MHAStarSolverContext context)
+        {
+            ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
+            HandleNewState(context.ObjectPool, ref csRef, ref newState);
+        }
 
-        private void HandleNewState(ChunkedStructPool<StateInfo> stateInfoPool, ref StateInfo currentState, ref StateInfo newState)
+
+        private void HandleNewState(IChunkedStructPool<StateInfo> stateInfoPool, ref StateInfo currentState, ref StateInfo newState)
         {
             int tentative_g = currentState.CurrentG + 1;
             newState.Hash = GetHashCode(newState);

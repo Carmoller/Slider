@@ -1,0 +1,115 @@
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+public unsafe class GreedyVisitedSet : IDisposable
+{
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Node
+    {
+        public ulong ZobristHash;
+        public int Next; // Chains entries inside the same bucket, or chains the free-list
+        public fixed byte BoardState;
+    }
+
+    private readonly int _bucketCount;
+    private readonly int _maxPoolSize;
+    
+    private int* _buckets;
+    private Node* _nodePool;
+    
+    private int _freeHead; // Head of the allocation-free pool recycling chain
+    private int _count;
+    private bool _isDisposed;
+
+    public GreedyVisitedSet(int bucketCount, int maxPoolSize)
+    {
+        _bucketCount = bucketCount;
+        _maxPoolSize = maxPoolSize;
+
+        _buckets = (int*)NativeMemory.AllocZeroed((nuint)bucketCount, sizeof(int));
+        _nodePool = (Node*)NativeMemory.Alloc((nuint)maxPoolSize, (nuint)sizeof(Node));
+
+        // 1. Initialize all buckets to -1 (empty)
+        Unsafe.InitBlockUnaligned(_buckets, 0xFF, (uint)(bucketCount * sizeof(int)));
+
+        // 2. Thread the entire pool into a single allocation-free free-list chain
+        for (int i = 0; i < maxPoolSize - 1; i++)
+        {
+            _nodePool[i].Next = i + 1;
+        }
+        _nodePool[maxPoolSize - 1].Next = -1; // End of pool
+        _freeHead = 0;
+        _count = 0;
+    }
+
+    /// <summary>
+    /// Attempts to record a state. Returns true if it's a brand new state.
+    /// Returns false if the state was already visited (preventing a greedy loop).
+    /// </summary>
+    public bool TryRecordVisited(ulong hash, ReadOnlySpan<byte> board)
+    {
+        int bucketIndex = (int)(Mix64(hash) % (ulong)_bucketCount);
+        int currentIndex = _buckets[bucketIndex];
+
+        // 1. Scan the chain for an exact match (0% false positives)
+        while (currentIndex != -1)
+        {
+            Node* node = &_nodePool[currentIndex];
+            if (node->ZobristHash == hash)
+            {
+                ReadOnlySpan<byte> nodeBoard = new ReadOnlySpan<byte>(node->BoardState, 100);
+                if (board.SequenceEqual(nodeBoard))
+                {
+                    return false; // Already visited! Block the greedy loop.
+                }
+            }
+            currentIndex = node->Next;
+        }
+
+        // 2. Allocate out of our fixed unmanaged pool
+        if (_freeHead == -1)
+        {
+            throw new InvalidOperationException("Visited set pool exhausted. Increase maxPoolSize.");
+        }
+
+        int allocatedNodeIndex = _freeHead;
+        Node* newNode = &_nodePool[allocatedNodeIndex];
+        
+        // Pop from free-list
+        _freeHead = newNode->Next;
+
+        // Populate node
+        newNode->ZobristHash = hash;
+        fixed (byte* pBoard = board)
+        {
+            Unsafe.CopyBlock(newNode->BoardState, pBoard, 100);
+        }
+
+        // Push node to the front of the bucket chain
+        newNode->Next = _buckets[bucketIndex];
+        _buckets[bucketIndex] = allocatedNodeIndex;
+
+        _count++;
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong Mix64(ulong x)
+    {
+        x ^= x >> 30;
+        x *= 0xbf58476d1ce4e5b9UL;
+        x ^= x >> 27;
+        x *= 0x94d049bb133111ebUL;
+        x ^= x >> 31;
+        return x;
+    }
+
+    public void Dispose()
+    {
+        if (_isDisposed) return;
+        NativeMemory.Free(_buckets);
+        NativeMemory.Free(_nodePool);
+        _isDisposed = true;
+    }
+}
