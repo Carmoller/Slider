@@ -20,7 +20,7 @@ namespace UnitTest
                 throw new NotImplementedException();
             }
 
-            public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
             }
@@ -32,7 +32,7 @@ namespace UnitTest
                 throw new NotImplementedException();
             }
 
-            public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
             }
@@ -43,7 +43,7 @@ namespace UnitTest
             {
                 throw new NotImplementedException();
             }
-            public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
             }

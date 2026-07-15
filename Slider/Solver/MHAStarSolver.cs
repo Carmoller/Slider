@@ -52,7 +52,7 @@ namespace Slider.Solver
             _cachedProcessNewStateHandler = ProcessNewState;
         }
 
-        private StateInfo CreateStartState(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, byte[] board)
+        private StateInfo CreateStartState(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, Span<byte> board)
         {
             int startBlank = int.MaxValue;
             for (int i = 0; i < board.Length; i++)
@@ -111,7 +111,7 @@ namespace Slider.Solver
             }
             return goalBoard;
         }
-        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Length);
             if (targetBoard.Length == 0)

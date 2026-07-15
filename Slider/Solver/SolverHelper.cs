@@ -1,7 +1,9 @@
 ﻿using Slider.Common;
 using Slider.Common.Interfaces;
+using Slider.Heuristics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Slider.Solver
@@ -88,8 +90,9 @@ namespace Slider.Solver
                     moves.Reverse();
                     return moves;
                 }
-                if (boardCache.Exists(GetHashCode(current), current))
+                if (boardCache.TryGetState(GetHashCode(current), current, out StateInfo previousState))
                 {
+                    Console.WriteLine("Detected macro loop");
                     int a = 1;
                 }
 

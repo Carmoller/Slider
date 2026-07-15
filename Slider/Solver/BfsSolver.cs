@@ -21,6 +21,7 @@ namespace Slider.Solver
             public required IHeuristicCalculator Calculator { get; set; }
             public required int CurrentStepIndex { get; set; }
         }
+        public int MaxG { get; set; } = int.MaxValue;
 
         private readonly PriorityQueue<StateInfo, double> _openQueue = new();
         private readonly SolveStateDictionary<StateInfo> _closed = [];
@@ -39,7 +40,7 @@ namespace Slider.Solver
             _cachedProcessNewStateHandler = ProcessNewState;
         }
 
-        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Length);
             if (targetBoard.Length == 0)
@@ -104,9 +105,11 @@ namespace Slider.Solver
 
                     if (currentState.CurrentH < _min_h)
                     {
-                        Console.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{nodesExplored}: h:{currentState.CurrentH}");
+                        Debug.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{nodesExplored}: h:{currentState.CurrentH}");
                         _min_h = currentState.CurrentH;
                     }
+                    if (currentState.CurrentG >= MaxG)
+                        return null;
                     nodesExplored++;
                     result.TotalStatesConsidered++;
 

@@ -67,7 +67,7 @@ namespace Slider.Solver
             _stateInfoFactory = stateInfoFactory;
             _solverFactory = solverFactory;
         }
-        private SolveResult SolveOneRowColumn(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, byte[] board, int rowColNumber)
+        private SolveResult SolveOneRowColumn(ChunkedArrayPoolUnsafe arrayPool, ChunkedStructPool<StateInfo> stateInfoPool, Span<byte> board, int rowColNumber)
         {
             _goalPositionsActiveCount = 0;
             SolveResult result = new();
@@ -103,7 +103,7 @@ namespace Slider.Solver
                 new RowColHeuristicFactory(GetHeuristics));
         }
 
-        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             _gridSize = (int)Math.Sqrt(board.Length);
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);

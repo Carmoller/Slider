@@ -55,6 +55,7 @@ namespace Slider.Solver
             int bestHValueIndex, 
             SolveResult result,
             ChunkedStructPool<StateInfo> stateInfoPool,
+            ref StateInfo startState,
             ref StateInfo currentState)
         {
             ref StateInfo bestState = ref currentState;
@@ -71,7 +72,7 @@ namespace Slider.Solver
             Cleanup();
         }
 
-        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             // Initialize the cached delegate once per solve
 
@@ -164,7 +165,7 @@ namespace Slider.Solver
                     {
                         sw.Stop();
                         result.TimeSpent = sw.Elapsed;
-                        Finalize(sw.Elapsed > _options.SolveTimeout, bestHValueIndex, result, stateInfoPool, ref currentState);
+                        Finalize(sw.Elapsed > _options.SolveTimeout, bestHValueIndex, result, stateInfoPool, ref startState, ref currentState);
                         return result;
                     }
 

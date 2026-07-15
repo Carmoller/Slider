@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Automation;
+using System.Windows.Markup;
 
 namespace Slider.Solver
 {
@@ -45,6 +46,8 @@ namespace Slider.Solver
                     return new WeightedAStarSolver(_options, _stateInfoFactory);
                 case SolverType.BidirectionalAStar:
                     return new BidirectionalAStarSolver(_options, _stateInfoFactory);
+                case SolverType.BFSSolver:
+                    return new BfsSolver(_options);
                 default:
                     throw new InvalidOperationException($"Requesting unknown solver type: {type.ToString()}");
             }

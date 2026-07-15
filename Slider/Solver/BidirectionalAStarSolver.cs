@@ -64,7 +64,7 @@ namespace Slider.Solver
             }
         }
 
-        public SolveResult Solve(byte[] board, byte[] targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
         {
             int gridSize = (int)Math.Sqrt(board.Length);
             if (targetBoard.Length == 0)
