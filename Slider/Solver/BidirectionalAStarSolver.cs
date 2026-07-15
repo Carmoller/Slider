@@ -23,14 +23,12 @@ namespace Slider.Solver
             public required PriorityQueue<int, double> CurrentOpen;
             public bool CurrentIsForward;
             public required int[] CurrentStartPositions;
-            public ChunkedStructPool<StateInfo> ObjectPool;
+            public IChunkedStructPool<StateInfo> ObjectPool;
         }
 
         private int _gridSize = 0;
         public IHeuristicCalculator? Calculator { get { return _heuristicsCalculator; } }
         private int StatesCalculatedCount { get; set; }
-        private ChunkedArrayPoolUnsafe? _arrayPool;
-        private ChunkedStructPool<StateInfo>? _objectPool;
         private IHeuristicCalculator? _heuristicsCalculator;
         private IHeuristicCalculator? _reverseCalculator;
         private readonly IStateInfoFactory _stateInfoFactory;
@@ -76,88 +74,91 @@ namespace Slider.Solver
             Stopwatch sw = Stopwatch.StartNew();
 
             _gridSize = (byte)Math.Sqrt(board.Length);
-            _arrayPool = new(1000000, board.Length);
-            _objectPool = new(1000000);
-
-            // Initialize the cached delegate once per solve
-            _cachedProcessNewStateHandler = ProcessNewState;
-
-            PointerToken initialToken = _arrayPool.GetToken();
-            PointerToken goalToken = _arrayPool.GetToken();
-
-            int[] startPositions = new int[board.Length];
-            SetupBoardAndPositions(board, initialToken.AsSpan(), goalToken.AsSpan(), startPositions, out int emptyPosition);
-
-            _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(goalToken.AsSpan(), gridSize, _options, solverOptions);
-
-            _reverseCalculator = heuristicElementFactory.CreateHeuristicCalculator(initialToken.AsSpan(), gridSize, _options,
-                new SolverOptions { UseManhattanDistance = true, UseLinearConflict = false, UseEdgePattern = false, UseCornerPattern = true, UsePdbs = false });
-
-            // Check if already solved
-            if (initialToken.AsSpan().SequenceCompareTo(goalToken.AsSpan()) == 0)
-                return new() { Result = SolveResultType.AlreadySolved };
-
-            // Bidirectional A*
-            PriorityQueue<int, double> forwardOpen = new();
-            SolveStateDictionary<StateInfo> forwardClosed = [];
-            PriorityQueue<int, double> backwardOpen = new();
-            SolveStateDictionary<StateInfo> backwardClosed = [];
-
-            int initialH = GetHeuristic(initialToken.AsSpan(), _gridSize);
-            int goalH = _reverseCalculator.GetHeuristic(goalToken.AsSpan(), _gridSize);
-
-            StateInfo startState = new() { CurrentG = 0, CurrentH = initialH, BlankPos = emptyPosition };
-            int startStateIndex = _objectPool.Get(startState, (ref state, source) =>
+            using (ChunkedArrayPoolUnsafe arrayPool = new(1000000, board.Length))
             {
-                state.ParentIndex = -1;
-                state.CurrentG = 0;
-                state.CurrentH = initialH;
-                state.BlankPos = emptyPosition;
-                state.BoardToken = _arrayPool.GetToken();
-                initialToken.AsSpan().CopyTo(state.BoardToken.AsSpan());
-            });
-            ref StateInfo startStateActual = ref _objectPool.GetRef(startStateIndex);
-            startStateActual.NodeIndex = startStateIndex;
+                ChunkedStructPool<StateInfo> objectPool = new(1000000);
 
-            StateInfo goalState = new() { CurrentG = 0, CurrentH = goalH, BlankPos = _gridSize * _gridSize - 1 };
-            int goalStateIndex = _objectPool.Get(startState, (ref state, source) =>
-            {
-                state.ParentIndex = -1;
-                state.CurrentG = 0;
-                state.CurrentH = goalH;
-                state.BlankPos = _gridSize * _gridSize - 1;
-                state.BoardToken = _arrayPool.GetToken();
-                goalToken.AsSpan().CopyTo(state.BoardToken.AsSpan());
-            });
-            ref StateInfo goalStateActual = ref _objectPool.GetRef(goalStateIndex);
-            goalStateActual.NodeIndex = goalStateIndex;
+                // Initialize the cached delegate once per solve
+                _cachedProcessNewStateHandler = ProcessNewState;
 
-            forwardOpen.Enqueue(startStateIndex, startState.CurrentF);
-            backwardOpen.Enqueue(goalStateIndex, goalState.CurrentF);
+                PointerToken initialToken = arrayPool.GetToken();
+                PointerToken goalToken = arrayPool.GetToken();
 
-            StatesCalculatedCount = 1;
+                int[] startPositions = new int[board.Length];
+                SetupBoardAndPositions(board, initialToken.AsSpan(), goalToken.AsSpan(), startPositions, out int emptyPosition);
 
-            List<Move> moves = IteratePaths(_objectPool, forwardOpen, backwardOpen, forwardClosed, backwardClosed, startPositions);
+                _heuristicsCalculator = heuristicElementFactory.CreateHeuristicCalculator(goalToken.AsSpan(), gridSize, _options, solverOptions);
 
-            sw.Stop();
-            return new(moves)
-            {
-                Result = SolveResultType.Solved,
-                TimeSpent = TimeSpan.FromTicks(sw.ElapsedTicks),
-                TotalStatesConsidered = StatesCalculatedCount,
-                ForwardDictonarySize = forwardClosed.Count,
-                BackwardDictonarySize = backwardClosed.Count,
-                ForwardCollisionCount = forwardClosed.CollisionCount,
-                BackwardCollisionCount = backwardClosed.CollisionCount,
-                ForwardHitCount = forwardClosed.HitCount,
-                BackwardHitCount = backwardClosed.HitCount,
-                ForwardMaxListLength = forwardClosed.MaxLength,
-                BackwardMaxListLength = backwardClosed.MaxLength
-            };
+                _reverseCalculator = heuristicElementFactory.CreateHeuristicCalculator(initialToken.AsSpan(), gridSize, _options,
+                    new SolverOptions { UseManhattanDistance = true, UseLinearConflict = false, UseEdgePattern = false, UseCornerPattern = true, UsePdbs = false });
+
+                // Check if already solved
+                if (initialToken.AsSpan().SequenceCompareTo(goalToken.AsSpan()) == 0)
+                    return new() { Result = SolveResultType.AlreadySolved };
+
+                // Bidirectional A*
+                PriorityQueue<int, double> forwardOpen = new();
+                SolveStateDictionary<StateInfo> forwardClosed = [];
+                PriorityQueue<int, double> backwardOpen = new();
+                SolveStateDictionary<StateInfo> backwardClosed = [];
+
+                int initialH = GetHeuristic(initialToken.AsSpan(), _gridSize);
+                int goalH = _reverseCalculator.GetHeuristic(goalToken.AsSpan(), _gridSize);
+
+                StateInfo startState = new() { CurrentG = 0, CurrentH = initialH, BlankPos = emptyPosition };
+                int startStateIndex = objectPool.Get(startState, (ref state, source) =>
+                {
+                    state.ParentIndex = -1;
+                    state.CurrentG = 0;
+                    state.CurrentH = initialH;
+                    state.BlankPos = emptyPosition;
+                    state.BoardToken = arrayPool.GetToken();
+                    initialToken.AsSpan().CopyTo(state.BoardToken.AsSpan());
+                });
+                ref StateInfo startStateActual = ref objectPool.GetRef(startStateIndex);
+                startStateActual.NodeIndex = startStateIndex;
+
+                StateInfo goalState = new() { CurrentG = 0, CurrentH = goalH, BlankPos = _gridSize * _gridSize - 1 };
+                int goalStateIndex = objectPool.Get(startState, (ref state, source) =>
+                {
+                    state.ParentIndex = -1;
+                    state.CurrentG = 0;
+                    state.CurrentH = goalH;
+                    state.BlankPos = _gridSize * _gridSize - 1;
+                    state.BoardToken = arrayPool.GetToken();
+                    goalToken.AsSpan().CopyTo(state.BoardToken.AsSpan());
+                });
+                ref StateInfo goalStateActual = ref objectPool.GetRef(goalStateIndex);
+                goalStateActual.NodeIndex = goalStateIndex;
+
+                forwardOpen.Enqueue(startStateIndex, startState.CurrentF);
+                backwardOpen.Enqueue(goalStateIndex, goalState.CurrentF);
+
+                StatesCalculatedCount = 1;
+
+                List<Move> moves = IteratePaths(objectPool, arrayPool, forwardOpen, backwardOpen, forwardClosed, backwardClosed, startPositions);
+
+                sw.Stop();
+                return new(moves)
+                {
+                    Result = SolveResultType.Solved,
+                    TimeSpent = TimeSpan.FromTicks(sw.ElapsedTicks),
+                    TotalStatesConsidered = StatesCalculatedCount,
+                    ForwardDictonarySize = forwardClosed.Count,
+                    BackwardDictonarySize = backwardClosed.Count,
+                    ForwardCollisionCount = forwardClosed.CollisionCount,
+                    BackwardCollisionCount = backwardClosed.CollisionCount,
+                    ForwardHitCount = forwardClosed.HitCount,
+                    BackwardHitCount = backwardClosed.HitCount,
+                    ForwardMaxListLength = forwardClosed.MaxLength,
+                    BackwardMaxListLength = backwardClosed.MaxLength
+                };
+            }
         }
 
         private List<Move> IteratePaths(
-            ChunkedStructPool<StateInfo> objectPool,
+            IChunkedStructPool<StateInfo> objectPool,
+            IChunkedArrayPoolUnsafe arrayPool,
             PriorityQueue<int, double> forwardOpen,
             PriorityQueue<int, double> backwardOpen,
             SolveStateDictionary<StateInfo> forwardClosed,
@@ -169,14 +170,14 @@ namespace Slider.Solver
             while (forwardOpen.Count > 0 && backwardOpen.Count > 0)
             {
                 // Forward step
-                bool forwardResult = StepSearch(objectPool, forwardOpen, forwardClosed, backwardClosed, ref forwardState, ref backwardState, startPositions, true);
+                bool forwardResult = StepSearch(objectPool, arrayPool, forwardOpen, forwardClosed, backwardClosed, ref forwardState, ref backwardState, startPositions, true);
                 if (forwardResult)
                 {
                     return ReconstructPath(objectPool, ref forwardState, ref backwardState);
                 }
 
                 // Backward step
-                bool backwardResult = StepSearch(objectPool, backwardOpen, backwardClosed, forwardClosed, ref forwardState, ref backwardState, startPositions, false);
+                bool backwardResult = StepSearch(objectPool, arrayPool, backwardOpen, backwardClosed, forwardClosed, ref forwardState, ref backwardState, startPositions, false);
                 if (backwardResult)
                 {
                     return ReconstructPath(objectPool, ref forwardState, ref backwardState);
@@ -186,7 +187,8 @@ namespace Slider.Solver
         }
 
         private bool StepSearch(
-            ChunkedStructPool<StateInfo> objectPool,
+            IChunkedStructPool<StateInfo> objectPool,
+            IChunkedArrayPoolUnsafe arrayPool,
             PriorityQueue<int, double> open,
             SolveStateDictionary<StateInfo> closed,
             SolveStateDictionary<StateInfo> oppositeClosed,
@@ -211,7 +213,7 @@ namespace Slider.Solver
 #if DIAGNOSE
                 Debug.WriteLine("\tAlready visited");
 #endif
-                objectPool.Release(currentIndex, (ref p) => { _arrayPool!.Release(p.BoardArrayIndex); });
+                objectPool.Release(currentIndex, (ref p) => { arrayPool.Release(p.BoardArrayIndex); });
                 return false;
             }
 
@@ -246,9 +248,9 @@ namespace Slider.Solver
                 CurrentOpen = open,
                 CurrentStartPositions = startPositions,
                 CurrentIsForward = isForward,
-                ObjectPool = _objectPool!,
+                ObjectPool = objectPool,
             };
-            _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, objectPool, _arrayPool!, ref context, _cachedProcessNewStateHandler!);
+            _stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, objectPool, arrayPool, ref context, _cachedProcessNewStateHandler!);
             return false;
         }
 
@@ -270,7 +272,7 @@ namespace Slider.Solver
                 if (newState.CurrentH < _minhForward)
                 {
                     _minhForward = newState.CurrentH;
-                    Debug.WriteLine($"Forward: New min h: {_minhForward}, StateCount: {StatesCalculatedCount}");
+                    Console.WriteLine($"Forward: New min h: {_minhForward}, StateCount: {StatesCalculatedCount}");
                 }
             }
             else
@@ -279,7 +281,7 @@ namespace Slider.Solver
                 if (newState.CurrentH < _minhBackward)
                 {
                     _minhBackward = newState.CurrentH;
-                    Debug.WriteLine($"Backward: New  min h: {_minhBackward}, StateCount: {StatesCalculatedCount}");
+                    Console.WriteLine($"Backward: New  min h: {_minhBackward}, StateCount: {StatesCalculatedCount}");
                 }
             }
             newState.CurrentF = newState.CurrentG + newState.CurrentH;
@@ -287,7 +289,9 @@ namespace Slider.Solver
             {
                 newState.BestG = currentState.CurrentG;
             }
-            double priority = newState.CurrentF + newState.CurrentG;
+//            double priority = newState.CurrentF + newState.CurrentG;
+            double priority = (newState.CurrentH * 1.2 + currentState.CurrentG) - (currentState.CurrentG * 0.0001);
+
             open.Enqueue(newState.NodeIndex, priority);
 #if DEBUG
             if (newState.BoardToken.AsSpan()[newState.BlankPos] != 0)
@@ -301,7 +305,7 @@ namespace Slider.Solver
 #endif
         }
 
-        private List<Move> ReconstructPath(ChunkedStructPool<StateInfo> objectPool, ref StateInfo forwardState, ref StateInfo backwardState)
+        private List<Move> ReconstructPath(IChunkedStructPool<StateInfo> objectPool, ref StateInfo forwardState, ref StateInfo backwardState)
         {
             List<Move> result = [];
 

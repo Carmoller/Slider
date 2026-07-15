@@ -61,6 +61,49 @@ namespace Slider.Solver
             board.CopyTo(state.BoardToken.AsSpan());
             return state;
         }
+        private static Move GetMove(StateInfo goal, StateInfo start, int gridSize)
+        {
+            (int fromRow, int fromCol) = Math.DivRem(start.BlankPos, gridSize);
+            (int toRow, int toCol) = Math.DivRem(goal.BlankPos, gridSize);
+            return new Move
+            {
+                FromRow = fromRow,
+                ToRow = toRow,
+                FromColumn = fromCol,
+                ToColumn = toCol
+            };
+        }
+
+        public static List<Move> ReconstructPath(StateInfo goalState, ChunkedStructPool<StateInfo> stateInfoPool, int gridSize)
+        {
+            SolveStateDictionary<StateInfo> boardCache = new();
+
+            List<Move> moves = [];
+            int nodeIndex = goalState.NodeIndex;
+            while (nodeIndex != -1)
+            {
+                ref StateInfo current = ref stateInfoPool.GetRef(nodeIndex);
+                if (current.ParentIndex == -1)
+                {
+                    moves.Reverse();
+                    return moves;
+                }
+                if (boardCache.Exists(GetHashCode(current), current))
+                {
+                    int a = 1;
+                }
+
+                ref StateInfo parent = ref stateInfoPool.GetRef(current.ParentIndex);
+                moves.Add(GetMove(parent, current, gridSize));
+                nodeIndex = parent.NodeIndex;
+            }
+            throw new InvalidOperationException("Shouldn't get here");
+        }
+
+        public static long GetHashCode(StateInfo state)
+        {
+            return StateHashes.FastHash(state.BoardToken.AsSpan());
+        }
 
     }
 }
