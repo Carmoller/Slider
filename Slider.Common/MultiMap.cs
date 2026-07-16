@@ -3,7 +3,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-public sealed class MultiMap<T>
+public sealed class MultiMap<T> where T: struct
 {
     private long[] _keys;
     private int[] _valueStart;
@@ -24,10 +24,18 @@ public sealed class MultiMap<T>
     // -------------------------------------------------
     // PUBLIC API
     // -------------------------------------------------
-    public void Add(long key, T value)
+    public void Clear()
+    {
+    }
+
+    public void AddState(long key, T value)
     {
         if (_nextValueIndex >= _values.Length)
-            throw new InvalidOperationException("Value storage full. Call ResizeValues().");
+        {
+            ResizeValues(2 * _values.Length);
+            ResizeKeys(2 * _values.Length);
+  //          throw new InvalidOperationException("Value storage full. Call ResizeValues().");
+        }
         int slot = ProbeForSlot(key);
         if (_keys[slot] == 0 && _valueCount[slot] == 0)
         {
@@ -42,7 +50,11 @@ public sealed class MultiMap<T>
             // Existing key
             int idx = _valueStart[slot] + _valueCount[slot];
             if (idx >= _values.Length)
-                throw new InvalidOperationException("Value storage full. Call ResizeValues().");
+            {
+                ResizeValues(2 * _values.Length);
+                ResizeKeys(2 * _values.Length);
+//                throw new InvalidOperationException("Value storage full. Call ResizeValues().");
+            }
             _values[idx] = value;
             _valueCount[slot]++;
             _nextValueIndex++;
@@ -54,6 +66,23 @@ public sealed class MultiMap<T>
         if (slot < 0)
             return ReadOnlySpan<T>.Empty;
         return new ReadOnlySpan<T>(_values, _valueStart[slot], _valueCount[slot]);
+    }
+
+    public bool TryGetState(long key, T testValue, ref T existing)
+    {
+        existing = default;
+        ReadOnlySpan<T> existingSpan = Get(key);
+        if (existingSpan == ReadOnlySpan<T>.Empty)
+            return false;
+        for (int i = 0; i < existingSpan.Length; i++)
+        {
+            if (existingSpan[i].Equals(testValue))
+            {
+                existing = existingSpan[i];
+                return true;
+            }
+        }
+        return false;
     }
     // -------------------------------------------------
     // RESIZING

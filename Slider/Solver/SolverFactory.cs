@@ -23,10 +23,6 @@ namespace Slider.Solver
         {
             foreach (SolverDescriptor descriptor in _options.SolverSelector)
             {
-                if (descriptor.LowGridSize > gridSize)
-                    continue;
-                if (descriptor.HighGridSize < gridSize)
-                    continue;
                 if (descriptor.LowHeuristic > heuristic)
                     continue;
                 if (descriptor.HighHeuristic < heuristic)

@@ -17,7 +17,7 @@ namespace UnitTest
         public void MultiMap_MustRetrieveAfterAdding()
         {
             MultiMap<TestStruct> testObject = new(100, 100);
-            testObject.Add(23, new TestStruct { x = 2, y = 3 });
+            testObject.AddState(23, new TestStruct { x = 2, y = 3 });
 
             ReadOnlySpan<TestStruct> readSpan = testObject.Get(23);
             Assert.AreEqual(1, readSpan.Length);
@@ -30,8 +30,8 @@ namespace UnitTest
         public void MultiMap_HashCollision_MustRetrieveArray()
         {
             MultiMap<TestStruct> testObject = new(100, 100);
-            testObject.Add(23, new TestStruct { x = 2, y = 3 });
-            testObject.Add(23, new TestStruct { x = 4, y = 5 });
+            testObject.AddState(23, new TestStruct { x = 2, y = 3 });
+            testObject.AddState(23, new TestStruct { x = 4, y = 5 });
 
             ReadOnlySpan<TestStruct> readSpan = testObject.Get(23);
 
@@ -56,7 +56,7 @@ namespace UnitTest
             Stopwatch sw = Stopwatch.StartNew();
             for (int i = 0; i < numberToTest; i++)
             {
-                testObject.Add(23, new TestStruct { x = 2, y = 3 });
+                testObject.AddState(23, new TestStruct { x = 2, y = 3 });
             }
 
             for (int i=0; i< numberToTest; i++)
@@ -81,7 +81,7 @@ namespace UnitTest
             Stopwatch sw = Stopwatch.StartNew();
             for (int i = 0; i < numberToTest; i++)
             {
-                testObject.Add(i+1, new TestStruct { x = 2, y = 3 });
+                testObject.AddState(i+1, new TestStruct { x = 2, y = 3 });
             }
 
             for (int i = 0; i < numberToTest; i++)

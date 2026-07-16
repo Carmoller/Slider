@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using Slider.Common;
 using Slider.Common.Interfaces;
+using Slider.Interfaces;
 using Slider.Solver;
 using System;
 using System.Collections.Generic;
@@ -25,15 +26,15 @@ namespace Slider
         public ISolverOptions SolverOptions { get; set; } = new SolverOptions { UseManhattanDistance = true, UseLinearConflict = true, UseEdgePattern = true, UseCornerPattern = true, UseSprintFinish = true };
         public List<SolverDescriptor> SolverSelector { get; } = new();
 
-        public Options()
+        public Options(IStateInfoFactory stateInfoFactory)
         {
             SolveTimeout = TimeSpan.FromSeconds(30);
-            //SolverSelector = [
-            //    new SolverDescriptor{LowGridSize = 0, HighGridSize = 4, LowHeuristic = 0, HighHeuristic = 50, Solver = typeof(BidirectionalAStarSolver), SolverParameters=[] },
-            //    new SolverDescriptor{LowGridSize = 4, HighGridSize = 5, LowHeuristic = 51, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[2] },
-            //    new SolverDescriptor{LowGridSize = 5, HighGridSize = 6, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3] },
-            //    new SolverDescriptor{LowGridSize = 6, HighGridSize = int.MaxValue, LowHeuristic = 0, HighHeuristic = int.MaxValue, Solver = typeof(WeightedAStarSolver), SolverParameters=[3.5] },
-            //    ];
+            SolverSelector = [
+                new SolverDescriptor{LowHeuristic = 0, HighHeuristic = 60, Solver = new BfsSolver(this), SolverParameters=[] },
+                new SolverDescriptor{LowHeuristic = 61, HighHeuristic = 80, Solver = new WeightedAStarSolver(this, stateInfoFactory), SolverParameters=[2] },
+                new SolverDescriptor{LowHeuristic = 80, HighHeuristic = 100, Solver = new WeightedAStarSolver(this, stateInfoFactory),  SolverParameters=[3] },
+                new SolverDescriptor{LowHeuristic = 100, HighHeuristic = int.MaxValue, Solver = new WeightedAStarSolver(this, stateInfoFactory), SolverParameters=[3.5] },
+                ];
         }
         private void OnPropertyChanged([CallerMemberName] string? name = null)
         {

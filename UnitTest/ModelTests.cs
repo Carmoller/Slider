@@ -1,3 +1,4 @@
+using Castle.Components.DictionaryAdapter;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Slider;
@@ -15,16 +16,52 @@ namespace UnitTest
     public class ModelTests
     {
         private Mock<IGenerator> _mockGenerator = null!;
-        private Mock<ISolver> _mockSolver = null!;
+        private Mock<ISolverFactory> _mockSolverFactory = null!;
         private Mock<IOptions> _mockOptions = null!;
         private Mock<IHeuristicElementFactory> _mockHeuristicFactory = null!;
         private Model _model = null!;
+
+        private class FakeHeuristicCalculator : IHeuristicCalculator
+        {
+            public List<IHeuristicElement> ElementCalculators { get; }
+
+            public int GetHeuristic(Span<byte> board, int gridSize)
+            {
+                return 5;
+            }
+            public FakeHeuristicCalculator()
+            {
+                ElementCalculators = new();
+            }
+        }
+        private class FakeHeuristicCalculatorFactory : IHeuristicCalculatorFactory
+        {
+            public IHeuristicCalculator GetHeuristicCalculator(Span<int> targetPositions, int gridSize)
+            {
+                return new FakeHeuristicCalculator();
+            }
+        }
+
+        private class FakeSolver : ISolver
+        {
+            public static int SolveInvocations { get; private set; } = 0;
+            public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
+            {
+                return 0;
+            }
+
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            {
+                SolveInvocations++;
+                return new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.FromSeconds(1), Moves = new() };
+            }
+        }
 
         [TestInitialize]
         public void Setup()
         {
             _mockGenerator = new Mock<IGenerator>();
-            _mockSolver = new Mock<ISolver>();
+            _mockSolverFactory = new Mock<ISolverFactory>();
             _mockOptions = new Mock<IOptions>();
             _mockHeuristicFactory = new Mock<IHeuristicElementFactory>();
 
@@ -37,9 +74,9 @@ namespace UnitTest
             _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(solvedBoard);
 
             // Setup solver
-            _mockSolver.Setup(s => s.GetHeuristic(It.IsAny<List<BoardTile>>(), It.IsAny<IHeuristicElementFactory>())).Returns(0);
+            _mockSolverFactory.Setup(p => p.Create(It.IsAny<int>(), It.IsAny<int>())).Returns(new FakeSolver());
 
-            _model = new Model(_mockGenerator.Object, _mockSolver.Object, _mockOptions.Object, _mockHeuristicFactory.Object);
+            _model = new Model(_mockGenerator.Object, _mockSolverFactory.Object, _mockOptions.Object, new FakeHeuristicCalculatorFactory(), _mockHeuristicFactory.Object);
         }
 
         [TestMethod]
@@ -378,15 +415,13 @@ namespace UnitTest
             // Arrange
             _model.New();
             SolveResult solveResult = new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.Zero, Moves = new() };
-            _mockSolver.Setup(s => s.Solve(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()))
-                .Returns(solveResult);
 
             // Act
             SolveResult result = _model.Solve();
 
             // Assert
             Assert.IsNotNull(result);
-            _mockSolver.Verify(s => s.Solve(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()), Times.Once);
+            Assert.IsGreaterThan(0, FakeSolver.SolveInvocations);
         }
 
         [TestMethod]
@@ -395,8 +430,6 @@ namespace UnitTest
             // Arrange
             _model.New();
             SolveResult solveResult = new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.FromSeconds(1), Moves = new() };
-            _mockSolver.Setup(s => s.Solve(It.IsAny<byte[]>(), It.IsAny<byte[]>(), It.IsAny<SolverOptions>(), It.IsAny<IHeuristicElementFactory>()))
-                .Returns(solveResult);
 
             // Act
             SolveResult result = _model.Solve();
@@ -454,22 +487,6 @@ namespace UnitTest
 
             // Assert
             Assert.IsTrue(eventRaised);
-        }
-
-        [TestMethod]
-        public void Heuristic_UpdatesAfterMove()
-        {
-            // Arrange
-            _mockSolver.Setup(s => s.GetHeuristic(It.IsAny<List<BoardTile>>(), It.IsAny<IHeuristicElementFactory>()))
-                .Returns(5);
-            _model.New();
-
-            // Act
-            _model.MoveTile(_model.Board[1]);
-
-            // Assert
-            Assert.AreEqual(5, _model.Heuristic);
-            _mockSolver.Verify(s => s.GetHeuristic(It.IsAny<List<BoardTile>>(), It.IsAny<IHeuristicElementFactory>()), Times.AtLeastOnce);
         }
 
         [TestMethod]

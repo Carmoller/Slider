@@ -90,12 +90,6 @@ namespace Slider.Solver
                     moves.Reverse();
                     return moves;
                 }
-                if (boardCache.TryGetState(GetHashCode(current), current, out StateInfo previousState))
-                {
-                    Console.WriteLine("Detected macro loop");
-                    int a = 1;
-                }
-
                 ref StateInfo parent = ref stateInfoPool.GetRef(current.ParentIndex);
                 moves.Add(GetMove(parent, current, gridSize));
                 nodeIndex = parent.NodeIndex;

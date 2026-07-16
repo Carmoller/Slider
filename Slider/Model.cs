@@ -1,4 +1,5 @@
 ﻿using Slider.Common.Interfaces;
+using Slider.Heuristics;
 using Slider.Interfaces;
 using Slider.Solver;
 using Slider.ViewModels;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -21,17 +23,21 @@ namespace Slider
         public LinkedList<Move> MoveHistory { get; private set; } = new();
         public int NumberOfMoves { get; private set; }
 
+        private readonly ISolverFactory _solverFactory;
         private readonly IOptions _options;
         private readonly IGenerator _generator;
-        private readonly ISolver _solver;
         private readonly IHeuristicElementFactory _heuristicElementFactory;
+        private readonly IHeuristicCalculatorFactory _heuristicCalculatorFactory;
+        private IHeuristicCalculator _heuristicCalculator;
         private BoardTile? _emptyTile;
-        public Model(IGenerator generator, ISolver solver, IOptions options, IHeuristicElementFactory heuristicElementFactory)
+        public Model(IGenerator generator, ISolverFactory solverFactory, IOptions options, IHeuristicCalculatorFactory heuristicCalculatorFactory,
+                    IHeuristicElementFactory heuristicElementFactory)
         {
             _options = options;
             _generator = generator;
-            _solver = solver;
+            _solverFactory = solverFactory;
             _heuristicElementFactory = heuristicElementFactory;
+            _heuristicCalculatorFactory = heuristicCalculatorFactory;
             _options.PropertyChanged += Options_PropertyChanged;
             Board = new();
         }
@@ -65,8 +71,24 @@ namespace Slider
             _emptyTile!.Column = tempColumn;
             _emptyTile.Row = tempRow;
             NumberOfMoves--;
-            Heuristic = _solver.GetHeuristic(Board, _heuristicElementFactory);
+            Heuristic = _heuristicCalculator.GetHeuristic(Board.ToByteArray(), _options.GridSize);
         }
+
+        private static int[] GetGoalBoard(int gridSize)
+        {
+            int[] goalPositions = new int[gridSize*gridSize];
+            for (int i = 1; i < gridSize * gridSize; i++)
+            {
+                if (i == 0)
+                {
+                    goalPositions[i] = gridSize * gridSize - 1;
+                }
+                else
+                    goalPositions[i] = i - 1;
+            }
+            return goalPositions;
+        }
+
         private void GenerateBoard()
         {
             Board = new();
@@ -98,7 +120,9 @@ namespace Slider
                 throw new InvalidOperationException("Generated board does not contain an empty tile.");
             }
             BoardLayoutChanged?.Invoke(this, EventArgs.Empty);
-            Heuristic = _solver.GetHeuristic(Board, _heuristicElementFactory);
+            int[] goalPositions = GetGoalBoard(_options.GridSize);
+            _heuristicCalculator = _heuristicCalculatorFactory.GetHeuristicCalculator(goalPositions, _options.GridSize);
+            Heuristic = _heuristicCalculator.GetHeuristic(newBoard.ToArray(), _options.GridSize);
         }
 
         public AllowedMove CanMove(BoardTile tile)
@@ -130,7 +154,7 @@ namespace Slider
             _emptyTile.Row = tempRow;
             NumberOfMoves++;
             MoveHistory.AddLast(new Move { FromColumn = tempColumn, FromRow = tempRow, ToColumn = tile.Column, ToRow = tile.Row });
-            Heuristic = _solver.GetHeuristic(Board, _heuristicElementFactory);
+            Heuristic = _heuristicCalculator.GetHeuristic(Board.ToByteArray(), _options.GridSize);
             IsSolved();
         }
 
@@ -172,7 +196,8 @@ namespace Slider
         public SolveResult Solve()
         {
             Debug.WriteLine($"{DateTime.Now}: Starting Solve()");
-            SolveResult result = _solver.Solve(ByteArrayFromBoard(Board), [], _options.SolverOptions, _heuristicElementFactory);
+            ISolver solver = _solverFactory.Create(_options.GridSize, Heuristic);
+            SolveResult result = solver.Solve(ByteArrayFromBoard(Board), [], _options.SolverOptions, _heuristicElementFactory);
             if ((result.Result == SolveResultType.Solved) || (result.Result == SolveResultType.Timeout))
                 Debug.WriteLine($"{DateTime.Now}: Finished Solve() in {result.TimeSpent.ToString()}, Using {result.Moves!.Count} moves");
             else 

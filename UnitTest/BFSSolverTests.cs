@@ -58,8 +58,8 @@ namespace UnitTest
             solver.BfsMode = BfsMode.Greedy;
 
             SolveResult result = solver.Solve(board, [],
-                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
-                new HeuristicElementFactory());
+                    new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
+                    new HeuristicElementFactory());
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Assert.IsGreaterThan(0, result.Moves.Count);
@@ -92,9 +92,13 @@ namespace UnitTest
 
             BfsSolver solver = new(optionsMock.Object);
 
-            SolveResult result = solver.Solve(board, targetBoard,
-                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
-                new HeuristicElementFactory());
+            SolveResult result = new(); ;
+            for (int i = 0; i < 5; i++)
+            {
+                result = solver.Solve(board, targetBoard,
+                    new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
+                    new HeuristicElementFactory());
+            }
 
             Assert.AreEqual(SolveResultType.Solved, result.Result);
             Console.WriteLine($"\tMoves: {result.MoveCount}");
