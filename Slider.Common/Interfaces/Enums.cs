@@ -33,7 +33,8 @@ namespace Slider.Common.Interfaces
         AlreadySolved,
         Solved,
         Unsolvable,
-        Timeout
+        Timeout,
+        StateLimitExceeded
     }
 
     public enum SolverType

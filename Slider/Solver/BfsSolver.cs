@@ -23,9 +23,7 @@ namespace Slider.Solver
             public required MultiMap<StateInfo> Closed { get; set; }
             public required PriorityQueue<StateInfo, double> OpenQueue { get; set; }
         }
-        public int MaxG { get; set; } = int.MaxValue;
 
-//        private readonly SolveStateDictionary<StateInfo> _closed = [];
         private int _gridSize;
         private const double H_Scale = 1.2;
         private int _min_h;
@@ -50,8 +48,8 @@ namespace Slider.Solver
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             using (ChunkedArrayPoolUnsafe arrayPool = new ChunkedArrayPoolUnsafe(1000000, _gridSize * _gridSize))
             {
+                Stopwatch sw = Stopwatch.StartNew();
                 IHeuristicCalculator heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(targetBoard, _gridSize, _options, solverOptions);
-                SolveResult result = new();
 
                 StateInfo startState = SolverHelper.CreateStateInfoFromBoard(
                     board,
@@ -63,28 +61,23 @@ namespace Slider.Solver
                     GetHeuristics,
                     SolverHelper.GetHashCode);
 
-                List<Move>? moves = SprintSolve(result, startState, stateInfoPool, arrayPool, heuristicCalculator, stateInfoFactory, _gridSize, int.MaxValue);
-                if (moves == null)
-                    result.Result = SolveResultType.Timeout;
-                else
-                {
-                    result.Result = SolveResultType.Solved;
-                    result.Moves = moves;
-                }
+                SolveResult result = SprintSolve(startState, stateInfoPool, arrayPool, heuristicCalculator, stateInfoFactory, sw, _gridSize, int.MaxValue);
                 return result;
             }
         }
 
-        public List<Move>? SprintSolve(
-            SolveResult result,
+        public SolveResult SprintSolve(
             StateInfo startState,
             ChunkedStructPool<StateInfo> stateInfoPool,
             ChunkedArrayPoolUnsafe arrayPool,
             IHeuristicCalculator heuristicsCalculator,
             IStateInfoFactory stateInfoFactory,
+            Stopwatch sw,
             int gridSize,
             int maxNodes = 5000)
         {
+            TimeSpan timeout = _options.SolveTimeout;
+            SolveResult result = new();
             MultiMap<StateInfo> closed = new(300000, 300000);
             PriorityQueue<StateInfo, double> openQueue = new();
             try
@@ -92,9 +85,8 @@ namespace Slider.Solver
                 _gridSize = gridSize;
                 _startNodeIndex = startState.NodeIndex;
                 openQueue.Enqueue(startState, startState.CurrentF);
-                int nodesExplored = 0;
                 _min_h = startState.CurrentH;
-                while (openQueue.TryDequeue(out StateInfo currentState, out double _) && nodesExplored < maxNodes)
+                while (openQueue.TryDequeue(out StateInfo currentState, out double _) && result.TotalStatesConsidered < maxNodes)
                 {
                     StateInfo closedState = new();
                     bool found = closed.TryGetState(currentState.Hash, currentState, ref closedState);
@@ -109,20 +101,28 @@ namespace Slider.Solver
 
                     if (currentState.CurrentH < _min_h)
                     {
-                        Debug.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{nodesExplored}: h:{currentState.CurrentH}");
+                        Debug.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{result.TotalStatesConsidered}: h:{currentState.CurrentH}");
                         _min_h = currentState.CurrentH;
                     }
-                    if (currentState.CurrentG >= MaxG)
-                        return null;
-                    nodesExplored++;
                     result.TotalStatesConsidered++;
-
-                    /* Code to check locked corner move needs. DELETE AFTER USE!!*/
-                    Span<byte> board = currentState.BoardToken.AsSpan();
-
-                    if (currentState.CurrentH == 0)
+                    if (result.TotalStatesConsidered >= maxNodes)
                     {
-                        return SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
+                        Console.WriteLine($"Currently at {result.TotalStatesConsidered} examine nodes. Max is {maxNodes}");
+                        result.Result = SolveResultType.StateLimitExceeded;
+                        return result;
+                    }
+
+                    Span<byte> board = currentState.BoardToken.AsSpan();
+                    if ((currentState.CurrentH == 0) ||  (timeout != TimeSpan.Zero && sw.Elapsed > timeout))
+                    {
+                        if (timeout != TimeSpan.Zero && sw.Elapsed > timeout)
+                            result.Result = SolveResultType.Timeout;
+                        else
+                        {
+                            result.Moves = SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
+                            result.Result = SolveResultType.Solved;
+                        }
+                        return result;
                     }
 
                     if (!found)
@@ -142,11 +142,8 @@ namespace Slider.Solver
 
                     stateInfoFactory.GetAvailableMoves(ref currentState, _gridSize, stateInfoPool, arrayPool, ref context, _cachedProcessNewStateHandler!);
                 }
-                if (nodesExplored >= maxNodes)
-                {
-                    Console.WriteLine($"Currently at {nodesExplored} examine nodes. Max is {maxNodes}");
-                }
-                return null;
+                result.Result = SolveResultType.Unsolvable;
+                return result;
             }
             finally
             {

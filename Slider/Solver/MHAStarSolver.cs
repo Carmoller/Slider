@@ -234,13 +234,14 @@ namespace Slider.Solver
                     Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
                     // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
                     BfsSolver solver = new(_options);
-                    List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, _heuristicCalculator, _stateInfoFactory, _gridSize);
-                    if (moves != null)
+                    SolveResult sprintResult = solver.SprintSolve(currentState, stateInfoPool, arrayPool, _heuristicCalculator, _stateInfoFactory, sw, _gridSize);
+                    result.TotalStatesConsidered += sprintResult.TotalStatesConsidered;
+                    if (sprintResult.Result == SolveResultType.Solved)
                     {
                         // Finished
                         sw.Stop();
                         result.TimeSpent = sw.Elapsed;
-                        result.Moves = moves;
+                        result.Moves = sprintResult.Moves;
                         result.Result = SolveResultType.Solved;
                         Cleanup();
                         return result;

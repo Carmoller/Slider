@@ -82,6 +82,7 @@ namespace Slider.Solver
                 targetBoard = SolverHelper.CreateGoalBoard(_gridSize);
             }
             int bestHValueIndex = -1;
+            TimeSpan timeout = _options.SolveTimeout;
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             using (ChunkedArrayPoolUnsafe arrayPool = new ChunkedArrayPoolUnsafe(1000000, _gridSize * _gridSize))
             {
@@ -161,11 +162,11 @@ namespace Slider.Solver
                         Debug.WriteLine($"Weighted A*: State #{result.TotalStatesConsidered}: h:{h_Current}");
                         min_h = h_Current;
                     }
-                    if ((h_Current == 0) || (sw.Elapsed > _options.SolveTimeout && _options.SolveTimeout != TimeSpan.Zero))
+                    if ((h_Current == 0) || (timeout != TimeSpan.Zero && sw.Elapsed > timeout))
                     {
                         sw.Stop();
                         result.TimeSpent = sw.Elapsed;
-                        Finalize(sw.Elapsed > _options.SolveTimeout, bestHValueIndex, result, stateInfoPool, ref startState, ref currentState);
+                        Finalize(sw.Elapsed > timeout, bestHValueIndex, result, stateInfoPool, ref startState, ref currentState);
                         return result;
                     }
 
@@ -174,13 +175,14 @@ namespace Slider.Solver
                         Debug.WriteLine($"Weighted A*: h is rising current: {h_Current}: previous:{h_previous}");
                         // We are below the cutoff threshold, and now the h is rising - time to pull the emergency cord and see if it works
                         BfsSolver solver = new(_options);
-                        List<Move>? moves = solver.SprintSolve(result, currentState, stateInfoPool, arrayPool, heuristicCalculator, _stateInfoFactory, _gridSize);
-                        if (moves != null)
+                        SolveResult sprintResult = solver.SprintSolve(currentState, stateInfoPool, arrayPool, heuristicCalculator, _stateInfoFactory, sw, _gridSize);
+                        result.TotalStatesConsidered += sprintResult.TotalStatesConsidered;
+                        if (sprintResult.Result == SolveResultType.Solved)
                         {
                             // Finished
                             sw.Stop();
                             result.TimeSpent = sw.Elapsed;
-                            result.Moves = moves;
+                            result.Moves = sprintResult.Moves;
                             result.Result = SolveResultType.Solved;
                             Cleanup();
                             return result;
