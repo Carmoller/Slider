@@ -56,7 +56,7 @@ namespace Slider.Solver
             state.CurrentF = CalculateF(state);
             state.Hash = GetHashCode(state);
 
-            state.NodeIndex = stateInfoPool.Get(state, (ref state, source) =>
+            state.NodeIndex = stateInfoPool.Get(state, (ref state, ref source) =>
             {
                 state = source;
             });
@@ -78,8 +78,6 @@ namespace Slider.Solver
 
         public static List<Move> ReconstructPath(StateInfo goalState, ChunkedStructPool<StateInfo> stateInfoPool, int gridSize)
         {
-            SolveStateDictionary<StateInfo> boardCache = new();
-
             List<Move> moves = [];
             int nodeIndex = goalState.NodeIndex;
             while (nodeIndex != -1)

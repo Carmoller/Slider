@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Slider.Common
 {
-    public delegate void RefInitializer<T, TState>(ref T target, TState state);
+    public delegate void RefInitializer<T, TState>(ref T target, ref TState state) where TState : struct;
     public delegate void RefAction<T>(ref T arg);
     public delegate void RefAction<T, TContext>(ref T arg, ref TContext context) where TContext : struct;
 }

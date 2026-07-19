@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Slider.Solver
 {
-    public struct StateInfo : IStateInfo
+    public struct StateInfo : IStateInfo, IEquatable<StateInfo>
     {
         public static readonly StateInfo Empty = default;
         public int NodeIndex { get; set; }
@@ -21,6 +21,12 @@ namespace Slider.Solver
         public int CurrentH { get; set; }
         public double CurrentF { get; set; }
         public MoveDirection PreviousMove { get; set; }
+
+        public bool Equals(StateInfo other)
+        {
+            if (BlankPos != other.BlankPos) return false;
+            return BoardToken.AsSpan().SequenceEqual(other.BoardToken.AsSpan());
+        }
 
         public override bool Equals(object? obj)
         {

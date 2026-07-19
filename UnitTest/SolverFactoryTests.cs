@@ -15,11 +15,6 @@ namespace UnitTest
         #region FakeSolvers
         private class FakeSolver1 : ISolver
         {
-            public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
-            {
-                throw new NotImplementedException();
-            }
-
             public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
@@ -27,11 +22,6 @@ namespace UnitTest
         }
         private class FakeSolver2 : ISolver
         {
-            public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
-            {
-                throw new NotImplementedException();
-            }
-
             public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();
@@ -39,10 +29,6 @@ namespace UnitTest
         }
         private class FakeSolver3 : ISolver
         {
-            public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
-            {
-                throw new NotImplementedException();
-            }
             public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
             {
                 throw new NotImplementedException();

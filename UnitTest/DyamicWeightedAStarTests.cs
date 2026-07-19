@@ -11,7 +11,7 @@ using System.Text;
 namespace UnitTest
 {
     [TestClass]
-    public class BFSSolverTests
+    public class DyamicWeightedAStarTests
     {
         [TestMethod]
         public void BfsSolver_3x3_Greedy()
@@ -25,7 +25,7 @@ namespace UnitTest
                             2, 4, 5];
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
             solver.BfsMode = BfsMode.Greedy;
 
             SolveResult result = solver.Solve(board, [],
@@ -54,7 +54,7 @@ namespace UnitTest
 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
             solver.BfsMode = BfsMode.Greedy;
 
             SolveResult result = solver.Solve(board, [],
@@ -90,7 +90,7 @@ namespace UnitTest
                 15, 06, 12, 14,
                 10, 09, 13, 04];
 
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
 
             SolveResult result = new(); ;
             for (int i = 0; i < 5; i++)
@@ -118,7 +118,7 @@ namespace UnitTest
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 4, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
 
             SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
@@ -143,7 +143,7 @@ namespace UnitTest
             HeuristicElementFactory heuristicsFactory = new();
             HeuristicCalculator calculator = new(Span<int>.Empty, 4, new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true },
                 heuristicsFactory, optionsMock.Object);
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
 
             SolveResult result = solver.Solve(board, [], new SolverOptions(), heuristicsFactory);
 
@@ -164,7 +164,7 @@ namespace UnitTest
                             2, 4, 5];
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
             solver.BfsMode = BfsMode.Standard;
 
             SolveResult result = solver.Solve(board, [],
@@ -200,7 +200,7 @@ namespace UnitTest
                 15, 06, 12, 14,
                 10, 09, 13, 04];
 
-            BfsSolver solver = new(optionsMock.Object);
+            DynamicWeightAStarSolver solver = new(optionsMock.Object);
             solver.BfsMode = BfsMode.Standard;
 
             SolveResult result = solver.Solve(board, targetBoard,

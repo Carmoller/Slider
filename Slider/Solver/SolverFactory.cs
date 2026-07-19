@@ -38,12 +38,8 @@ namespace Slider.Solver
         {
             switch (type)
             {
-                case SolverType.WeightedAStar:
-                    return new WeightedAStarSolver(_options, _stateInfoFactory);
-                case SolverType.BidirectionalAStar:
-                    return new BidirectionalAStarSolver(_options, _stateInfoFactory);
                 case SolverType.BFSSolver:
-                    return new BfsSolver(_options);
+                    return new DynamicWeightAStarSolver(_options);
                 default:
                     throw new InvalidOperationException($"Requesting unknown solver type: {type.ToString()}");
             }

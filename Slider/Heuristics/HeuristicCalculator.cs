@@ -35,10 +35,6 @@ namespace Slider.Heuristics
             {
                 ElementCalculators.Add(new EdgePattern(targetPositions, gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
             }
-            if (_solverOptions.UsePdbs)
-            {
-                ElementCalculators.Add(new HeuristicPdb(options));
-            }
             _additiveElements.AddRange(ElementCalculators.Where(p => p.IsAdditive));
             _singularElements.AddRange(ElementCalculators.Where(p => !p.IsAdditive));
         }
@@ -50,14 +46,6 @@ namespace Slider.Heuristics
             foreach (IHeuristicElement heuristicElement in _additiveElements)
             {
                 distance += heuristicElement.Calculate(board, gridSize);
-            }
-
-            if (_solverOptions.UsePdbs)
-            {
-# warning Bit of a hurried approach, to assume we only have one singular element, and that is the PDB. Fix!!
-                IHeuristicElement heuristicElement = _singularElements[0];
-                int pdbDistance = heuristicElement.Calculate(board, gridSize);
-                distance = Math.Max(distance, pdbDistance);
             }
             return distance;
         }

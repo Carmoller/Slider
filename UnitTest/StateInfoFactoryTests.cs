@@ -20,9 +20,9 @@ namespace UnitTest
         {
             _currentIndex = currentIndex;
         }
-        public int Get<TState>(TState state, RefInitializer<StateInfo, TState> initializer)
+        public int Get<TState>(TState state, RefInitializer<StateInfo, TState> initializer) where TState : struct
         {
-            initializer(ref _newState, state);
+            initializer(ref _newState, ref state);
             return _currentIndex++;
         }
 

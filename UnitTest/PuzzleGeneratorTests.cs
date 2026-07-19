@@ -49,7 +49,7 @@ namespace UnitTest
             PuzzleGenerator generator = new();
 
             // Act
-            List<byte> result = generator.Generate(gridSize);
+            byte[] result = generator.Generate(gridSize);
 
             // Assert - verify the configuration is solvable by checking inversion parity
             Assert.IsTrue(IsSolvableManual(result, gridSize));
@@ -102,7 +102,7 @@ namespace UnitTest
         {
             // Arrange
             int gridSize = 3;
-            var results = new List<List<byte>>();
+            var results = new List<byte[]>();
             PuzzleGenerator generator = new();
 
             // Act - generate multiple puzzles
@@ -115,7 +115,7 @@ namespace UnitTest
             bool hasDifference = false;
             for (int i = 0; i < results.Count - 1; i++)
             {
-                if (!ListsEqual(results[i], results[i + 1]))
+                if (!Enumerable.SequenceEqual(results[i], results[i + 1]))
                 {
                     hasDifference = true;
                     break;
@@ -125,18 +125,21 @@ namespace UnitTest
             Assert.IsTrue(hasDifference, "Generated puzzles should not all be identical");
         }
 
-        private bool IsSolvableManual(List<byte> tiles, int gridSize)
+        private bool IsSolvableManual(byte[] board, int gridSize)
         {
+            int emptyPos = 0;
             int inversions = 0;
-            for (int i = 0; i < tiles.Count; i++)
+            for (int i = 0; i < board.Length; i++)
             {
-                for (int j = i + 1; j < tiles.Count; j++)
+                for (int j = i + 1; j < board.Length; j++)
                 {
-                    if (tiles[i] > tiles[j] && tiles[i] != 0 && tiles[j] != 0)
+                    if (board[i] > board[j] && board[i] != 0 && board[j] != 0)
                     {
                         inversions++;
                     }
                 }
+                if (board[i] == 0)
+                    emptyPos = i;
             }
 
             if (gridSize % 2 == 1)
@@ -145,23 +148,9 @@ namespace UnitTest
             }
             else
             {
-                int blankRowFromBottom = gridSize - (tiles.IndexOf(0) / gridSize);
+                int blankRowFromBottom = gridSize - (emptyPos / gridSize);
                 return (blankRowFromBottom % 2 == 0) == (inversions % 2 == 1);
             }
-        }
-
-        private bool ListsEqual(List<byte> list1, List<byte> list2)
-        {
-            if (list1.Count != list2.Count)
-                return false;
-
-            for (int i = 0; i < list1.Count; i++)
-            {
-                if (list1[i] != list2[i])
-                    return false;
-            }
-
-            return true;
         }
     }
 }

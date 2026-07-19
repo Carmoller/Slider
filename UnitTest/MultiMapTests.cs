@@ -16,8 +16,9 @@ namespace UnitTest
         [TestMethod]
         public void MultiMap_MustRetrieveAfterAdding()
         {
+            TestStruct ts1 = new TestStruct { x = 2, y = 3 };
             MultiMap<TestStruct> testObject = new(100, 100);
-            testObject.AddState(23, new TestStruct { x = 2, y = 3 });
+            testObject.AddState(23, ref ts1);
 
             ReadOnlySpan<TestStruct> readSpan = testObject.Get(23);
             Assert.AreEqual(1, readSpan.Length);
@@ -29,9 +30,11 @@ namespace UnitTest
         [TestMethod]
         public void MultiMap_HashCollision_MustRetrieveArray()
         {
+            TestStruct ts1 = new TestStruct { x = 2, y = 3 };
+            TestStruct ts2 = new TestStruct { x = 4, y = 5 };
             MultiMap<TestStruct> testObject = new(100, 100);
-            testObject.AddState(23, new TestStruct { x = 2, y = 3 });
-            testObject.AddState(23, new TestStruct { x = 4, y = 5 });
+            testObject.AddState(23, ref ts1);
+            testObject.AddState(23, ref ts2);
 
             ReadOnlySpan<TestStruct> readSpan = testObject.Get(23);
 
@@ -53,10 +56,11 @@ namespace UnitTest
             // Add 1000 structs to the MultiMap, and iterate through all of them, then do the same to a dictionary, and compare the time spent
             MultiMap<TestStruct> testObject = new(numberToTest, numberToTest);
 
+            TestStruct ts1 = new TestStruct { x = 2, y = 3 };
             Stopwatch sw = Stopwatch.StartNew();
             for (int i = 0; i < numberToTest; i++)
             {
-                testObject.AddState(23, new TestStruct { x = 2, y = 3 });
+                testObject.AddState(23, ref ts1);
             }
 
             for (int i=0; i< numberToTest; i++)
@@ -78,10 +82,11 @@ namespace UnitTest
             // Add 1000 structs to the MultiMap, and iterate through all of them, then do the same to a dictionary, and compare the time spent
             MultiMap<TestStruct> testObject = new(numberToTest, numberToTest);
 
+            TestStruct ts1 = new TestStruct { x = 2, y = 3 };
             Stopwatch sw = Stopwatch.StartNew();
             for (int i = 0; i < numberToTest; i++)
             {
-                testObject.AddState(i+1, new TestStruct { x = 2, y = 3 });
+                testObject.AddState(i+1, ref ts1);
             }
 
             for (int i = 0; i < numberToTest; i++)

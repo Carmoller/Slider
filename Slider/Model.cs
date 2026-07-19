@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Windows.Input;
 
 namespace Slider
 {
@@ -28,7 +29,7 @@ namespace Slider
         private readonly IGenerator _generator;
         private readonly IHeuristicElementFactory _heuristicElementFactory;
         private readonly IHeuristicCalculatorFactory _heuristicCalculatorFactory;
-        private IHeuristicCalculator _heuristicCalculator;
+        private int[] _goalPositions = [];
         private BoardTile? _emptyTile;
         public Model(IGenerator generator, ISolverFactory solverFactory, IOptions options, IHeuristicCalculatorFactory heuristicCalculatorFactory,
                     IHeuristicElementFactory heuristicElementFactory)
@@ -40,6 +41,17 @@ namespace Slider
             _heuristicCalculatorFactory = heuristicCalculatorFactory;
             _options.PropertyChanged += Options_PropertyChanged;
             Board = new();
+        }
+
+        private int CalculateHeuristics(byte[] board)
+        {
+            if (_goalPositions.Length == 0)
+            {
+                _goalPositions = GetGoalBoard(_options.GridSize);
+            }
+
+            IHeuristicCalculator heuristicCalculator = _heuristicCalculatorFactory.GetHeuristicCalculator(_goalPositions, _options.GridSize);
+            return heuristicCalculator.GetHeuristic(board, _options.GridSize);
         }
 
         private void Options_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -71,7 +83,7 @@ namespace Slider
             _emptyTile!.Column = tempColumn;
             _emptyTile.Row = tempRow;
             NumberOfMoves--;
-            Heuristic = _heuristicCalculator.GetHeuristic(Board.ToByteArray(), _options.GridSize);
+            Heuristic = CalculateHeuristics(Board.ToByteArray());
         }
 
         private static int[] GetGoalBoard(int gridSize)
@@ -95,25 +107,21 @@ namespace Slider
             MoveHistory.Clear();
             _emptyTile = null;
             NumberOfMoves = 0;
-            List<byte> newBoard = _generator.Generate(_options.GridSize);
-            Debug.Assert(newBoard.Count == _options.GridSize * _options.GridSize);
-            int newBoardIndex = 0;
-            for (int row = 0; row < _options.GridSize; row++)
+            byte[] newBoard = _generator.Generate(_options.GridSize);
+            for (int i = 0; i < newBoard.Length; i++)
             {
-                for (int col = 0; col < _options.GridSize; col++)
+                (int row, int col) = Math.DivRem(i, _options.GridSize);
+                BoardTile tile = new BoardTile()
                 {
-                    BoardTile tile = new BoardTile()
-                    {
-                        Value = newBoard[newBoardIndex++],
-                        Row = row,
-                        Column = col,
-                    };
-                    if (tile.IsEmpty)
-                    {
-                        _emptyTile = tile;
-                    }
-                    Board.Add(tile);
+                    Value = newBoard[i],
+                    Row = row,
+                    Column = col,
+                };
+                if (tile.IsEmpty)
+                {
+                    _emptyTile = tile;
                 }
+                Board.Add(tile);
             }
             if (_emptyTile == null)
             {
@@ -121,8 +129,7 @@ namespace Slider
             }
             BoardLayoutChanged?.Invoke(this, EventArgs.Empty);
             int[] goalPositions = GetGoalBoard(_options.GridSize);
-            _heuristicCalculator = _heuristicCalculatorFactory.GetHeuristicCalculator(goalPositions, _options.GridSize);
-            Heuristic = _heuristicCalculator.GetHeuristic(newBoard.ToArray(), _options.GridSize);
+            Heuristic = CalculateHeuristics(newBoard.ToArray());
         }
 
         public AllowedMove CanMove(BoardTile tile)
@@ -154,7 +161,7 @@ namespace Slider
             _emptyTile.Row = tempRow;
             NumberOfMoves++;
             MoveHistory.AddLast(new Move { FromColumn = tempColumn, FromRow = tempRow, ToColumn = tile.Column, ToRow = tile.Row });
-            Heuristic = _heuristicCalculator.GetHeuristic(Board.ToByteArray(), _options.GridSize);
+            Heuristic = CalculateHeuristics(Board.ToByteArray());
             IsSolved();
         }
 

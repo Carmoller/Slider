@@ -56,10 +56,9 @@ namespace Slider.Solver
         private int _gridSize;
         private readonly IOptions _options;
         private readonly IStateInfoFactory _stateInfoFactory;
-        private double w = 3;
         private readonly ISolverFactory _solverFactory;
         private int _goalPositionsActiveCount;
-        private byte[] _goalPositions;
+        private byte[] _goalPositions = [];
         private readonly MinimumSpanningTree _mst = new();
         public RowColSolver(IOptions options, IStateInfoFactory stateInfoFactory, ISolverFactory solverFactory)
         {
@@ -92,7 +91,7 @@ namespace Slider.Solver
                 p => p.CurrentG + p.CurrentH,
                 GetHeuristics,
                 GetHashCode);
-            ISolver solver = _solverFactory.Create(SolverType.WeightedAStar);
+            ISolver solver = _solverFactory.Create(SolverType.BFSSolver);
             if (solver is IWeightedAStarSolver weightedSolver)
             {
                 weightedSolver.InitialW = 2.7;
@@ -155,16 +154,6 @@ namespace Slider.Solver
         {
             return customCalculator.GetHeuristic(board, gridSize);
         }
-
-        public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
-        {
-            byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
-            int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(Span<byte>.Empty, gridSize, _options,
-                new SolverOptions { UseManhattanDistance = true, UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true });
-            return GetHeuristics(byteBoard, gridSize, calculator);
-        }
-
 
     }
 }

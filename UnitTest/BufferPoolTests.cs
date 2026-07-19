@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PDBGenerator;
 using Slider.Common;
 using System;
 using System.Collections.Generic;

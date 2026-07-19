@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PDBGenerator\PDBGenerator.csproj" />
     <ProjectReference Include="..\Slider.Common\Slider.Common.csproj" />
     <ProjectReference Include="..\Slider\Slider.csproj" />
   </ItemGroup>

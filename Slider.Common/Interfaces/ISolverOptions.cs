@@ -10,7 +10,6 @@ namespace Slider.Common.Interfaces
         bool UseLinearConflict { get; set; }  
         bool UseCornerPattern { get; set; } 
         bool UseEdgePattern { get; set; } 
-        bool UsePdbs { get; set; } 
         bool UseSprintFinish { get; set; }
 
     }

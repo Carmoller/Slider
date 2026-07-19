@@ -19,7 +19,7 @@ namespace Slider.Solver
             IChunkedStructPool<StateInfo> stateInfoPool,
             IChunkedArrayPoolUnsafe arrayPool)
         {
-            int nodeIndex = stateInfoPool.Get(currentState, (ref state, currentState) =>
+            int nodeIndex = stateInfoPool.Get(currentState, (ref state, ref currentState) =>
             {
                 state = currentState;
             });

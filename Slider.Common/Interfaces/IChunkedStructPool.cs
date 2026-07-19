@@ -7,7 +7,7 @@ namespace Slider.Common.Interfaces
 {
     public interface IChunkedStructPool<T>
     {
-        int Get<TState>(TState state, RefInitializer<T, TState> initializer);
+        int Get<TState>(TState state, RefInitializer<T, TState> initializer) where TState : struct;
         ref T GetRef(int index);
         public void Release(int index, RefAction<T>? Dispose = null);
 

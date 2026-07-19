@@ -17,7 +17,7 @@ namespace Slider.Common
             AllocateChunk();
         }
 
-        public int Get<TState>(TState state, RefInitializer<T, TState> initializer)
+        public int Get<TState>(TState state, RefInitializer<T, TState> initializer) where TState : struct
         {
             if (_freeIndices.Count == 0)
             {
@@ -26,7 +26,7 @@ namespace Slider.Common
 
             int index = _freeIndices.Pop();
             ref T node = ref GetRef(index);
-            initializer(ref node, state);
+            initializer(ref node, ref state);
             return index;
         }
 

@@ -7,14 +7,15 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows.Media.Animation;
 
 namespace Slider.Solver
 {
-    public sealed class BfsSolver : ISolver
+    public sealed class DynamicWeightAStarSolver : ISolver
     {
-        private struct BfsSolverContext
+        private struct SolverContext
         {
             public required IChunkedStructPool<StateInfo> ObjectPool { get; set; }
             public required IChunkedArrayPoolUnsafe ArrayPool { get; set; }
@@ -24,19 +25,34 @@ namespace Slider.Solver
             public required PriorityQueue<StateInfo, double> OpenQueue { get; set; }
         }
 
+        public double W { get; set; } = 3;
         private int _gridSize;
-        private const double H_Scale = 1.2;
         private int _min_h;
-        private int _startNodeIndex;
         private readonly IOptions _options;
-        private RefAction<StateInfo, BfsSolverContext>? _cachedProcessNewStateHandler;
+        private RefAction<StateInfo, SolverContext>? _cachedProcessNewStateHandler;
+        private double[] w_cache;
+        private const int MaxSupportedHeuristic = 1000;
 
         public BfsMode BfsMode { get; set; } = BfsMode.Greedy;
 
-        public BfsSolver(IOptions options)
+        public DynamicWeightAStarSolver(IOptions options)
         {
             _options = options;
             _cachedProcessNewStateHandler = ProcessNewState;
+            // Initialize the w cache
+            w_cache = new double[MaxSupportedHeuristic];
+            for (int h = 0; h < MaxSupportedHeuristic; h++)
+            {
+                if (h <= 10)
+                {
+                    w_cache[h] = 1.2;
+                }
+                else
+                {
+                    // Precalculate the exact logarithmic curve
+                    w_cache[h] = 1.2 + (Math.Log(h - 9.0) * 0.8443);
+                }
+            }
         }
 
         public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
@@ -83,7 +99,6 @@ namespace Slider.Solver
             try
             {
                 _gridSize = gridSize;
-                _startNodeIndex = startState.NodeIndex;
                 openQueue.Enqueue(startState, startState.CurrentF);
                 _min_h = startState.CurrentH;
                 while (openQueue.TryDequeue(out StateInfo currentState, out double _) && result.TotalStatesConsidered < maxNodes)
@@ -94,7 +109,7 @@ namespace Slider.Solver
                     {
                         if (closedState.BestG <= currentState.CurrentG)
                         {
-                            closed.AddState(currentState.Hash, currentState); // No reason to continue down this road, just mark it as closed
+                            closed.AddState(currentState.Hash, ref currentState); // No reason to continue down this road, just mark it as closed
                             continue;
                         }
                     }
@@ -115,11 +130,12 @@ namespace Slider.Solver
                     Span<byte> board = currentState.BoardToken.AsSpan();
                     if ((currentState.CurrentH == 0) ||  (timeout != TimeSpan.Zero && sw.Elapsed > timeout))
                     {
+                        result.TimeSpent = sw.Elapsed;
+                        result.Moves = SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
                         if (timeout != TimeSpan.Zero && sw.Elapsed > timeout)
                             result.Result = SolveResultType.Timeout;
                         else
                         {
-                            result.Moves = SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
                             result.Result = SolveResultType.Solved;
                         }
                         return result;
@@ -127,10 +143,10 @@ namespace Slider.Solver
 
                     if (!found)
                     {
-                        closed.AddState(currentState.Hash, currentState);
+                        closed.AddState(currentState.Hash, ref currentState);
                     }
 
-                    BfsSolverContext context = new BfsSolverContext
+                    SolverContext context = new SolverContext
                     {
                         ArrayPool = arrayPool,
                         ObjectPool = stateInfoPool,
@@ -152,18 +168,23 @@ namespace Slider.Solver
             }
         }
 
-        private void ProcessNewState(ref StateInfo newState, ref BfsSolverContext context)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public double GetWeight(int h)
+        {
+            // Safety bounds check to prevent crashing on corrupt states
+            if (h >= MaxSupportedHeuristic) return w_cache[MaxSupportedHeuristic - 1];
+
+            return w_cache[h];
+        }
+
+        private void ProcessNewState(ref StateInfo newState, ref SolverContext context)
         {
             ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
             int tentative_g = csRef.CurrentG + 1;
             newState.Hash = SolverHelper.GetHashCode(newState);
-            StateInfo closedNeighbor = new();
+            StateInfo closedNeighbor = StateInfo.Empty;
             if (context.Closed.TryGetState(newState.Hash, newState, ref closedNeighbor))
             {
-                if (closedNeighbor.BoardToken.AsSpan().ToArray().Where(p => p == 0).Count() > 1)
-                {
-                    throw new InvalidOperationException("Multiple blank tiles on board");
-                }
                 if (closedNeighbor.CurrentG > tentative_g)
                 {
                     context.ArrayPool.Release(newState.BoardArrayIndex);
@@ -179,18 +200,10 @@ namespace Slider.Solver
             {
                 newState.BestG = csRef.CurrentG;
             }
-            double priority = (newState.CurrentH * H_Scale + csRef.CurrentG) - (csRef.CurrentG * 0.0001);
+            double priority = (newState.CurrentH * GetWeight(newState.CurrentH) + csRef.CurrentG) - (csRef.CurrentG * 0.0001);
             context.OpenQueue.Enqueue(newState, BfsMode == BfsMode.Greedy ? priority : newState.CurrentG);
         }
 
-        public int GetHeuristic(List<BoardTile> board, IHeuristicElementFactory heuristicElementFactory)
-        {
-            byte[] byteBoard = board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray();
-            int gridSize = (int)(Math.Sqrt(byteBoard.Length));
-            IHeuristicCalculator calculator = heuristicElementFactory.CreateHeuristicCalculator(SolverHelper.CreateGoalBoard(gridSize), gridSize, _options,
-                new SolverOptions { UseManhattanDistance = true, UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true });
-            return GetHeuristics(calculator, byteBoard, gridSize);
-        }
         private static int GetHeuristics(IHeuristicCalculator heuristicsCalculator, Span<byte> board, int gridSize)
         {
             return heuristicsCalculator.GetHeuristic(board, gridSize);

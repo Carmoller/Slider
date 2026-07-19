@@ -28,13 +28,12 @@ public sealed class MultiMap<T> where T: struct
     {
     }
 
-    public void AddState(long key, T value)
+    public void AddState(long key, ref T value)
     {
         if (_nextValueIndex >= _values.Length)
         {
             ResizeValues(2 * _values.Length);
             ResizeKeys(2 * _values.Length);
-  //          throw new InvalidOperationException("Value storage full. Call ResizeValues().");
         }
         int slot = ProbeForSlot(key);
         if (_keys[slot] == 0 && _valueCount[slot] == 0)
@@ -53,7 +52,6 @@ public sealed class MultiMap<T> where T: struct
             {
                 ResizeValues(2 * _values.Length);
                 ResizeKeys(2 * _values.Length);
-//                throw new InvalidOperationException("Value storage full. Call ResizeValues().");
             }
             _values[idx] = value;
             _valueCount[slot]++;
@@ -68,20 +66,30 @@ public sealed class MultiMap<T> where T: struct
         return new ReadOnlySpan<T>(_values, _valueStart[slot], _valueCount[slot]);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryGetState(long key, T testValue, ref T existing)
     {
-        existing = default;
-        ReadOnlySpan<T> existingSpan = Get(key);
-        if (existingSpan == ReadOnlySpan<T>.Empty)
-            return false;
-        for (int i = 0; i < existingSpan.Length; i++)
+        int slot = ProbeForExisting(key);
+        if (slot < 0)
         {
-            if (existingSpan[i].Equals(testValue))
+            existing = default;
+            return false;
+        }
+
+        int start = _valueStart[slot];
+        int count = _valueCount[slot];
+
+        for (int i = 0; i < count; i++)
+        {
+            ref T candidate = ref _values[start + i];
+            if (EqualityComparer<T>.Default.Equals(candidate, testValue))
             {
-                existing = existingSpan[i];
+                existing = candidate;
                 return true;
             }
         }
+
+        existing = default;
         return false;
     }
     // -------------------------------------------------
