@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
@@ -35,6 +36,9 @@ namespace Slider.ViewModels
         private long _forwardHitCount ;
         private long _backwardHitCount;
         private long _idAStarIterations;
+        private int _minimumH;
+        private int _minimumHNodeIndex;
+
         private SolveResultType _solveResult;
         public int GridSize { get => _options.GridSize; set { _options.GridSize = value; OnPropertyChanged(); } } 
         public int AnimationDelay { get => _options.AnimationDelay; set { _options.AnimationDelay = value; OnPropertyChanged(); } }
@@ -45,6 +49,8 @@ namespace Slider.ViewModels
         public TimeSpan SolveTime { get { return _solveTimeElasped; } set {if (value != _solveTimeElasped) { _solveTimeElasped = value; OnPropertyChanged(); } } }
         public int SolveMoveCount { get { return _solveMoveCount; } set { if (value != _solveMoveCount) { _solveMoveCount = value; OnPropertyChanged(); } } }
         public SolveResultType SolveResult { get { return _solveResult; } set { if (value != _solveResult) { _solveResult = value; OnPropertyChanged(); } } }
+        public int MinimumH { get { return _minimumH; } set { if (value != _minimumH) { _minimumH = value; OnPropertyChanged(); } } }
+        public int MinimumHNodeIndex { get { return _minimumHNodeIndex; } set { if (value != _minimumHNodeIndex) { _minimumHNodeIndex = value; OnPropertyChanged(); } } }
         public long ForwardDictonarySize { get { return _forwardDictonarySize; } set { if (value != _forwardDictonarySize) { _forwardDictonarySize = value; OnPropertyChanged(); } } }
         public long BackwardDictonarySize { get { return _backwardDictonarySize; } set { if (value != _backwardDictonarySize) { _backwardDictonarySize = value; OnPropertyChanged(); } } }
         public long ForwardCollisionCount { get { return _forwardCollisionCount; } set { if (value != _forwardCollisionCount) { _forwardCollisionCount = value; OnPropertyChanged(); } } }
@@ -59,6 +65,7 @@ namespace Slider.ViewModels
         public DelegateCommand NewGameCommand { get; private set; }
         public DelegateCommand UndoCommand { get; private set; }
         public DelegateCommand SolveCommand { get; private set; }
+        public DelegateCommand AutoPlayCommand { get; private set; }
 
         private DispatcherTimer _gameTimer = new DispatcherTimer();
 
@@ -83,7 +90,7 @@ namespace Slider.ViewModels
             NewGameCommand = new (NewGameCommand_Executed);
             UndoCommand = new(UndoCommand_Executed, UndoCommand_CanExecute);
             SolveCommand = new(SolveCommand_Executed, SolveCommand_CanExecute);
-
+            AutoPlayCommand = new(AutoPlayCommand_Executed, AutoPlayCommand_CanExecute);
             _gameTimer.Interval = TimeSpan.FromMilliseconds(500);
             _gameTimer.Tick += GameTimer_Tick;
         }
@@ -100,6 +107,21 @@ namespace Slider.ViewModels
             OnPropertyChanged(nameof(Heuristic));
             RecalculateTilePositions();
             UndoCommand.RaiseCanExecuteChanged();
+        }
+        public bool AutoPlayCommand_CanExecute()
+        {
+            return SolveMoveCount > 0;
+        }
+
+        public void AutoPlayCommand_Executed()
+        {
+            foreach (Move move in SolveMoves.ToList())
+            {
+                ITileControlViewModel tile = Tiles.First(p => p.Row == move.FromRow && p.Column == move.FromColumn);
+                MoveTile(tile);
+                RecalculateTilePositions();
+                OnPropertyChanged(nameof(Heuristic));
+            }
         }
 
         public void NewGameCommand_Executed()
@@ -125,6 +147,8 @@ namespace Slider.ViewModels
             SolveTime = result.TimeSpent;
             SolveMoveCount = result.MoveCount;
             SolveResult = result.Result;
+            MinimumH = result.MinimumH;
+            MinimumHNodeIndex = result.MinimumHNodeIndex;
             TotalStatesConsidered = result.TotalStatesConsidered;
             ForwardDictonarySize = result.ForwardDictonarySize;
             BackwardDictonarySize = result.BackwardDictonarySize;
@@ -135,6 +159,7 @@ namespace Slider.ViewModels
             }
             if (SolveMoves.Count > 0)
                 SetHighlightedTile(SolveMoves[0].FromRow, SolveMoves[0].FromColumn);
+            AutoPlayCommand.RaiseCanExecuteChanged();
         }
 
         public bool SolveCommand_CanExecute()

@@ -44,6 +44,15 @@ namespace Slider.Heuristics
             }
         }
 
+        protected void TargetPositionsUpdateFromBoard(Span<byte> board)
+        {
+            for (int i = 0; i < board.Length; i++)
+            {
+                TargetValues[i] = board[i];
+                TargetPositions[board[i]] = i;
+            }
+        }
+
         protected int GetTargetPosition(int tileValue)
         {
             return TargetPositions[tileValue];

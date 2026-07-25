@@ -80,8 +80,9 @@ namespace UnitTest
             }
         }
 
-        private static Span<byte> GetDefaultTargetBoard(int count)
+        public static Span<byte> GetDefaultTargetBoard(Span<byte> startBoard)
         {
+            int count = startBoard.Length;
             Span<byte> targetBoard = new byte[count];
             for (int i = 1; i < count; i++)
             {
@@ -94,7 +95,7 @@ namespace UnitTest
             int size = (int)Math.Sqrt(board.Length);
             if (targetBoard == Span<byte>.Empty)
             {
-                targetBoard = GetDefaultTargetBoard(board.Length);
+                targetBoard = GetDefaultTargetBoard(board);
             }
 
             for (int i = 0; i < board.Length; i++)

@@ -10,5 +10,6 @@ namespace Slider.Common.Interfaces
         bool IsAdditive { get; }
         IHeuristicsStatistics Statistics { get; }
         int Calculate(Span<byte> board, int gridSize);
+        void UpdateTargetPositionsFromBoard(Span<byte> board);
     }
 }

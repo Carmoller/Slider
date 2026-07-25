@@ -39,7 +39,7 @@ namespace Slider.Solver
             switch (type)
             {
                 case SolverType.BFSSolver:
-                    return new DynamicWeightAStarSolver(_options);
+                    return new DynamicWeightAStarSolver(_options, _stateInfoFactory);
                 default:
                     throw new InvalidOperationException($"Requesting unknown solver type: {type.ToString()}");
             }

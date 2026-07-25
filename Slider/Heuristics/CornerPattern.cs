@@ -118,5 +118,9 @@ namespace Slider.Heuristics
             return penalty;
         }
 
+        public void UpdateTargetPositionsFromBoard(Span<byte> board)
+        {
+            TargetPositionsUpdateFromBoard(board);
+        }
     }
 }

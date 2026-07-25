@@ -26,6 +26,11 @@ namespace Slider.Solver
                 ElementCalculators = [];
                 _getHeuristic = getHeuristic;
             }
+            public void UpdateTargetPositionsFromBoard(Span<byte> board)
+            {
+            }
+
+
         }
         public class RowColHeuristicFactory : IHeuristicElementFactory
         {
@@ -35,7 +40,7 @@ namespace Slider.Solver
                 _getHeuristic = getHeuristic;
 
             }
-            public IHeuristicCalculator CreateHeuristicCalculator(Span<byte> goalBoard, int gridSize, IOptions options, ISolverOptions solverOptions)
+            public IHeuristicCalculator CreateHeuristicCalculator(Span<byte> goalBoard, int gridSize, ISolverOptions solverOptions)
             {
                 return new RowColHeuristicCalculator(_getHeuristic);
             }

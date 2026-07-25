@@ -115,7 +115,7 @@ namespace UnitTest.HeuristicElementTests
             int loopCount = 1000000;
             byte gridSize = 12;
             byte[] board = new byte[gridSize * gridSize];
-            // Set up a 12x12 board where it is in reverse order, which is the worst case for Manhattan distance
+            // Set up a 12x12 board where it is in reverse order
             for (byte row = 0; row < gridSize; row++)
             {
                 for (byte col = 0; col < gridSize; col++)

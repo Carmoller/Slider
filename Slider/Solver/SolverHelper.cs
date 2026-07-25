@@ -63,7 +63,7 @@ namespace Slider.Solver
             board.CopyTo(state.BoardToken.AsSpan());
             return state;
         }
-        private static Move GetMove(StateInfo goal, StateInfo start, int gridSize)
+        public static Move GetMove(StateInfo goal, StateInfo start, int gridSize)
         {
             (int fromRow, int fromCol) = Math.DivRem(start.BlankPos, gridSize);
             (int toRow, int toCol) = Math.DivRem(goal.BlankPos, gridSize);
@@ -72,7 +72,9 @@ namespace Slider.Solver
                 FromRow = fromRow,
                 ToRow = toRow,
                 FromColumn = fromCol,
-                ToColumn = toCol
+                ToColumn = toCol,
+                NodeIndex = start.NodeIndex,
+                CurrentH = start.CurrentH,
             };
         }
 

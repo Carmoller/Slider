@@ -8,14 +8,14 @@ namespace Slider.Heuristics
 {
     public class HeuristicElementFactory : IHeuristicElementFactory
     {
-        public IHeuristicCalculator CreateHeuristicCalculator(Span<byte> goalBoard, int gridSize, IOptions options, ISolverOptions solverOptions)
+        public IHeuristicCalculator CreateHeuristicCalculator(Span<byte> goalBoard, int gridSize, ISolverOptions solverOptions)
         {
             int[] goalPositions = new int[gridSize*gridSize];
             for (int i = 0; i < goalBoard.Length; i++)
             {
                 goalPositions[goalBoard[i]] = i;
             }
-            return new HeuristicCalculator(goalPositions, gridSize, solverOptions, this, options);
+            return new HeuristicCalculator(goalPositions, gridSize, solverOptions, this);
         }
         public IHeuristicElement CreateManhattanDistance(Span<int> goalPositions, int gridSize)
         {

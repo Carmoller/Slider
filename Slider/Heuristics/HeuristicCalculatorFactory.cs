@@ -11,7 +11,7 @@ namespace Slider.Heuristics
     {
         public IHeuristicCalculator GetHeuristicCalculator(Span<int> targetPositions, int gridSize)
         {
-            return new HeuristicCalculator(targetPositions, gridSize, options.SolverOptions, elementFactory, options);
+            return new HeuristicCalculator(targetPositions, gridSize, options.SolverOptions, elementFactory);
         }
     }
 }

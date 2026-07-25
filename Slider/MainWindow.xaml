@@ -7,7 +7,7 @@
         xmlns:usercontrols="clr-namespace:Slider.UserControls"
         xmlns:vms="clr-namespace:Slider.ViewModels"
         mc:Ignorable="d"
-        Title="Slider" Height="500" Width="800">
+        Title="Slider" Height="603" Width="944">
     <Grid x:Name="grid">
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
@@ -20,15 +20,15 @@
         </Grid.ColumnDefinitions>
         <DockPanel Grid.Row="0">
             <StackPanel Orientation="Vertical">
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="3">
-                <TextBlock Text="Grid Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Slider x:Name="GridSizeSlider" Minimum="2" Maximum="12" Width="140" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GridSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="3">
+                    <TextBlock Text="Grid Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <Slider x:Name="GridSizeSlider" Minimum="2" Maximum="12" Width="140" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GridSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
                     <Run Text="{Binding GridSize}" />
                     <Run Text=" x " />
                     <Run Text="{Binding GridSize}" />
-                </TextBlock>
-            </StackPanel>
+                    </TextBlock>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Animation Delay:" Margin="3,0,8,0" />
                     <Slider Minimum="0" Maximum="1000" Width="140" TickFrequency="100" IsSnapToTickEnabled="True" Value="{Binding AnimationDelay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
@@ -71,12 +71,13 @@
             <Grid.RowDefinitions>
                 <RowDefinition/>
                 <RowDefinition Height="2*"/>
-                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0">
                 <Button Content="New" Command="{Binding NewGameCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Undo" Command="{Binding UndoCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Solve" Command="{Binding SolveCommand}" Width="45" Height="23" Margin="3"/>
+                <Button Content=">>" Command="{Binding AutoPlayCommand}" Width="45" Height="23" Margin="3"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <TextBlock Text="Heuristic:" Margin="3,0,0,0"/>
                     <TextBlock Text="{Binding Heuristic, Mode=OneWay}" Margin="3,0,0,0"/>
@@ -115,7 +116,10 @@
                                 <Run Text="{Binding ToRow}"/>
                                 <Run Text=","/>
                                 <Run Text="{Binding ToColumn}"/>
-                                <Run Text=")"/>
+                                <Run Text="), "/>
+                                <Run Text="{Binding NodeIndex}"/>
+                                <Run Text=", "/>
+                                <Run Text="{Binding CurrentH}"/>
                             </TextBlock>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
@@ -145,7 +149,6 @@
                     <RowDefinition Height="23"/>
                     <RowDefinition Height="23"/>
                     <RowDefinition Height="23"/>
-                    <RowDefinition Height="23"/>
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Result"/>
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveResult}"/>
@@ -155,12 +158,10 @@
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SolveMoveCount}"/>
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="States"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TotalStatesConsidered}"/>
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="Forward Size"/>
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ForwardDictonarySize}"/>
-                <TextBlock Grid.Row="5" Grid.Column="0" Text="Backward Size"/>
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding BackwardDictonarySize}"/>
-                <TextBlock Grid.Row="6" Grid.Column="0" Text="IDA* Iterations"/>
-                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding IDAStarIterations}"/>
+                <TextBlock Grid.Row="4" Grid.Column="0" Text="Minum H"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MinimumH}"/>
+                <TextBlock Grid.Row="5" Grid.Column="0" Text="MinimumH Index"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MinimumHNodeIndex}"/>
             </Grid>
         </Grid>
     </Grid>

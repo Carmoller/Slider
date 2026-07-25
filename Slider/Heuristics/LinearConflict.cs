@@ -96,5 +96,9 @@ namespace Slider.Heuristics
             Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             return conflictCount * 4; // Each conflict adds four moves
         }
+        public void UpdateTargetPositionsFromBoard(Span<byte> board)
+        {
+            TargetPositionsUpdateFromBoard(board);
+        }
     }
 }

@@ -33,6 +33,10 @@ namespace UnitTest
             {
                 ElementCalculators = new();
             }
+            public void UpdateTargetPositionsFromBoard(Span<byte> board)
+            {
+            }
+
         }
         private class FakeHeuristicCalculatorFactory : IHeuristicCalculatorFactory
         {

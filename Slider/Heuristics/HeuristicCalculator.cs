@@ -14,7 +14,7 @@ namespace Slider.Heuristics
         public List<IHeuristicElement> ElementCalculators { get; } = new();
         private List<IHeuristicElement> _additiveElements;
         private List<IHeuristicElement> _singularElements;
-        public HeuristicCalculator(Span<int> targetPositions, int gridSize, ISolverOptions solverOptions, IHeuristicElementFactory elementFactory, IOptions options)
+        public HeuristicCalculator(Span<int> targetPositions, int gridSize, ISolverOptions solverOptions, IHeuristicElementFactory elementFactory)
         {
             _additiveElements = new();
             _singularElements = new();
@@ -49,5 +49,18 @@ namespace Slider.Heuristics
             }
             return distance;
         }
+
+        public void UpdateTargetPositionsFromBoard(Span<byte> board)
+        {
+            foreach (IHeuristicElement element in _additiveElements)
+            {
+                element.UpdateTargetPositionsFromBoard(board);
+            }
+            foreach (IHeuristicElement element in _singularElements)
+            {
+                element.UpdateTargetPositionsFromBoard(board);
+            }
+        }
+
     }
 }

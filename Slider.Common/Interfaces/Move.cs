@@ -12,5 +12,7 @@ namespace Slider.Common.Interfaces
         public int FromColumn { get; set; }
         public int ToRow { get; set; }
         public int ToColumn { get; set; }
+        public int NodeIndex { get; set; }
+        public int CurrentH { get; set; }
     }
 }

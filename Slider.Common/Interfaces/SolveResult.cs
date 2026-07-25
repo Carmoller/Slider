@@ -11,6 +11,8 @@ namespace Slider.Common.Interfaces
         public TimeSpan TimeSpent { get; set; }
         public List<Move> Moves { get; set; }
         public int MoveCount => Moves?.Count ?? 0;
+        public int MinimumH { get; set; } = int.MaxValue;
+        public int MinimumHNodeIndex { get; set; } = int.MaxValue;
         public long TotalStatesConsidered { get; set; }
         public long ForwardDictonarySize { get; set; }
         public long BackwardDictonarySize { get; set; }

@@ -118,6 +118,10 @@ namespace Slider.Heuristics
             Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTime).TotalMilliseconds;
             return penalty;
         }
+        public void UpdateTargetPositionsFromBoard(Span<byte> board)
+        {
+            TargetPositionsUpdateFromBoard(board);
+        }
 
     }
 }

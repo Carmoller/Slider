@@ -30,10 +30,10 @@ namespace Slider
         {
             SolveTimeout = TimeSpan.FromSeconds(30);
             SolverSelector = [
-                new SolverDescriptor{LowHeuristic = 0, HighHeuristic = 60, Solver = new DynamicWeightAStarSolver(this), SolverParameters=[] },
-                new SolverDescriptor{LowHeuristic = 61, HighHeuristic = 80, Solver = new DynamicWeightAStarSolver(this), SolverParameters=[2] },
-                new SolverDescriptor{LowHeuristic = 80, HighHeuristic = 100, Solver = new DynamicWeightAStarSolver(this),  SolverParameters=[3] },
-                new SolverDescriptor{LowHeuristic = 100, HighHeuristic = int.MaxValue, Solver = new DynamicWeightAStarSolver(this), SolverParameters=[3.5] },
+                new SolverDescriptor{LowHeuristic = 0, HighHeuristic = 60, Solver = new DynamicWeightAStarSolver(this, stateInfoFactory), SolverParameters=[] },
+                new SolverDescriptor{LowHeuristic = 61, HighHeuristic = 80, Solver = new DynamicWeightAStarSolver(this, stateInfoFactory), SolverParameters=[2] },
+                new SolverDescriptor{LowHeuristic = 80, HighHeuristic = 100, Solver = new DynamicWeightAStarSolver(this, stateInfoFactory),  SolverParameters=[3] },
+                new SolverDescriptor{LowHeuristic = 100, HighHeuristic = int.MaxValue, Solver = new DynamicWeightAStarSolver(this, stateInfoFactory), SolverParameters=[3.5] },
                 ];
         }
         private void OnPropertyChanged([CallerMemberName] string? name = null)

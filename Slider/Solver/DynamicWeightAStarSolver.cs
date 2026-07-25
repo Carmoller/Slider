@@ -29,15 +29,17 @@ namespace Slider.Solver
         private int _gridSize;
         private int _min_h;
         private readonly IOptions _options;
+        private readonly IStateInfoFactory _stateInfoFactory;
         private RefAction<StateInfo, SolverContext>? _cachedProcessNewStateHandler;
         private double[] w_cache;
         private const int MaxSupportedHeuristic = 1000;
 
         public BfsMode BfsMode { get; set; } = BfsMode.Greedy;
 
-        public DynamicWeightAStarSolver(IOptions options)
+        public DynamicWeightAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
         {
             _options = options;
+            _stateInfoFactory = stateInfoFactory;
             _cachedProcessNewStateHandler = ProcessNewState;
             // Initialize the w cache
             w_cache = new double[MaxSupportedHeuristic];
@@ -60,12 +62,11 @@ namespace Slider.Solver
             _gridSize = (int)Math.Sqrt(board.Length);
             if (targetBoard.Length == 0)
                 targetBoard = SolverHelper.CreateGoalBoard(_gridSize);
-            IStateInfoFactory stateInfoFactory = new StateInfoFactory();
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);
             using (ChunkedArrayPoolUnsafe arrayPool = new ChunkedArrayPoolUnsafe(1000000, _gridSize * _gridSize))
             {
                 Stopwatch sw = Stopwatch.StartNew();
-                IHeuristicCalculator heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(targetBoard, _gridSize, _options, solverOptions);
+                IHeuristicCalculator heuristicCalculator = heuristicElementFactory.CreateHeuristicCalculator(targetBoard, _gridSize, solverOptions);
 
                 StateInfo startState = SolverHelper.CreateStateInfoFromBoard(
                     board,
@@ -77,7 +78,7 @@ namespace Slider.Solver
                     GetHeuristics,
                     SolverHelper.GetHashCode);
 
-                SolveResult result = SprintSolve(startState, stateInfoPool, arrayPool, heuristicCalculator, stateInfoFactory, sw, _gridSize, int.MaxValue);
+                SolveResult result = SprintSolve(startState, stateInfoPool, arrayPool, heuristicCalculator, _stateInfoFactory, sw, _gridSize, int.MaxValue);
                 return result;
             }
         }
@@ -95,7 +96,7 @@ namespace Slider.Solver
             TimeSpan timeout = _options.SolveTimeout;
             SolveResult result = new();
             MultiMap<StateInfo> closed = new(300000, 300000);
-            PriorityQueue<StateInfo, double> openQueue = new();
+            PriorityQueue<StateInfo, double> openQueue = new(10000);
             try
             {
                 _gridSize = gridSize;
@@ -116,14 +117,16 @@ namespace Slider.Solver
 
                     if (currentState.CurrentH < _min_h)
                     {
-                        Debug.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{result.TotalStatesConsidered}: h:{currentState.CurrentH}");
+                        Debug.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{result.TotalStatesConsidered}: h:{currentState.CurrentH}, g:{currentState.CurrentG}");
                         _min_h = currentState.CurrentH;
+                        result.MinimumH = _min_h;
+                        result.MinimumHNodeIndex = currentState.NodeIndex;
                     }
                     result.TotalStatesConsidered++;
                     if (result.TotalStatesConsidered >= maxNodes)
                     {
                         Console.WriteLine($"Currently at {result.TotalStatesConsidered} examine nodes. Max is {maxNodes}");
-                        result.Result = SolveResultType.StateLimitExceeded;
+                        result.Result = SolveResultType.LimitExceeded;
                         return result;
                     }
 
@@ -131,7 +134,13 @@ namespace Slider.Solver
                     if ((currentState.CurrentH == 0) ||  (timeout != TimeSpan.Zero && sw.Elapsed > timeout))
                     {
                         result.TimeSpent = sw.Elapsed;
-                        result.Moves = SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
+                        if (currentState.CurrentH == 0 || result.MinimumHNodeIndex == int.MaxValue)
+                            result.Moves = SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
+                        else
+                        {
+                            ref StateInfo minHState = ref stateInfoPool.GetRef(result.MinimumHNodeIndex);
+                            result.Moves = SolverHelper.ReconstructPath(minHState, stateInfoPool, gridSize);
+                        }
                         if (timeout != TimeSpan.Zero && sw.Elapsed > timeout)
                             result.Result = SolveResultType.Timeout;
                         else
@@ -195,6 +204,10 @@ namespace Slider.Solver
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
             newState.CurrentH = GetHeuristics(context.Calculator, newState.BoardToken.AsSpan(), _gridSize);
+            if (newState.CurrentH < 0)
+            {
+                int a = 1;
+            }
             newState.CurrentF = newState.CurrentG + newState.CurrentH;
             if (newState.BestG > csRef.CurrentG)
             {

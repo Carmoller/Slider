@@ -10,10 +10,15 @@
 
   <ItemGroup>
     <Compile Remove="Solver\BidirectionalAStarSolver2.cs" />
+    <Compile Remove="Solver\WeightedMmSolver.cs" />
   </ItemGroup>
   
   <ItemGroup>
     <InternalsVisibleTo Include="UnitTest" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="Solver\WeightedMmSolver.cs" />
   </ItemGroup>
   <ItemGroup>
     

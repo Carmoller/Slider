@@ -26,11 +26,23 @@ namespace Slider.Heuristics
                 }
                 (int row, int col) = base.GetRowAndColumn(i);
                 (int targetRow, int targetCol) = base.GetRowAndColumn(TargetPositions[board[i]]);
-                distance += Math.Abs(row - targetRow) + Math.Abs(col - targetCol);
+                int tileDistance = Math.Abs(row - targetRow) + Math.Abs(col - targetCol);
+                // The following possibly makes the calculation inadmissable
+                // That's why it's only done for larger boards, where we primarily use h as a guide to the solver,
+                // and are not worried about finding an optimal path
+                if (gridSize > 7 && tileDistance > 2)
+                {
+                    tileDistance *= 2;
+                }
+                distance += tileDistance;
             }
             Statistics.NumberOfCalls++;
             Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             return distance;
+        }
+        public void UpdateTargetPositionsFromBoard(Span<byte> board)
+        {
+            TargetPositionsUpdateFromBoard(board);
         }
     }
 }
