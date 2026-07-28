@@ -182,6 +182,47 @@ namespace UnitTest
             Console.WriteLine($"Min h: {result.MinimumH}");
             Console.WriteLine();
             Console.WriteLine($"{result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} States / ms");
+            Console.WriteLine();
+
+            BoardHelper.VerifyMoves(board, result);
+            Console.WriteLine(board.ToPrettyPrintedBoardString());
+            Assert.AreEqual(SolveResultType.Solved, result.Result);
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
+
+        }
+        [TestMethod]
+        public void BfsSolver_10x10Board_Timeout()
+        {
+            // This board is immensely slow for the Bidirational A* sovler, so we test it here as well
+            Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(new TimeSpan(0, 0, 30));
+            // This test attempts to solve a board that choked the Dynamic Weighted A* solver
+            byte[] board = [63, 41, 44, 10, 88, 58, 97, 59, 19, 99,
+                            21, 56, 70, 64, 79, 05, 15, 08, 30, 61,
+                            31, 01, 38, 86, 74, 68, 39, 47, 29, 49,
+                            89, 14, 73, 20, 78, 76, 00, 83, 28, 94,
+                            45, 57, 24, 26, 95, 04, 40, 98, 12, 71,
+                            62, 34, 42, 81, 25, 13, 33, 09, 77, 93,
+                            46, 85, 23, 72, 03, 52, 82, 54, 35, 50,
+                            69, 75, 65, 36, 16, 84, 06, 02, 55, 07,
+                            43, 80, 48, 90, 51, 32, 92, 60, 17, 11,
+                            27, 91, 18, 87, 53, 22, 66, 37, 67, 96];
+
+            Assert.IsTrue(BoardHelper.IsSolvable(board));
+
+            DynamicWeightAStarSolver testObject = new(optionsMock.Object, new StateInfoFactory());
+
+            SolveResult result = testObject.Solve(board,
+                BoardHelper.GetDefaultTargetBoard(board),
+                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
+                new HeuristicElementFactory());
+
+            Console.WriteLine($"Moves: {result.MoveCount}");
+            Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
+            Console.WriteLine($"Min h: {result.MinimumH}");
+            Console.WriteLine();
+            Console.WriteLine($"{result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} States / ms");
+            Console.WriteLine();
 
             BoardHelper.VerifyMoves(board, result);
             Console.WriteLine(board.ToPrettyPrintedBoardString());

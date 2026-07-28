@@ -11,6 +11,7 @@ namespace Slider.Common.Interfaces
         bool UseCornerPattern { get; set; } 
         bool UseEdgePattern { get; set; } 
         bool UseSprintFinish { get; set; }
+        bool UseColumnAnchoring { get; set; }
 
     }
 }

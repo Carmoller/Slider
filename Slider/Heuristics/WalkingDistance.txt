@@ -1,0 +1,115 @@
+﻿// Member variables allocated once at the class level
+private readonly int[,] _rowCounts = new int[10, 10];
+
+public int GetGlobalVerticalWalkingDistance(int[] board, int blankRow)
+{
+    // 1. Reset your member variable matrix (fast 100-element clear)
+    Array.Clear(_rowCounts, 0, _rowCounts.Length);
+
+    // 2. Populate the matrix
+    for (int i = 0; i < 100; i++)
+    {
+        int tile = board[i];
+        if (tile == 0) continue;
+
+        int currentRow = i / 10;
+        int goalRow = (tile - 1) / 10;
+        _rowCounts[currentRow, goalRow]++;
+    }
+
+    int totalVerticalMoves = 0;
+    int tilesGoingDown = 0;
+    int tilesGoingUp = 0;
+
+    // 3. Single linear pass to calculate crossings
+    // Boundary 'r' sits between row 'r' and row 'r+1'
+    for (int r = 0; r < 9; r++)
+    {
+        // Add tiles in row 'r' that want to go to any lower row
+        for (int targetRow = r + 1; targetRow < 10; targetRow++)
+        {
+            tilesGoingDown += _rowCounts[r, targetRow];
+        }
+
+        // Subtract tiles from any lower row that wanted to come up to row 'r'
+        for (int sourceRow = r + 1; sourceRow < 10; sourceRow++)
+        {
+            tilesGoingUp += _rowCounts[sourceRow, r];
+        }
+
+        // Apply the tile moves
+        totalVerticalMoves += tilesGoingDown + tilesGoingUp;
+
+        // Apply your blank tile alignment
+        int netSlack = tilesGoingDown - tilesGoingUp;
+        if (netSlack > 0 && blankRow > r) 
+        {
+            totalVerticalMoves++;
+        }
+        else if (netSlack < 0 && blankRow <= r) 
+        {
+            totalVerticalMoves++;
+        }
+    }
+
+    return totalVerticalMoves;
+}
+
+
+    // Columns!
+    int totalHorizontalMoves = 0;
+
+    // 2. Evaluate each column boundary (0 to 8). 
+    // Boundary 'c' sits between Column c and Column c+1
+    for (int c = 0; c < 9; c++)
+    {
+        int tilesGoingRight = 0;
+        int tilesGoingLeft = 0;
+
+        // Count how many tiles currently LEFT of or AT column 'c' want to go RIGHT of column 'c'
+        for (int curCol = 0; curCol <= c; curCol++)
+        {
+            for (int goalCol = c + 1; goalCol < 10; goalCol++)
+            {
+                tilesGoingRight += colCounts[curCol, goalCol];
+            }
+        }
+
+        // Count how many tiles currently RIGHT of column 'c' want to go LEFT of or AT column 'c'
+        for (int curCol = c + 1; curCol < 10; curCol++)
+        {
+            for (int goalCol = 0; goalCol <= c; goalCol++)
+            {
+                tilesGoingLeft += colCounts[curCol, goalCol];
+            }
+        }
+
+        // Base tile movement cost across this column boundary
+        totalHorizontalMoves += tilesGoingRight + tilesGoingLeft;
+
+        // --- BLANK TILE PARITY ALIGNMENT (HORIZONTAL) ---
+        // Determine the net directional pressure across this column boundary
+        int netSlack = tilesGoingRight - tilesGoingLeft;
+
+        if (netSlack > 0) 
+        {
+            // Net tiles are moving RIGHT. The blank must move LEFT to meet them.
+            // If the blank is currently to the right of this boundary, it is forced to cross left.
+            if (blankCol > c) 
+            {
+                totalHorizontalMoves += 1; 
+            }
+        }
+        else if (netSlack < 0) 
+        {
+            // Net tiles are moving LEFT. The blank must move RIGHT to meet them.
+            // If the blank is currently to the left of or at this boundary, it is forced to cross right.
+            if (blankCol <= c) 
+            {
+                totalHorizontalMoves += 1;
+            }
+        }
+    }
+
+    return totalHorizontalMoves;
+}

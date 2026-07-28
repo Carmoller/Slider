@@ -12,6 +12,7 @@ namespace Slider.Solver
         public bool UseCornerPattern { get; set; } = true;
         public bool UseEdgePattern { get; set; } = false;
         public bool UseSprintFinish { get; set; }
+        public bool UseColumnAnchoring { get; set; }
 
         public override string ToString()
         {

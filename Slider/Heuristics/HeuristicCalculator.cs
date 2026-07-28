@@ -33,7 +33,11 @@ namespace Slider.Heuristics
             }
             if (_solverOptions.UseEdgePattern)
             {
-                ElementCalculators.Add(new EdgePattern(targetPositions, gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
+                ElementCalculators.Add(elementFactory.CreateEdgePattern( targetPositions, gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
+            }
+            if (_solverOptions.UseColumnAnchoring)
+            {
+                ElementCalculators.Add(elementFactory.CreateColumnAnchor(targetPositions, gridSize, _solverOptions.UseCornerPattern)); // Edge detection should ignore corners, if we are using corner pattern as well
             }
             _additiveElements.AddRange(ElementCalculators.Where(p => p.IsAdditive));
             _singularElements.AddRange(ElementCalculators.Where(p => !p.IsAdditive));

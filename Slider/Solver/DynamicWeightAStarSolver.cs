@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.ObjectPool;
+using Microsoft.Extensions.Options;
 using Slider.Common;
 using Slider.Common.Interfaces;
 using Slider.Heuristics;
@@ -33,8 +34,16 @@ namespace Slider.Solver
         private RefAction<StateInfo, SolverContext>? _cachedProcessNewStateHandler;
         private double[] w_cache;
         private const int MaxSupportedHeuristic = 1000;
-
+        private const double MinWeight = 1.2;
+        private const double MaxWeight = 3.6;
+        private Func<Span<byte>, bool>? IsSolved;
         public BfsMode BfsMode { get; set; } = BfsMode.Greedy;
+
+        public DynamicWeightAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory, Func<Span<byte>, bool> isSolved) : this(options, stateInfoFactory)
+        {
+            IsSolved = isSolved;
+            BfsMode = BfsMode.Standard;
+        }
 
         public DynamicWeightAStarSolver(IOptions options, IStateInfoFactory stateInfoFactory)
         {
@@ -47,12 +56,12 @@ namespace Slider.Solver
             {
                 if (h <= 10)
                 {
-                    w_cache[h] = 1.2;
+                    w_cache[h] = MinWeight;
                 }
                 else
                 {
-                    // Precalculate the exact logarithmic curve
-                    w_cache[h] = 1.2 + (Math.Log(h - 9.0) * 0.8443);
+                    // Precalculate the logarithmic curve
+                    w_cache[h] = MinWeight + Math.Max(MaxWeight, (Math.Log(h - 9.0) * 0.8443));
                 }
             }
         }
@@ -100,7 +109,7 @@ namespace Slider.Solver
             try
             {
                 _gridSize = gridSize;
-                openQueue.Enqueue(startState, startState.CurrentF);
+                openQueue.Enqueue(startState, BfsMode == BfsMode.Standard ? 0: startState.CurrentF);
                 _min_h = startState.CurrentH;
                 while (openQueue.TryDequeue(out StateInfo currentState, out double _) && result.TotalStatesConsidered < maxNodes)
                 {
@@ -131,10 +140,11 @@ namespace Slider.Solver
                     }
 
                     Span<byte> board = currentState.BoardToken.AsSpan();
-                    if ((currentState.CurrentH == 0) ||  (timeout != TimeSpan.Zero && sw.Elapsed > timeout))
+                    bool isSolved = (currentState.CurrentH == 0) || (IsSolved != null && IsSolved(board) == true);
+                    if (isSolved ||  (timeout != TimeSpan.Zero && sw.Elapsed > timeout))
                     {
                         result.TimeSpent = sw.Elapsed;
-                        if (currentState.CurrentH == 0 || result.MinimumHNodeIndex == int.MaxValue)
+                        if (isSolved || result.MinimumHNodeIndex == int.MaxValue)
                             result.Moves = SolverHelper.ReconstructPath(currentState, stateInfoPool, gridSize);
                         else
                         {
@@ -204,10 +214,6 @@ namespace Slider.Solver
             newState.CurrentG = tentative_g;
             newState.BestG = int.MaxValue;
             newState.CurrentH = GetHeuristics(context.Calculator, newState.BoardToken.AsSpan(), _gridSize);
-            if (newState.CurrentH < 0)
-            {
-                int a = 1;
-            }
             newState.CurrentF = newState.CurrentG + newState.CurrentH;
             if (newState.BestG > csRef.CurrentG)
             {

@@ -30,5 +30,13 @@ namespace Slider.Heuristics
         {
             return new CornerPattern(goalPositions, gridSize);
         }
+        public IHeuristicElement CreateColumnAnchor(Span<int> goalPositions, int gridSize, bool ignoreCorners)
+        {
+            return new ColumnAnchoring(goalPositions, gridSize, true);
+        }
+        public IHeuristicElement CreateEdgePattern(Span<int> goalPositions, int gridSize, bool ignoreCorners)
+        {
+            return new EdgePattern(goalPositions, gridSize, ignoreCorners);
+        }
     }
 }

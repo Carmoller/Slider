@@ -48,12 +48,24 @@ namespace Slider.Solver
             {
                 throw new NotImplementedException();
             }
+            public IHeuristicElement CreateColumnAnchor(Span<int> goalPositions, int gridSize)
+            {
+                throw new NotImplementedException();
+            }
             public IHeuristicElement CreateLinearConflict(int gridSize)
             {
                 throw new NotImplementedException();
             }
 
             public IHeuristicElement CreateManhattanDistance(Span<int> goalPositions, int gridSize)
+            {
+                throw new NotImplementedException();
+            }
+            public IHeuristicElement CreateColumnAnchor(Span<int> goalPositions, int gridSize, bool ignoreCorners)
+            {
+                throw new NotImplementedException();
+            }
+            public IHeuristicElement CreateEdgePattern(Span<int> goalPositions, int gridSize, bool ignoreCorners)
             {
                 throw new NotImplementedException();
             }

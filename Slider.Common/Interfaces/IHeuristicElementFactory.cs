@@ -10,5 +10,7 @@ namespace Slider.Common.Interfaces
         IHeuristicElement CreateManhattanDistance(Span<int> goalPositions, int gridSize);
         IHeuristicElement CreateLinearConflict(int gridSize);
         IHeuristicElement CreateCornerPattern(Span<int> goalPositions, int gridSize);
+        IHeuristicElement CreateColumnAnchor(Span<int> goalPositions, int gridSize, bool ignoreCorners);
+        IHeuristicElement CreateEdgePattern(Span<int> goalPositions, int gridSize, bool ignoreCorners);
     }
 }

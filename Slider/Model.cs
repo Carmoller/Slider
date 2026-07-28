@@ -104,6 +104,7 @@ namespace Slider
         private void GenerateBoard()
         {
             Board = new();
+            _goalPositions = [];
             MoveHistory.Clear();
             _emptyTile = null;
             NumberOfMoves = 0;

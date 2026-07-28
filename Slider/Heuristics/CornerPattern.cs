@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.Text;
 
 namespace Slider.Heuristics
@@ -44,12 +45,10 @@ namespace Slider.Heuristics
 
         }
 
-        private bool IsLock(Span<byte> board, int position, int gridSize)
+        (int adjacentLocation1, int adjacentLocation2) GetAdjacentLocations(int position, int gridSize)
         {
-            // If we get here, then we know the 'position' is in a corner, and it has a wrong tile
-            // Check along the two edges, and see if they are correctly placed. If they are, it's a major penalty
             (int row, int column) = GetRowAndColumn(position);
-            
+
             // Find adjacent row
             int adjacentLocation1, adjacentLocation2;
             if (row == 0)
@@ -69,7 +68,15 @@ namespace Slider.Heuristics
             {
                 adjacentLocation2 = position - 1;
             }
+            return (adjacentLocation1, adjacentLocation2);
+        }
+
+        private bool IsLock(Span<byte> board, int position, int gridSize)
+        {
+            // If we get here, then we know the 'position' is in a corner, and it has a wrong tile
+            // Check along the two edges, and see if they are correctly placed. If they are, it's a major penalty
             // one of these adjacent positions must be in place, and the other must be the corner tile
+            (int adjacentLocation1, int adjacentLocation2) = GetAdjacentLocations(position, gridSize);
             if ((board[adjacentLocation1] == 0) || (board[adjacentLocation2] == 0))
             {
                 return false;
@@ -91,7 +98,7 @@ namespace Slider.Heuristics
                 byte tileValue = board[position];
                 byte expectedTile = TargetValues[position];
 
-                // Case 1: Non-corner tile in corner = LOCK situation (highest penalty)
+                // Case 1: Non-corner tile in corner = LOCK situation 
                 if (tileValue != expectedTile)
                 {
                     if (IsLock(board, position, gridSize))
@@ -111,8 +118,20 @@ namespace Slider.Heuristics
                         penalty += 1;
                     }
                 }
-                // Case 3: Correct tile in correct corner (no penalty)
+                // Case 3: Correct tile in correct corner 
+                else
+                {
+                    // Corner tile is correct, see if we have swapped the adjacent tiles
+                    (int adjacentLocation1, int adjacentLocation2) = GetAdjacentLocations(position, gridSize);
+                    if (board[adjacentLocation1] == TargetValues[adjacentLocation2] &&
+                        board[adjacentLocation2] == TargetValues[adjacentLocation1])
+                    {
+                        // Solved corner, swapped neighbors, add 6
+                        penalty += 6;
+                    }
+                }
             }
+
             Statistics.NumberOfCalls++;
             Statistics.TotalTimeSpentMs += Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds;
             return penalty;
