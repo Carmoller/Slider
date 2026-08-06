@@ -35,7 +35,7 @@ namespace Slider.Solver
         private double[] w_cache;
         private const int MaxSupportedHeuristic = 1000;
         private const double MinWeight = 1.2;
-        private const double MaxWeight = 3.6;
+        private const double MaxWeight = 3.2;
         private Func<Span<byte>, bool>? IsSolved;
         public BfsMode BfsMode { get; set; } = BfsMode.Greedy;
 
@@ -129,6 +129,7 @@ namespace Slider.Solver
                         Debug.WriteLine($"{(BfsMode == BfsMode.Standard ? "Standard" : "Greedy")} BFS: State #{result.TotalStatesConsidered}: h:{currentState.CurrentH}, g:{currentState.CurrentG}");
                         _min_h = currentState.CurrentH;
                         result.MinimumH = _min_h;
+                        result.MinimumHTime = sw.Elapsed;
                         result.MinimumHNodeIndex = currentState.NodeIndex;
                     }
                     result.TotalStatesConsidered++;

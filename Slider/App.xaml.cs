@@ -32,6 +32,8 @@ namespace Slider
                 {
                     services.AddSingleton<MainWindow>();
                     services.AddSingleton<IMainViewModel, MainViewModel>();
+                    services.AddSingleton<BuildPuzzleWindow>();
+                    services.AddSingleton<IBuildPuzzleViewModel, BuildPuzzleViewModel>();
                     services.AddSingleton<IUserAlert>(serviceProvider => serviceProvider.GetRequiredService<MainWindow>());
                     services.AddSingleton<IModel, Model>();
                     services.AddSingleton<IGenerator, PuzzleGenerator>();
@@ -58,8 +60,10 @@ namespace Slider
             try
             {
                 _host.Start();
-                MainWindow startupForm = _host.Services.GetRequiredService<MainWindow>();
-                startupForm.DataContext = _host.Services.GetRequiredService<IMainViewModel>();
+                //MainWindow startupForm = _host.Services.GetRequiredService<MainWindow>();
+                //startupForm.DataContext = _host.Services.GetRequiredService<IMainViewModel>();
+                BuildPuzzleWindow startupForm = _host.Services.GetRequiredService<BuildPuzzleWindow>();
+                startupForm.DataContext = _host.Services.GetRequiredService<IBuildPuzzleViewModel>();
                 startupForm.Show();
 
                 base.OnStartup(e);

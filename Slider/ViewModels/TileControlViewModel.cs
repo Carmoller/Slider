@@ -13,7 +13,7 @@ namespace Slider.ViewModels
     {
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private readonly IMainViewModel _mainViewModel;
+        private readonly IMainViewModel? _mainViewModel;
         private readonly IOptions _options;
         private int _x;
         private int _y;
@@ -29,7 +29,7 @@ namespace Slider.ViewModels
         public int AnimationDelay { get { return _options.AnimationDelay; } }
         public BoardTile BoardTile { get; }
 
-        public TileControlViewModel(BoardTile boardTile, IMainViewModel mainViewModel, IOptions options)
+        public TileControlViewModel(BoardTile boardTile, IMainViewModel? mainViewModel, IOptions options)
         {
             _mainViewModel = mainViewModel;
             _options = options;
@@ -42,11 +42,15 @@ namespace Slider.ViewModels
 
         public AllowedMove CanMove()
         {
+            if (_mainViewModel == null)
+                return AllowedMove.None;
             return _mainViewModel.CanMove(this);
         }
 
         public void Move()
         {
+            if (_mainViewModel == null)
+                return;
             _mainViewModel.MoveTile(this);
         }
     }

@@ -38,6 +38,7 @@ namespace Slider.ViewModels
         private long _idAStarIterations;
         private int _minimumH;
         private int _minimumHNodeIndex;
+        private TimeSpan _minimumHTime;
 
         private SolveResultType _solveResult;
         public int GridSize { get => _options.GridSize; set { _options.GridSize = value; OnPropertyChanged(); } } 
@@ -51,6 +52,7 @@ namespace Slider.ViewModels
         public SolveResultType SolveResult { get { return _solveResult; } set { if (value != _solveResult) { _solveResult = value; OnPropertyChanged(); } } }
         public int MinimumH { get { return _minimumH; } set { if (value != _minimumH) { _minimumH = value; OnPropertyChanged(); } } }
         public int MinimumHNodeIndex { get { return _minimumHNodeIndex; } set { if (value != _minimumHNodeIndex) { _minimumHNodeIndex = value; OnPropertyChanged(); } } }
+        public TimeSpan MinimumHTime { get { return _minimumHTime; } set { if (value != _minimumHTime) { _minimumHTime = value; OnPropertyChanged(); } } }
         public long ForwardDictonarySize { get { return _forwardDictonarySize; } set { if (value != _forwardDictonarySize) { _forwardDictonarySize = value; OnPropertyChanged(); } } }
         public long BackwardDictonarySize { get { return _backwardDictonarySize; } set { if (value != _backwardDictonarySize) { _backwardDictonarySize = value; OnPropertyChanged(); } } }
         public long ForwardCollisionCount { get { return _forwardCollisionCount; } set { if (value != _forwardCollisionCount) { _forwardCollisionCount = value; OnPropertyChanged(); } } }
@@ -149,6 +151,7 @@ namespace Slider.ViewModels
             SolveResult = result.Result;
             MinimumH = result.MinimumH;
             MinimumHNodeIndex = result.MinimumHNodeIndex;
+            MinimumHTime = result.MinimumHTime;
             TotalStatesConsidered = result.TotalStatesConsidered;
             ForwardDictonarySize = result.ForwardDictonarySize;
             BackwardDictonarySize = result.BackwardDictonarySize;

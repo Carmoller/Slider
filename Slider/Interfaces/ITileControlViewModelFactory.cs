@@ -7,6 +7,7 @@ namespace Slider.Interfaces
 {
     public interface ITileControlViewModelFactory
     {
+        ITileControlViewModel CreateViewModel(BoardTile boardTile);
         ITileControlViewModel CreateViewModel(BoardTile boardTile, IMainViewModel mainViewModel);
     }
 }

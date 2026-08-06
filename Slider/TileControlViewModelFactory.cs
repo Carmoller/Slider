@@ -9,6 +9,10 @@ namespace Slider
 {
     public class TileControlViewModelFactory(IOptions options) : ITileControlViewModelFactory
     {
+        public ITileControlViewModel CreateViewModel(BoardTile boardTile)
+        {
+            return new TileControlViewModel(boardTile, null, options);
+        }
         public ITileControlViewModel CreateViewModel(BoardTile boardTile, IMainViewModel mainViewModel)
         {
             return new TileControlViewModel(boardTile, mainViewModel, options);

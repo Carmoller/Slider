@@ -180,6 +180,7 @@ namespace UnitTest
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
             Console.WriteLine($"Min h: {result.MinimumH}");
+            Console.WriteLine($"Min h time: {result.MinimumHTime}");
             Console.WriteLine();
             Console.WriteLine($"{result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} States / ms");
             Console.WriteLine();
@@ -220,6 +221,7 @@ namespace UnitTest
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
             Console.WriteLine($"Min h: {result.MinimumH}");
+            Console.WriteLine($"Min h time: {result.MinimumHTime}");
             Console.WriteLine();
             Console.WriteLine($"{result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} States / ms");
             Console.WriteLine();

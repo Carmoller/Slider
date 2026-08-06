@@ -22,7 +22,7 @@
             <StackPanel Orientation="Vertical">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="3">
                     <TextBlock Text="Grid Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <Slider x:Name="GridSizeSlider" Minimum="2" Maximum="12" Width="140" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GridSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <Slider x:Name="GridSizeSlider" Minimum="2" Maximum="10" Width="140" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GridSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
                     <Run Text="{Binding GridSize}" />
                     <Run Text=" x " />
@@ -69,7 +69,7 @@
         </Viewbox>
         <Grid Grid.Row="0" Grid.Column="1" Grid.RowSpan="2">
             <Grid.RowDefinitions>
-                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="2*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -149,12 +149,13 @@
                     <RowDefinition Height="23"/>
                     <RowDefinition Height="23"/>
                     <RowDefinition Height="23"/>
+                    <RowDefinition Height="23"/>
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Result"/>
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveResult}"/>
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Solve time"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SolveTime, StringFormat=\{0:mm\\:ss\\.fff\}}"/>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Moves"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Moves" Margin="0,8,0,15" Grid.RowSpan="2"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SolveMoveCount}"/>
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="States"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TotalStatesConsidered}"/>
@@ -162,6 +163,8 @@
                 <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding MinimumH}"/>
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="MinimumH Index"/>
                 <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding MinimumHNodeIndex}"/>
+                <TextBlock Grid.Row="6" Grid.Column="0" Text="MinimumH Time"/>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding MinimumHTime, StringFormat=\{0:mm\\:ss\\.fff\}}"/>
             </Grid>
         </Grid>
     </Grid>

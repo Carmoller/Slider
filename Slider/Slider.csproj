@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Solver\BidirectionalAStarSolver2.cs" />
     <Compile Remove="Solver\WeightedMmSolver.cs" />
   </ItemGroup>
   
@@ -21,6 +21,8 @@
     <None Include="Solver\WeightedMmSolver.cs" />
   </ItemGroup>
   <ItemGroup>
+    
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />

@@ -13,6 +13,7 @@ namespace Slider.Common.Interfaces
         public int MoveCount => Moves?.Count ?? 0;
         public int MinimumH { get; set; } = int.MaxValue;
         public int MinimumHNodeIndex { get; set; } = int.MaxValue;
+        public TimeSpan MinimumHTime { get; set; } = TimeSpan.MinValue;
         public long TotalStatesConsidered { get; set; }
         public long ForwardDictonarySize { get; set; }
         public long BackwardDictonarySize { get; set; }
