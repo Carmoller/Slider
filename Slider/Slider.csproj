@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <LangVersion>preview</LangVersion>
+    <AssemblyName>Slider</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

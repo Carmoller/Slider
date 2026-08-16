@@ -1,9 +1,7 @@
 ﻿using Slider.Interfaces;
-using Slider.SliderEventArgs;
 using Slider.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,16 +15,17 @@ using System.Windows.Shapes;
 namespace Slider
 {
     /// <summary>
-    /// Interaction logic for BuildPuzzleWindow.xaml
+    /// Interaction logic for SelectTileWindow.xaml
     /// </summary>
-    public partial class BuildPuzzleWindow : Window
+    public partial class SelectTileWindow : Window
     {
-        private IBuildPuzzleViewModel Vm { get { return (DataContext as IBuildPuzzleViewModel)!; } }
-        public BuildPuzzleWindow()
+        private ISelectTileViewModel Vm { get { return (DataContext as ISelectTileViewModel)!; } }
+        public SelectTileWindow(ISelectTileViewModel vm) 
         {
-            DataContext = new BuildPuzzleViewModel();
             InitializeComponent();
+            DataContext = vm;
         }
+
         private void MoveNext_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             MyBoard.ExecuteMoveNext();
@@ -49,23 +48,11 @@ namespace Slider
             MyBoard.KeyBoardSelect();
         }
 
-        private void MyBoard_SelectionChanged(object sender, BoardSelectionChangedEventArgs e)
+        private void MyBoard_BoardSelectionChanged(object sender, SliderEventArgs.BoardSelectionChangedEventArgs e)
         {
-            Debug.WriteLine($"Selected {e.Tile.Value} via {e.SelectionMethod}");
-            ISelectTileViewModel viewModel = Vm.CreateSelectTileViewModel();
-            SelectTileWindow dialog = new(viewModel)
-            {
-                Owner = this
-            };
-            bool? result = dialog.ShowDialog();
-            if (result != null && result.Value == true)
-            {
-                e.Tile.Value = viewModel.SelectedValue;
-                if (e.SelectionMethod == BoardSelectionMethod.Keyboard)
-                {
-                    MyBoard.ExecuteMoveNext();
-                }
-            }
+            DialogResult = true;
+            Vm.SelectedValue = e.Tile.Value;
+            Close();
         }
     }
 }

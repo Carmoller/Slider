@@ -24,5 +24,17 @@ namespace Slider.Common.Interfaces
             else
                 return 0;
         }
+
+        public BoardTile DeepClone()
+        {
+            BoardTile newTile = new()
+            {
+                Value = Value,
+                Row = Row,
+                Column = Column,
+                IsHighlighted = IsHighlighted,
+            };
+            return newTile;
+        }
     }
 }

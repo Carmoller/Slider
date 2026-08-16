@@ -1,4 +1,5 @@
-﻿using Slider.Common.Interfaces;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -9,37 +10,62 @@ using System.Text;
 
 namespace Slider.ViewModels
 {
-    public class TileControlViewModel : ITileControlViewModel, INotifyPropertyChanged
+    public partial class TileControlViewModel : ObservableObject, ITileControlViewModel
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-
         private readonly IMainViewModel? _mainViewModel;
-        private readonly IOptions _options;
-        private int _x;
-        private int _y;
-        private int _tileSize;
-        public int Value { get { return BoardTile.Value; } }
+        private readonly IOptions? _options;
+
+        public int Value { get { return BoardTile.Value; } set { if (value != BoardTile.Value) { BoardTile.Value = (byte)value; OnPropertyChanged(); OnPropertyChanged(nameof(IsEmpty)); } } }
         public bool IsEmpty{ get { return BoardTile.IsEmpty; } }
         public bool IsHighlighted { get { return BoardTile.IsHighlighted; } set { if (value != BoardTile.IsHighlighted) { BoardTile.IsHighlighted = value; OnPropertyChanged(); } } }
-        public int X { get => _x; set { if (_x != value) { _x = value; OnPropertyChanged(); } } }
-        public int Y { get => _y; set { if (_y != value) { _y = value; OnPropertyChanged(); } } }
+        [ObservableProperty]
+        public partial bool CanSelect { get; set; }
+        [ObservableProperty]
+        public partial bool IsSelected { get; set; }
+        [ObservableProperty]
+        public partial bool IsBorderHighlighted { get; set; }
+        [ObservableProperty] 
+        public partial int X { get; set; }
+        [ObservableProperty]
+        public partial int Y { get; set; }
         public int Row { get { return BoardTile.Row; } set { BoardTile.Row = value; } }
         public int Column { get { return BoardTile.Column; } set { BoardTile.Column = value; } }
-        public int TileSize { get => _tileSize; set { if (_tileSize != value) { _tileSize = value; OnPropertyChanged(); } } }
-        public int AnimationDelay { get { return _options.AnimationDelay; } }
+        [ObservableProperty]
+        public partial bool CanGray { get; set; }
+        [ObservableProperty]
+        public partial bool IsGray { get; set; }
+        [ObservableProperty]
+        public partial int TileSize { get; set; }
+        public int AnimationDelay { get { return _options == null ? 0 : _options.AnimationDelay; } }
         public BoardTile BoardTile { get; }
 
-        public TileControlViewModel(BoardTile boardTile, IMainViewModel? mainViewModel, IOptions options)
+        public TileControlViewModel(BoardTile boardTile, IMainViewModel? mainViewModel, IOptions? options)
         {
             _mainViewModel = mainViewModel;
             _options = options;
             BoardTile = boardTile;
         }
-        private void OnPropertyChanged([CallerMemberName] string? name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
 
+        public ITileControlViewModel DeepClone()
+        {
+            BoardTile boardTile = new();
+
+            TileControlViewModel newVm = new(BoardTile.DeepClone(), _mainViewModel, _options)
+            {
+                Value = Value,
+                CanSelect = CanSelect,
+                IsSelected = IsSelected,
+                IsBorderHighlighted = IsBorderHighlighted,
+                X = X,
+                Y = Y,
+                Row = Row,
+                Column = Column,
+                CanGray = CanGray,
+                IsGray = IsGray,
+                TileSize = TileSize,
+            };
+            return newVm;
+        }
         public AllowedMove CanMove()
         {
             if (_mainViewModel == null)

@@ -28,6 +28,10 @@ namespace Slider.UserControls
         public TileControl()
         {
             InitializeComponent();
+            if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
+            {
+                return;
+            }
         }
 
         private void TileBorder_MouseDown(object sender, MouseButtonEventArgs e)

@@ -9,12 +9,20 @@ namespace Slider.Interfaces
     public interface ITileControlViewModel : INotifyPropertyChanged
     {
         BoardTile BoardTile { get; }
+        int Value { get; set; }
         int TileSize { get; set; }
         bool IsEmpty { get; }
+        bool CanSelect { get; set; }
+        bool IsSelected { get; set; }
+        bool IsBorderHighlighted { get; set; }
         bool IsHighlighted { get; set; }
+        bool CanGray { get; set; }
+        bool IsGray { get; set; }
         int X { get; set; }
         int Y { get; set; }
         int Row { get; set; }
         int Column { get; set; }
+
+        ITileControlViewModel DeepClone();
     }
 }

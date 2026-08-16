@@ -6,11 +6,13 @@
              xmlns:conv="clr-namespace:Slider.Converters"
              xmlns:local="clr-namespace:Slider.UserControls"
              mc:Ignorable="d" 
-             d:DesignHeight="150" d:DesignWidth="150" MouseDown="TileBorder_MouseDown">
+             d:DesignHeight="150" d:DesignWidth="150" MouseDown="TileBorder_MouseDown"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
     <UserControl.Resources>
         <conv:EmptyToVisibilityConverter x:Key="EmptyToVisibilityConverter" />
-        <ImageBrush x:Key="TileImageBrush" ImageSource="/Images/tile.png" Stretch="Fill" />
-        <ImageBrush x:Key="HighlightTileImageBrush" ImageSource="/Images/tile_highlight.png" Stretch="Fill" />
+        <ImageBrush x:Key="TileImageBrush" ImageSource="pack://application:,,,/Slider;component/Images/tile.png" Stretch="Fill" />
+        <ImageBrush x:Key="HighlightTileImageBrush" ImageSource="pack://application:,,,/Slider;component/Images/tile_highlight.png" Stretch="Fill" />
         <Style TargetType="Border" x:Key="TileBorderStyle">
             <Setter Property="Background" Value="{StaticResource TileImageBrush}"/>
             <Style.Triggers>
@@ -20,12 +22,59 @@
                 <DataTrigger Binding="{Binding IsEmpty}" Value="True">
                     <Setter Property="Background" Value="Transparent" />
                 </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CanSelect}" Value="True"/>
+                        <Condition Binding="{Binding IsSelected}" Value="False"/>
+                        <Condition Binding="{Binding IsBorderHighlighted}" Value="False"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Setter Property="BorderThickness" Value="0.5"/>
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CanSelect}" Value="True"/>
+                        <Condition Binding="{Binding IsSelected}" Value="True"/>
+                        <Condition Binding="{Binding IsBorderHighlighted}" Value="False"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="Yellow"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CanSelect}" Value="True"/>
+                        <Condition Binding="{Binding IsSelected}" Value="False"/>
+                        <Condition Binding="{Binding IsBorderHighlighted}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="Green"/>
+                    <Setter Property="BorderThickness" Value="1.5"/>
+                </MultiDataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CanSelect}" Value="True"/>
+                        <Condition Binding="{Binding IsSelected}" Value="True"/>
+                        <Condition Binding="{Binding IsBorderHighlighted}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="BorderBrush" Value="Yellow"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding CanGray}" Value="True"/>
+                        <Condition Binding="{Binding IsGray}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Opacity" Value="0.5"/>
+                </MultiDataTrigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Border x:Name="border" Style="{StaticResource TileBorderStyle}" BorderThickness="0.5" BorderBrush="Transparent">
+    <Border x:Name="border" Style="{StaticResource TileBorderStyle}">
         <Viewbox x:Name="viewbox" Stretch="Uniform">
-            <TextBlock x:Name="Text" Text="{Binding Value, FallbackValue=127}" Visibility="{Binding IsEmpty, Converter={StaticResource EmptyToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="Palatino Linotype" FontWeight="Bold" Foreground="#BF382F2F" />
+            <TextBlock x:Name="Text" Text="{Binding Value, FallbackValue=127}" Visibility="{Binding IsEmpty, Converter={StaticResource EmptyToVisibilityConverter}}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" FontFamily="Palatino Linotype" FontWeight="Bold" Foreground="#BF382F2F"/>
         </Viewbox>
     </Border>
 </UserControl>

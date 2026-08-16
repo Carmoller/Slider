@@ -4,85 +4,79 @@ using Slider.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
+using System.Net.Http.Headers;
 using System.Text;
-using System.Windows;
 
 namespace Slider.ViewModels
 {
     public partial class BuildPuzzleViewModel : ObservableObject, IBuildPuzzleViewModel
     {
         [ObservableProperty]
-        public partial int GridSize { get; set; }
+        public partial int GridSize { get; set; } = 6;
         [ObservableProperty]
-        public partial int AvailableTileSize { get; set; }
-        [ObservableProperty]
-        public partial int BoardTileSize { get; set; }
-        public ObservableCollection<ITileControlViewModel> BoardTiles { get; private set; } = [];
-        public ObservableCollection<ITileControlViewModel> AvailableTiles { get; private set; } = [];
-
-        private readonly ITileControlViewModelFactory _tileControlViewModelFactory;
-        private int _availableTilesWidth = 0;
-        private int _boardTilesWidth = 0;
-        public BuildPuzzleViewModel(ITileControlViewModelFactory tileControlViewModelFactory)
+        public partial ObservableCollection<ITileControlViewModel> Board { get; set; }
+        public BuildPuzzleViewModel()
         {
-            _tileControlViewModelFactory = tileControlViewModelFactory;
-            GridSize = 5;
+            Board = [];
+            PopulateBoard();
         }
 
-        private void CalculateBoardTilesLayout(int width)
+        public ISelectTileViewModel CreateSelectTileViewModel()
         {
-            BoardTileSize = width / GridSize;
-            for (int i = 0; i < BoardTiles.Count; i++)
-            {
-                ITileControlViewModel tileControlViewModel = BoardTiles[i];
+            return new SelectTileViewModel(GridSize, [.. Board]);
+        }
 
-                tileControlViewModel.TileSize = BoardTileSize;
-                tileControlViewModel.X = (i % GridSize) * tileControlViewModel.TileSize;
-                tileControlViewModel.Y = (i / GridSize) * tileControlViewModel.TileSize;
+        private void PopulateBoard()
+        {
+            if (GridSize == 0)
+                return;
+            Board.Clear();
+            for (int i = 0; i < GridSize * GridSize; i++)
+            {
+                (int row, int col) = Math.DivRem(i, GridSize);
+#warning DEBUG CODE
+                byte tileValue = (byte)(i + 1);
+                if (i == GridSize * GridSize - 1)
+                {
+                    tileValue = 0;
+                }
+                ITileControlViewModel tileControlViewModel = new TileControlViewModel(
+                        new BoardTile { Value = tileValue, Row = row, Column = col }, null, null)
+                {
+                    CanSelect = true,
+                    CanGray = false,
+                };
+                tileControlViewModel.PropertyChanged += TileControlViewModel_PropertyChanged;
+                Board.Add(tileControlViewModel);
             }
         }
 
-        private void CalculateAvailableTilesLayout(int width)
+        private void TileControlViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            AvailableTileSize = width / GridSize;
-            for (int i=0; i<AvailableTiles.Count; i++)
+            if (!(sender is ITileControlViewModel senderVm))
+                return;
+            if (senderVm.Value == 0)
+                return; // We allow more than one blank
+            if (e.PropertyName == nameof(TileControlViewModel.Value))
             {
-                ITileControlViewModel tileControlViewModel = AvailableTiles[i];
-
-                tileControlViewModel.TileSize = AvailableTileSize;
-                tileControlViewModel.X = (i % GridSize) * tileControlViewModel.TileSize;
-                tileControlViewModel.Y = (i / GridSize) * tileControlViewModel.TileSize;
+                // Remove duplicate tile values (if any found, set them to 0, which is blank)
+                foreach (ITileControlViewModel tileControlViewModel in Board)
+                {
+                    if (tileControlViewModel == senderVm)
+                    {
+                        continue;
+                    }
+                    if (tileControlViewModel.Value == senderVm.Value)
+                    {
+                        tileControlViewModel.Value = 0; // This will not cause an infinite loop because of the check for Value=0 at the top
+                    }
+                }
             }
         }
 
         partial void OnGridSizeChanged(int value)
         {
-            BoardTiles.Clear();
-            AvailableTiles.Clear();
-            for (int i = 0; i < value * value; i++)
-            {
-                ITileControlViewModel tileControlViewModel = _tileControlViewModelFactory.CreateViewModel(
-                    new BoardTile { Value = (byte)(i + 1) });
-                AvailableTiles.Add(tileControlViewModel);
-                ITileControlViewModel tileControlViewModel2 = _tileControlViewModelFactory.CreateViewModel(
-                    new BoardTile { Value = 0 });
-                BoardTiles.Add(tileControlViewModel2);
-            }
-            CalculateAvailableTilesLayout(_availableTilesWidth);
-            CalculateBoardTilesLayout(_boardTilesWidth);
-        }
-        public void AvailableSizeChanged(SizeChangedEventArgs e)
-        {
-            _availableTilesWidth = (int)(e.NewSize.Width);
-            CalculateAvailableTilesLayout(_availableTilesWidth);
-        }
-        public void BoardSizeChanged(SizeChangedEventArgs e)
-        {
-            _boardTilesWidth = (int)(e.NewSize.Width);
-            CalculateBoardTilesLayout(_availableTilesWidth);
+            PopulateBoard();
         }
 
     }

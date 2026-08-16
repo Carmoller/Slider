@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Slider.ViewModels;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
-using System.Windows;
 
 namespace Slider.Interfaces
 {
-    interface IBuildPuzzleViewModel
+    public interface IBuildPuzzleViewModel
     {
-        void AvailableSizeChanged(SizeChangedEventArgs e);
-        void BoardSizeChanged(SizeChangedEventArgs e);
+        ObservableCollection<ITileControlViewModel> Board { get; set; }
+        ISelectTileViewModel CreateSelectTileViewModel();
     }
 }
