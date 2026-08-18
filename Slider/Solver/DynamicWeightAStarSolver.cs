@@ -221,13 +221,12 @@ namespace Slider.Solver
                 newState.BestG = csRef.CurrentG;
             }
             double priority = (newState.CurrentH * GetWeight(newState.CurrentH) + csRef.CurrentG) - (csRef.CurrentG * 0.0001);
-            context.OpenQueue.Enqueue(newState, BfsMode == BfsMode.Greedy ? priority : newState.CurrentG);
+            context.OpenQueue.Enqueue(newState, BfsMode == BfsMode.Standard ? newState.CurrentG : priority);
         }
 
         private static int GetHeuristics(IHeuristicCalculator heuristicsCalculator, Span<byte> board, int gridSize)
         {
             return heuristicsCalculator.GetHeuristic(board, gridSize);
         }
-
     }
 }

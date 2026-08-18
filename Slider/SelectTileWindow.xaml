@@ -7,13 +7,13 @@
         xmlns:usercontrols="clr-namespace:Slider.UserControls"
         xmlns:commands="clr-namespace:Slider.Commands"
         mc:Ignorable="d"
-        Title="SelectTileWindow" Height="450" Width="800" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+        Title="SelectTileWindow" Height="450" Width="800" ShowInTaskbar="False" WindowStartupLocation="CenterOwner" KeyDown="Window_KeyDown">
     <Window.InputBindings>
         <KeyBinding Key="Right" Command="commands:BoardCommands.MoveNext" />
         <KeyBinding Key="Left" Command="commands:BoardCommands.MovePrevious" />
         <KeyBinding Key="Up" Command="commands:BoardCommands.MoveUp" />
         <KeyBinding Key="Down" Command="commands:BoardCommands.MoveDown" />
-        <KeyBinding Key="Space" Command="commands:BoardCommands.KeyboardSelect" />
+        <KeyBinding Key="Return" Command="commands:BoardCommands.KeyboardSelect" />
     </Window.InputBindings>
     <Window.CommandBindings>
         <CommandBinding Command="commands:BoardCommands.MoveNext" Executed="MoveNext_Executed" />

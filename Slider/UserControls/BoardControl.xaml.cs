@@ -99,7 +99,7 @@ namespace Slider.UserControls
             DependencyProperty.Register(
             nameof(SelectedItem), typeof(ITileControlViewModel), typeof(BoardControl),
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnSelectedItemChanged));
-        public ITileControlViewModel SelectedItem
+        public ITileControlViewModel? SelectedItem
         {
             get { return (ITileControlViewModel)GetValue(SelectedItemProperty); }
             set { SetValue(SelectedItemProperty, value); }
@@ -118,7 +118,6 @@ namespace Slider.UserControls
         {
             if (e.PropertyName == nameof(BoardViewModel.Selected))
             {
-                // Avoid infinite recursion loop
                 if (SelectedItem != Vm.Selected)
                 {
                     SelectedItem = Vm.Selected;

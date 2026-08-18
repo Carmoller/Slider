@@ -9,4 +9,12 @@ namespace Slider.Interfaces
         Keyboard,
         Mouse
     }
+
+    public enum SolvableStatus
+    {
+        Solvable,
+        NotSolvable,
+        Incomplete,
+        DuplicateTiles
+    }
 }

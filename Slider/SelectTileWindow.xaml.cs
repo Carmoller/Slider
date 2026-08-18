@@ -24,6 +24,12 @@ namespace Slider
         {
             InitializeComponent();
             DataContext = vm;
+            Vm.SelectedChanged += SelectedChanged;
+        }
+
+        private void SelectedChanged(object? sender, SliderEventArgs.SetBoardSelectionEventArgs e)
+        {
+            MyBoard.SelectedItem = e.Selected;
         }
 
         private void MoveNext_Executed(object sender, ExecutedRoutedEventArgs e)
@@ -53,6 +59,11 @@ namespace Slider
             DialogResult = true;
             Vm.SelectedValue = e.Tile.Value;
             Close();
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            Vm.KeyDown(e);
         }
     }
 }

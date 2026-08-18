@@ -51,7 +51,6 @@ namespace Slider
 
         private void MyBoard_SelectionChanged(object sender, BoardSelectionChangedEventArgs e)
         {
-            Debug.WriteLine($"Selected {e.Tile.Value} via {e.SelectionMethod}");
             ISelectTileViewModel viewModel = Vm.CreateSelectTileViewModel();
             SelectTileWindow dialog = new(viewModel)
             {

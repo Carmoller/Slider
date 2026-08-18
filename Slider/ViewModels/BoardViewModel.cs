@@ -29,7 +29,6 @@ namespace Slider.ViewModels
         public partial ITileControlViewModel? BorderHighlighted { get; set; }
         [ObservableProperty]
         public partial ObservableCollection<ITileControlViewModel> ItemsSource { get; set; }
-        //public ObservableCollection<ITileControlViewModel> Tiles { get; private set; } = [];
         private int _availableTilesWidth;
         public BoardViewModel()
         {

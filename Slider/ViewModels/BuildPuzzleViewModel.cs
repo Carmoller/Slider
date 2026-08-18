@@ -15,6 +15,8 @@ namespace Slider.ViewModels
         public partial int GridSize { get; set; } = 6;
         [ObservableProperty]
         public partial ObservableCollection<ITileControlViewModel> Board { get; set; }
+        [ObservableProperty]
+        public partial SolvableStatus SolvableStatus { get; set; }
         public BuildPuzzleViewModel()
         {
             Board = [];
@@ -34,12 +36,8 @@ namespace Slider.ViewModels
             for (int i = 0; i < GridSize * GridSize; i++)
             {
                 (int row, int col) = Math.DivRem(i, GridSize);
-#warning DEBUG CODE
-                byte tileValue = (byte)(i + 1);
-                if (i == GridSize * GridSize - 1)
-                {
-                    tileValue = 0;
-                }
+#warning DEBUG CODE - should be instantiated via factory
+                byte tileValue = 0;
                 ITileControlViewModel tileControlViewModel = new TileControlViewModel(
                         new BoardTile { Value = tileValue, Row = row, Column = col }, null, null)
                 {
@@ -49,6 +47,7 @@ namespace Slider.ViewModels
                 tileControlViewModel.PropertyChanged += TileControlViewModel_PropertyChanged;
                 Board.Add(tileControlViewModel);
             }
+            SolvableStatus = PuzzleChecker.IsSolvable(Board, GridSize);
         }
 
         private void TileControlViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -70,6 +69,7 @@ namespace Slider.ViewModels
                     {
                         tileControlViewModel.Value = 0; // This will not cause an infinite loop because of the check for Value=0 at the top
                     }
+                    SolvableStatus = PuzzleChecker.IsSolvable(Board, GridSize);
                 }
             }
         }

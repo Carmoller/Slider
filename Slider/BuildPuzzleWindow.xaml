@@ -14,7 +14,7 @@
         <KeyBinding Key="Left" Command="commands:BoardCommands.MovePrevious" />
         <KeyBinding Key="Up" Command="commands:BoardCommands.MoveUp" />
         <KeyBinding Key="Down" Command="commands:BoardCommands.MoveDown" />
-        <KeyBinding Key="Space" Command="commands:BoardCommands.KeyboardSelect" />
+        <KeyBinding Key="Return" Command="commands:BoardCommands.KeyboardSelect" />
     </Window.InputBindings>
     <Window.CommandBindings>
         <CommandBinding Command="commands:BoardCommands.MoveNext" Executed="MoveNext_Executed" />
@@ -32,10 +32,18 @@
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <usercontrols:BoardControl x:Name="MyBoard" GridSize="{Binding GridSize, TargetNullValue=6, FallbackValue=6}" ItemsSource="{Binding Board}" CanSelect="True" SelectionChanged="MyBoard_SelectionChanged" />
-        <StackPanel Grid.Column="1" Orientation="Vertical">
-            <TextBlock Text="{Binding GridSize, TargetNullValue=6, FallbackValue=6}"/>
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="3">
-                <TextBlock Text="Grid Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <Grid Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Grid Size:" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <StackPanel Grid.Row="0" Grid.Column="1"  Orientation="Horizontal" DockPanel.Dock="Top" Margin="3">
                 <Slider x:Name="GridSizeSlider" Minimum="2" Maximum="10" Width="50" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GridSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <TextBlock VerticalAlignment="Center" Margin="8,0,0,0">
                     <Run Text="{Binding GridSize}" />
@@ -43,6 +51,11 @@
                     <Run Text="{Binding GridSize}" />
                 </TextBlock>
             </StackPanel>
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Solvable"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SolvableStatus}"/>
+        </Grid>
+              
+        <StackPanel Grid.Column="1" Orientation="Vertical">
         </StackPanel>
     </Grid>
 </Window>

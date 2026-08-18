@@ -1,11 +1,16 @@
-﻿using System;
+﻿using Slider.SliderEventArgs;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
+using System.Windows.Input;
 
 namespace Slider.Interfaces
 {
-    public interface ISelectTileViewModel
+    public interface ISelectTileViewModel : INotifyPropertyChanged
     {
-        public int SelectedValue { get; set; }
+        event EventHandler<SetBoardSelectionEventArgs> SelectedChanged;
+        int SelectedValue { get; set; }
+        void KeyDown(KeyEventArgs e);
     }
 }
