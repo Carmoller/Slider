@@ -48,7 +48,7 @@ namespace Slider.ViewModels
                     tileValue = 0;
                 }
                 ITileControlViewModel tileControlViewModel = new TileControlViewModel(
-                        new BoardTile { Value = tileValue, Row = row, Column = col }, null, null)
+                        new BoardTile { Value = tileValue, Row = row, Column = col })
                 {
                     CanSelect = true,
                     CanGray = true,

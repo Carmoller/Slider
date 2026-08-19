@@ -5,9 +5,25 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Slider"
         xmlns:usercontrols="clr-namespace:Slider.UserControls"
+        xmlns:commands="clr-namespace:Slider.Commands"
         xmlns:vms="clr-namespace:Slider.ViewModels"
         mc:Ignorable="d"
         Title="Slider" Height="603" Width="944">
+    <Window.InputBindings>
+        <KeyBinding Key="Right" Command="commands:BoardCommands.MoveNext" />
+        <KeyBinding Key="Left" Command="commands:BoardCommands.MovePrevious" />
+        <KeyBinding Key="Up" Command="commands:BoardCommands.MoveUp" />
+        <KeyBinding Key="Down" Command="commands:BoardCommands.MoveDown" />
+        <KeyBinding Key="Return" Command="commands:BoardCommands.KeyboardSelect" />
+    </Window.InputBindings>
+    <Window.CommandBindings>
+        <CommandBinding Command="commands:BoardCommands.MoveNext" Executed="MoveNext_Executed" />
+        <CommandBinding Command="commands:BoardCommands.MovePrevious" Executed="MovePrevious_Executed" />
+        <CommandBinding Command="commands:BoardCommands.MoveUp" Executed="MoveUp_Executed" />
+        <CommandBinding Command="commands:BoardCommands.MoveDown" Executed="MoveDown_Executed" />
+        <CommandBinding Command="commands:BoardCommands.KeyboardSelect" Executed="KeyboardSelect_Executed"/>
+    </Window.CommandBindings>
+
     <Grid x:Name="grid">
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
@@ -46,24 +62,14 @@
                     <ImageBrush ImageSource="/Images/box.png" Stretch="Fill"/>
                 </Border.Background>
                 <Canvas Margin="25,20,25,20" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" SizeChanged="Canvas_SizeChanged">
-                    <ItemsControl ItemsSource="{Binding Tiles}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <Canvas Background="Beige"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemContainerStyle>
-                            <Style TargetType="ContentPresenter">
-                                <Setter Property="Canvas.Left" Value="{Binding X}" />
-                                <Setter Property="Canvas.Top" Value="{Binding Y}" />
-                            </Style>
-                        </ItemsControl.ItemContainerStyle>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <usercontrols:TileControl Width="{Binding TileSize}" Height="{Binding TileSize, Mode=OneWay}"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <usercontrols:BoardControl x:Name="MyBoard" GridSize="{Binding GridSize}" 
+                                               CanSelect="{Binding CanSelect}" 
+                                               CanMove="{Binding CanMove}" 
+                                               CanGray="False" 
+                                               AnimationDelay="{Binding AnimationDelay}"
+                                               ItemsSource="{Binding Tiles, Mode=OneWay}" 
+                                               SelectedItem="{Binding SelectedItem}" 
+                                               SelectionChanged="MyBoard_SelectionChanged"/>
                 </Canvas>
             </Border>
         </Viewbox>
@@ -75,6 +81,7 @@
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0">
                 <Button Content="New" Command="{Binding NewGameCommand}" Width="45" Height="23" Margin="3"/>
+                <Button Content="Edit" Command="{Binding EditCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Undo" Command="{Binding UndoCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Solve" Command="{Binding SolveCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content=">>" Command="{Binding AutoPlayCommand}" Width="45" Height="23" Margin="3"/>
@@ -155,7 +162,7 @@
                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SolveResult}"/>
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Solve time"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SolveTime, StringFormat=\{0:mm\\:ss\\.fff\}}"/>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="Moves" Margin="0,8,0,15" Grid.RowSpan="2"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Moves"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SolveMoveCount}"/>
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="States"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding TotalStatesConsidered}"/>

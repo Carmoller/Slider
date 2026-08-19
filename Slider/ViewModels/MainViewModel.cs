@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Prism.Commands;
 using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using System;
@@ -9,6 +10,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,63 +20,65 @@ using System.Windows.Threading;
 
 namespace Slider.ViewModels
 {
-    public class MainViewModel : INotifyPropertyChanged, IMainViewModel
+    public partial class MainViewModel : ObservableObject, IMainViewModel
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-
         private double _canvasWidth;
         private DateTime _startTime;
-        private string _timeElapsed = "00:00:00";
-        private bool _isSolveDataAvailable;
-        private TimeSpan _solveTimeElasped;
-        private int _solveMoveCount;
-        private long _totalStatesConsidered;
-        private long _forwardDictonarySize ;
-        private long _backwardDictonarySize ;
-        private long _forwardCollisionCount ;
-        private long _backwardCollisionCount ;
-        private long _forwardHitCount ;
-        private long _backwardHitCount;
-        private long _idAStarIterations;
-        private int _minimumH;
-        private int _minimumHNodeIndex;
-        private TimeSpan _minimumHTime;
 
-        private SolveResultType _solveResult;
         public int GridSize { get => _options.GridSize; set { _options.GridSize = value; OnPropertyChanged(); } } 
         public int AnimationDelay { get => _options.AnimationDelay; set { _options.AnimationDelay = value; OnPropertyChanged(); } }
         public int Heuristic { get => _model.Heuristic; }
         public int NumberOfMoves { get => _model.NumberOfMoves; }
-        public string TimeElapsed { get => _timeElapsed; set { if (value != _timeElapsed) { _timeElapsed = value; OnPropertyChanged(); } } }
-        public bool IsSolveDataAvailable { get => _isSolveDataAvailable; set { if (value != _isSolveDataAvailable) { _isSolveDataAvailable = value; OnPropertyChanged(); } } }
-        public TimeSpan SolveTime { get { return _solveTimeElasped; } set {if (value != _solveTimeElasped) { _solveTimeElasped = value; OnPropertyChanged(); } } }
-        public int SolveMoveCount { get { return _solveMoveCount; } set { if (value != _solveMoveCount) { _solveMoveCount = value; OnPropertyChanged(); } } }
-        public SolveResultType SolveResult { get { return _solveResult; } set { if (value != _solveResult) { _solveResult = value; OnPropertyChanged(); } } }
-        public int MinimumH { get { return _minimumH; } set { if (value != _minimumH) { _minimumH = value; OnPropertyChanged(); } } }
-        public int MinimumHNodeIndex { get { return _minimumHNodeIndex; } set { if (value != _minimumHNodeIndex) { _minimumHNodeIndex = value; OnPropertyChanged(); } } }
-        public TimeSpan MinimumHTime { get { return _minimumHTime; } set { if (value != _minimumHTime) { _minimumHTime = value; OnPropertyChanged(); } } }
-        public long ForwardDictonarySize { get { return _forwardDictonarySize; } set { if (value != _forwardDictonarySize) { _forwardDictonarySize = value; OnPropertyChanged(); } } }
-        public long BackwardDictonarySize { get { return _backwardDictonarySize; } set { if (value != _backwardDictonarySize) { _backwardDictonarySize = value; OnPropertyChanged(); } } }
-        public long ForwardCollisionCount { get { return _forwardCollisionCount; } set { if (value != _forwardCollisionCount) { _forwardCollisionCount = value; OnPropertyChanged(); } } }
-        public long BackwardCollisionCount { get { return _backwardCollisionCount; } set { if (value != _backwardCollisionCount) { _backwardCollisionCount = value; OnPropertyChanged(); } } }
-        public long ForwardHitCount { get { return _forwardHitCount; } set { if (value != _forwardHitCount) { _forwardHitCount = value; OnPropertyChanged(); } } }
-        public long BackwardHitCount { get { return _backwardHitCount; } set { if (value != _backwardHitCount) { _backwardHitCount = value; OnPropertyChanged(); } } }
-        public long TotalStatesConsidered { get { return _totalStatesConsidered; } set { if (value != _totalStatesConsidered) { _totalStatesConsidered = value; OnPropertyChanged(); } } }
-        public long IDAStarIterations { get { return _idAStarIterations; } set { if (value != _idAStarIterations) { _idAStarIterations = value; OnPropertyChanged(); } } }
-        public ObservableCollection<ITileControlViewModel> Tiles { get; private set; } = new();
-        public ObservableCollection<Move> SolveMoves { get; private set; } = new();
+        public bool CanSelect { get { return State == GameState.Editing; } }
+        public bool CanMove { get { return State != GameState.Editing; } }
+        [ObservableProperty]
+        public partial GameState State { get; set; } = GameState.Playing;
+        [ObservableProperty]
+        public partial ITileControlViewModel? SelectedItem { get; set; }
+        [ObservableProperty]
+        public partial string TimeElapsed { get; set; } = string.Empty;
+        [ObservableProperty]
+        public partial bool IsSolveDataAvailable { get; set; }
+        [ObservableProperty]
+        public partial TimeSpan SolveTime { get; set; }
+        [ObservableProperty]
+        public partial int SolveMoveCount { get; set; }
+        [ObservableProperty]
+        public partial SolveResultType SolveResult { get; set; }
+        [ObservableProperty]
+        public partial int MinimumH { get; set; }
+        [ObservableProperty]
+        public partial int MinimumHNodeIndex { get; set; }
+        [ObservableProperty]
+        public partial TimeSpan MinimumHTime { get; set; }
+        [ObservableProperty]
+        public partial long ForwardDictonarySize { get; set; }
+        [ObservableProperty]
+        public partial long BackwardDictonarySize { get; set; }
+        [ObservableProperty]
+        public partial long ForwardCollisionCount { get; set; }
+        [ObservableProperty]
+        public partial long BackwardCollisionCount { get; set; }
+        [ObservableProperty]
+        public partial long ForwardHitCount { get; set; }
+        [ObservableProperty]
+        public partial long BackwardHitCount { get; set; }
+        [ObservableProperty]
+        public partial long TotalStatesConsidered { get; set; }
+        [ObservableProperty]
+        public partial long IDAStarIterations { get; set; }
+        [ObservableProperty]
+        public partial ObservableCollection<ITileControlViewModel> Tiles { get; private set; } = new();
+        [ObservableProperty]
+        public partial ObservableCollection<Move> SolveMoves { get; private set; } = new();
 
         public DelegateCommand NewGameCommand { get; private set; }
+        public DelegateCommand EditCommand { get; private set; }
         public DelegateCommand UndoCommand { get; private set; }
         public DelegateCommand SolveCommand { get; private set; }
         public DelegateCommand AutoPlayCommand { get; private set; }
 
         private DispatcherTimer _gameTimer = new DispatcherTimer();
-
-        private void OnPropertyChanged([CallerMemberName] string? name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        }
 
         private IModel _model;
         private IOptions _options;
@@ -85,16 +89,23 @@ namespace Slider.ViewModels
         {
             _model = model;
             _options = options;
+            _options.PropertyChanged += Options_PropertyChanged;
             _viewModelFactory = viewModelFactory;
             _userAlert = userAlert;
             _model.BoardLayoutChanged += Model_BoardLayoutChanged;
             _model.BoardSolved += Model_BoardSolved;
             NewGameCommand = new (NewGameCommand_Executed);
+            EditCommand = new(EditCommand_Executed);
             UndoCommand = new(UndoCommand_Executed, UndoCommand_CanExecute);
             SolveCommand = new(SolveCommand_Executed, SolveCommand_CanExecute);
             AutoPlayCommand = new(AutoPlayCommand_Executed, AutoPlayCommand_CanExecute);
             _gameTimer.Interval = TimeSpan.FromMilliseconds(500);
             _gameTimer.Tick += GameTimer_Tick;
+        }
+
+        private void Options_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            OnPropertyChanged(e.PropertyName);
         }
 
         public bool UndoCommand_CanExecute()
@@ -135,6 +146,15 @@ namespace Slider.ViewModels
             _startTime = DateTime.Now;
             _gameTimer.Start();
         }
+        public void EditCommand_Executed()
+        {
+            State = GameState.Editing;
+            if (Tiles.Count > 0)
+            {
+                SelectedItem = Tiles[0];
+            }
+        }
+
         public void SolveCommand_Executed()
         {
             IsSolveDataAvailable = false;
@@ -168,6 +188,11 @@ namespace Slider.ViewModels
         public bool SolveCommand_CanExecute()
         {
             return true;
+        }
+        partial void OnStateChanged(GameState oldValue, GameState newValue)
+        {
+            OnPropertyChanged(nameof(CanSelect));
+            OnPropertyChanged(nameof(CanMove));
         }
 
         private void GameTimer_Tick(object? sender, EventArgs e)
@@ -204,14 +229,16 @@ namespace Slider.ViewModels
             TimeElapsed = "00:00:00";
             SolveMoves.Clear();
             _gameTimer.Stop();
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NumberOfMoves)));
             OnPropertyChanged(nameof(NumberOfMoves));
             OnPropertyChanged(nameof(Heuristic));
             UndoCommand.RaiseCanExecuteChanged();
             Tiles.Clear();
             for (int i = 0; i < _model.Board.Count; i++)
             {
-                Tiles.Add(_viewModelFactory.CreateViewModel(_model.Board[i], this));
+                ITileControlViewModel tileVm = _viewModelFactory.CreateViewModel(_model.Board[i]);
+                tileVm.CanMove = true;
+                tileVm.AnimationDelay = AnimationDelay;
+                Tiles.Add(tileVm);
             }
             RecalculateTilePositions();
         }
@@ -244,14 +271,14 @@ namespace Slider.ViewModels
                 RecalculateTilePosition(Tiles[i]);
             }
         }
-        public AllowedMove CanMove(ITileControlViewModel tile)
+        public AllowedMove GetAllowedMoves(ITileControlViewModel tile)
         {
             return _model.CanMove(tile.BoardTile);
         }
 
         public void MoveTile(ITileControlViewModel tile)
         {
-            if (CanMove(tile) == AllowedMove.None)
+            if (GetAllowedMoves(tile) == AllowedMove.None)
                 return;
             if ((SolveMoves.Count > 0) && (tile.Row == SolveMoves[0].FromRow) && (tile.Column == SolveMoves[0].FromColumn))
             {
@@ -268,6 +295,26 @@ namespace Slider.ViewModels
             OnPropertyChanged(nameof(NumberOfMoves));
             OnPropertyChanged(nameof(Heuristic));
             UndoCommand.RaiseCanExecuteChanged();
+        }
+
+        private bool TileMove(ITileControlViewModel tile)
+        {
+            if (!CanMove)
+                return false;
+            AllowedMove allowedMove = GetAllowedMoves(tile);
+            if (allowedMove == AllowedMove.None)
+                return false;
+            MoveTile(tile);
+            return tile.Move(allowedMove);
+        }
+        public bool TileSelected(ITileControlViewModel tile, BoardSelectionMethod selectionMethod)
+        {
+            switch (State)
+            {
+                case GameState.Playing:
+                    return TileMove(tile);
+            }
+            return false;
         }
     }
 }

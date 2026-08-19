@@ -1,8 +1,10 @@
 ﻿using Slider.Common.Interfaces;
 using Slider.Interfaces;
+using Slider.SliderEventArgs;
 using Slider.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,13 +36,31 @@ namespace Slider.UserControls
             }
         }
 
-        private void TileBorder_MouseDown(object sender, MouseButtonEventArgs e)
+        private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
         {
-            AllowedMove allowedMove = Vm.CanMove();
-            if (allowedMove == AllowedMove.None)
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
+            while (parent != null)
             {
-                return;
+                if (parent is T)
+                    return (T)parent;
+                parent = VisualTreeHelper.GetParent(parent);
             }
+            return null;
+        }
+
+        private void UserControl_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is TileControlViewModel newVm)
+            {
+                // No unsubscription logic needed with a WeakEventManager
+                WeakEventManager<TileControlViewModel, TileMoveEventArgs>.AddHandler(newVm, nameof(newVm.TileMove), OnTileMove);
+            }
+        }
+
+        private void OnTileMove(object? sender, SliderEventArgs.TileMoveEventArgs e)
+        {
+            if (!Vm.CanMove)
+                return;
             // Get the parent ContentPresenter
             ContentPresenter? presenter = FindParent<ContentPresenter>(this);
             if (presenter == null)
@@ -49,18 +69,18 @@ namespace Slider.UserControls
             string propertyName = string.Empty;
             double startPos = 0;
             double endPos = 0;
-            if (allowedMove == AllowedMove.Left || allowedMove == AllowedMove.Right)
+            if (e.Direction == AllowedMove.Left || e.Direction == AllowedMove.Right)
             {
                 startPos = Canvas.GetLeft(presenter);
                 propertyName = "(Canvas.Left)";
-                endPos = startPos + (allowedMove == AllowedMove.Left ? -Vm.TileSize : Vm.TileSize);
+                endPos = startPos + (e.Direction == AllowedMove.Left ? -Vm.TileSize : Vm.TileSize);
                 Vm.X = (int)endPos;
             }
-            else if (allowedMove == AllowedMove.Up || allowedMove == AllowedMove.Down)
+            else if (e.Direction == AllowedMove.Up || e.Direction == AllowedMove.Down)
             {
                 startPos = Canvas.GetTop(presenter);
                 propertyName = "(Canvas.Top)";
-                endPos = startPos + (allowedMove == AllowedMove.Up ? -Vm.TileSize : Vm.TileSize);
+                endPos = startPos + (e.Direction == AllowedMove.Up ? -Vm.TileSize : Vm.TileSize);
                 Vm.Y = (int)endPos;
             }
 
@@ -75,8 +95,8 @@ namespace Slider.UserControls
                 _currentStoryboard = null;
             }
 
-            Storyboard storyboard = new ();
-            DoubleAnimation animation = new() 
+            Storyboard storyboard = new();
+            DoubleAnimation animation = new()
             {
                 From = startPos,
                 To = endPos,
@@ -93,19 +113,14 @@ namespace Slider.UserControls
             };
             _currentStoryboard = storyboard;
             storyboard.Begin();
-            Vm.Move();
         }
 
-        private static T? FindParent<T>(DependencyObject child) where T : DependencyObject
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
-            DependencyObject parent = VisualTreeHelper.GetParent(child);
-            while (parent != null)
+            if (DataContext != null)
             {
-                if (parent is T)
-                    return (T)parent;
-                parent = VisualTreeHelper.GetParent(parent);
+                int a = 1;
             }
-            return null;
         }
     }
 }

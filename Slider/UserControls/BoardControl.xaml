@@ -13,7 +13,7 @@
             <ItemsControl x:Name="ItemsControlBoard" ItemsSource="{Binding Path=ItemsSource, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" SizeChanged="Tiles_SizeChanged" Background="Transparent">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <Canvas Background="Red"/>
+                        <Canvas Background="Transparent"/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemContainerStyle>

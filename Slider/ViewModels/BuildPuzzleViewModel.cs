@@ -39,7 +39,7 @@ namespace Slider.ViewModels
 #warning DEBUG CODE - should be instantiated via factory
                 byte tileValue = 0;
                 ITileControlViewModel tileControlViewModel = new TileControlViewModel(
-                        new BoardTile { Value = tileValue, Row = row, Column = col }, null, null)
+                        new BoardTile { Value = tileValue, Row = row, Column = col })
                 {
                     CanSelect = true,
                     CanGray = false,

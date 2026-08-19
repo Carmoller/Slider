@@ -60,10 +60,10 @@ namespace Slider
             try
             {
                 _host.Start();
-                //MainWindow startupForm = _host.Services.GetRequiredService<MainWindow>();
-                //startupForm.DataContext = _host.Services.GetRequiredService<IMainViewModel>();
-                BuildPuzzleWindow startupForm = _host.Services.GetRequiredService<BuildPuzzleWindow>();
- //               startupForm.DataContext = _host.Services.GetRequiredService<IBuildPuzzleViewModel>();
+                MainWindow startupForm = _host.Services.GetRequiredService<MainWindow>();
+                startupForm.DataContext = _host.Services.GetRequiredService<IMainViewModel>();
+                //BuildPuzzleWindow startupForm = _host.Services.GetRequiredService<BuildPuzzleWindow>();
+                //               startupForm.DataContext = _host.Services.GetRequiredService<IBuildPuzzleViewModel>();
                 startupForm.Show();
 
                 base.OnStartup(e);

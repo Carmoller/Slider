@@ -94,6 +94,24 @@ namespace Slider.UserControls
             }
         }
         #endregion
+        #region CanMove Dependency Property
+        public bool CanMove
+        {
+            get { return (bool)GetValue(CanMoveProperty); }
+            set { SetValue(CanMoveProperty, value); }
+        }
+
+        public static readonly DependencyProperty CanMoveProperty =
+            DependencyProperty.Register(nameof(CanMove), typeof(bool),
+                typeof(BoardControl), new PropertyMetadata(false, OnCanMoveChanged));
+        private static void OnCanMoveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is BoardControl control && control.DataContext != null && e.NewValue is bool newCanMove)
+            {
+                control.Vm.CanMove = newCanMove;
+            }
+        }
+        #endregion
         #region SelectedItem Dependency Property
         public static readonly DependencyProperty SelectedItemProperty =
             DependencyProperty.Register(
@@ -146,6 +164,27 @@ namespace Slider.UserControls
             }
         }
 
+        #endregion
+        #region AnimationDelay Dependency Property
+        public int AnimationDelay
+        {
+            get { return (int)GetValue(AnimationDelayProperty); }
+            set { SetValue(AnimationDelayProperty, value); }
+        }
+
+        public static readonly DependencyProperty AnimationDelayProperty =
+            DependencyProperty.Register(nameof(AnimationDelay), typeof(int), typeof(BoardControl),
+                new FrameworkPropertyMetadata(
+                    0,
+                    FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+                    OnAnimationDelayChanged));
+        private static void OnAnimationDelayChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is BoardControl control && control.DataContext != null && e.NewValue is int newAnimationDelay)
+            {
+                control.Vm.AnimationDelay = newAnimationDelay;
+            }
+        }
         #endregion
 
 
@@ -217,16 +256,16 @@ namespace Slider.UserControls
         }
         private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (!CanSelect)
-                return;
             Point mousePos = Mouse.GetPosition(this);
             TileControl? tile = FindTile(mousePos);
             if (tile == null)
                 return;
             if (tile.DataContext is ITileControlViewModel tileVm)
             {
-                Vm.SetSelection(tileVm);
+                if (CanSelect)
+                    Vm.SetSelection(tileVm);
                 RaiseEvent(new BoardSelectionChangedEventArgs(SelectionChangedEvent, this) { SelectionMethod = BoardSelectionMethod.Mouse, Tile = tileVm});
+                e.Handled = true;
             }
         }
 

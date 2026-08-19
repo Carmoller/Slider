@@ -17,4 +17,9 @@ namespace Slider.Interfaces
         Incomplete,
         DuplicateTiles
     }
+    public enum GameState
+    {
+        Playing,
+        Editing
+    }
 }

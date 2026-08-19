@@ -15,12 +15,16 @@ namespace Slider.ViewModels
 {
     public partial class BoardViewModel : ObservableObject, IBoardViewModel
     {
-        private int _gridSize;
-        public int GridSize { get { return _gridSize; } set { _gridSize = value; OnGridSizeChanged(value); } }
+        [ObservableProperty]
+        public partial int GridSize { get; set; }
         [ObservableProperty]
         public partial bool CanSelect { get; set; }
         [ObservableProperty]
         public partial bool CanGray { get; set; }
+        [ObservableProperty]
+        public partial bool CanMove { get; set; }
+        [ObservableProperty]
+        public partial int AnimationDelay { get; set; }
         [ObservableProperty]
         public partial int TileSize { get; set; }
         [ObservableProperty]
@@ -71,26 +75,8 @@ namespace Slider.ViewModels
             _availableTilesWidth = (int)(e.NewSize.Width);
             CalculateTilesLayout((int)e.NewSize.Width);
         }
-        void OnGridSizeChanged(int value)
+        partial void OnGridSizeChanged(int value)
         {
-//            Tiles.Clear();
-//            for (int i = 0; i < value * value; i++)
-//            {
-//                (int row, int col) = Math.DivRem(i, value);
-//#warning DEBUG CODE
-//                byte tileValue = (byte)(i + 1);
-//                if (i == value * value - 1)
-//                {
-//                    tileValue = 0;
-//                }
-//                ITileControlViewModel tileControlViewModel = new TileControlViewModel(
-//                        new BoardTile { Value = tileValue, Row = row, Column = col }, null, null)
-//                {
-//                    CanSelect = CanSelect,
-//                    CanGray = CanGray,
-//                };
-//                Tiles.Add(tileControlViewModel);
-//            }
             CalculateTilesLayout(_availableTilesWidth);
             SetInitialState();
         }
@@ -99,6 +85,13 @@ namespace Slider.ViewModels
             foreach (ITileControlViewModel tileControlViewModel in ItemsSource)
             {
                 tileControlViewModel.CanSelect = value;
+            }
+        }
+        partial void OnCanMoveChanged(bool value)
+        {
+            foreach (ITileControlViewModel tileControlViewModel in ItemsSource)
+            {
+                tileControlViewModel.CanMove = value;
             }
         }
 
@@ -113,6 +106,14 @@ namespace Slider.ViewModels
                 newValue.IsSelected = true;
             }
         }
+        partial void OnAnimationDelayChanged(int value)
+        {
+            foreach (ITileControlViewModel tileControlViewModel in ItemsSource)
+            {
+                tileControlViewModel.AnimationDelay = value;
+            }
+        }
+
         public void SetSelection(ITileControlViewModel vm)
         {
             if (Selected != null)

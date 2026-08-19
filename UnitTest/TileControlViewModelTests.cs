@@ -23,11 +23,9 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile{ Value = 5, Row = 1, Column = 2 };
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
 
             // Act
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Assert
             Assert.AreEqual(boardTile, viewModel.BoardTile);
@@ -42,9 +40,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile { Value = 42, Row = 0, Column = 0 };
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int value = viewModel.Value;
@@ -58,9 +54,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 0, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int value = viewModel.Value;
@@ -78,9 +72,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 0, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             bool isEmpty = viewModel.IsEmpty;
@@ -94,9 +86,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             bool isEmpty = viewModel.IsEmpty;
@@ -115,9 +105,7 @@ namespace UnitTest
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
             boardTile.IsHighlighted = true;
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             bool isHighlighted = viewModel.IsHighlighted;
@@ -132,9 +120,7 @@ namespace UnitTest
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
             boardTile.IsHighlighted = false;
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
             {
@@ -158,9 +144,7 @@ namespace UnitTest
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
             boardTile.IsHighlighted = true;
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
             {
@@ -186,9 +170,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int x = viewModel.X;
@@ -202,9 +184,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
             {
@@ -227,9 +207,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             viewModel.X = 50;
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
@@ -256,9 +234,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int y = viewModel.Y;
@@ -272,9 +248,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
             {
@@ -297,9 +271,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             viewModel.Y = 75;
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
@@ -326,9 +298,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile { Value = 5, Row = 2, Column = 3 };
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int row = viewModel.Row;
@@ -342,9 +312,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             viewModel.Row = 3;
@@ -362,9 +330,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile { Value = 5, Row = 2, Column = 3 };
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int column = viewModel.Column;
@@ -378,9 +344,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             viewModel.Column = 2;
@@ -398,9 +362,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Act
             int tileSize = viewModel.TileSize;
@@ -414,9 +376,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
             {
@@ -439,9 +399,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             viewModel.TileSize = 100;
             bool propertyChangedRaised = false;
             viewModel.PropertyChanged += (s, e) =>
@@ -461,155 +419,6 @@ namespace UnitTest
 
         #endregion
 
-        #region AnimationDelay Property Tests
-
-        [TestMethod]
-        public void AnimationDelay_ReturnsOptionsAnimationDelay()
-        {
-            // Arrange
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            optionsMock.Setup(o => o.AnimationDelay).Returns(250);
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            int animationDelay = viewModel.AnimationDelay;
-
-            // Assert
-            Assert.AreEqual(250, animationDelay);
-        }
-
-        #endregion
-
-        #region CanMove Method Tests
-
-        [TestMethod]
-        public void CanMove_CallsMainViewModelCanMove()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            mainViewModelMock.Setup(m => m.CanMove(It.IsAny<ITileControlViewModel>())).Returns(AllowedMove.Up);
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            AllowedMove result = viewModel.CanMove();
-
-            // Assert
-            mainViewModelMock.Verify(m => m.CanMove(viewModel), Times.Once);
-            Assert.AreEqual(AllowedMove.Up, result);
-        }
-
-        [TestMethod]
-        public void CanMove_ReturnsAllowedMoveNone()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            mainViewModelMock.Setup(m => m.CanMove(It.IsAny<ITileControlViewModel>())).Returns(AllowedMove.None);
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            AllowedMove result = viewModel.CanMove();
-
-            // Assert
-            Assert.AreEqual(AllowedMove.None, result);
-        }
-
-        [TestMethod]
-        public void CanMove_ReturnsAllowedMoveLeft()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            mainViewModelMock.Setup(m => m.CanMove(It.IsAny<ITileControlViewModel>())).Returns(AllowedMove.Left);
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            AllowedMove result = viewModel.CanMove();
-
-            // Assert
-            Assert.AreEqual(AllowedMove.Left, result);
-        }
-
-        [TestMethod]
-        public void CanMove_ReturnsAllowedMoveRight()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            mainViewModelMock.Setup(m => m.CanMove(It.IsAny<ITileControlViewModel>())).Returns(AllowedMove.Right);
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            AllowedMove result = viewModel.CanMove();
-
-            // Assert
-            Assert.AreEqual(AllowedMove.Right, result);
-        }
-
-        [TestMethod]
-        public void CanMove_ReturnsAllowedMoveDown()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            mainViewModelMock.Setup(m => m.CanMove(It.IsAny<ITileControlViewModel>())).Returns(AllowedMove.Down);
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            AllowedMove result = viewModel.CanMove();
-
-            // Assert
-            Assert.AreEqual(AllowedMove.Down, result);
-        }
-
-        #endregion
-
-        #region Move Method Tests
-
-        [TestMethod]
-        public void Move_CallsMainViewModelMoveTile()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            viewModel.Move();
-
-            // Assert
-            mainViewModelMock.Verify(m => m.MoveTile(viewModel), Times.Once);
-        }
-
-        [TestMethod]
-        public void Move_IsCalledMultipleTimes_CallsMainViewModelMoveTileEachTime()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            viewModel.Move();
-            viewModel.Move();
-            viewModel.Move();
-
-            // Assert
-            mainViewModelMock.Verify(m => m.MoveTile(viewModel), Times.Exactly(3));
-        }
-
-        #endregion
-
         #region PropertyChanged Event Tests
 
         [TestMethod]
@@ -617,9 +426,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             List<string> changedProperties = new();
             viewModel.PropertyChanged += (s, e) => changedProperties.Add(e.PropertyName ?? "");
 
@@ -639,9 +446,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
 
             // Assert
             Assert.IsInstanceOfType(viewModel, typeof(INotifyPropertyChanged));
@@ -656,9 +461,7 @@ namespace UnitTest
         {
             // Arrange
             BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
+            TileControlViewModel viewModel = new(boardTile);
             Dictionary<string, int> propertyChanges = new();
             viewModel.PropertyChanged += (s, e) =>
             {
@@ -683,27 +486,6 @@ namespace UnitTest
             Assert.AreEqual(1, propertyChanges[nameof(TileControlViewModel.Y)]);
             Assert.AreEqual(2, propertyChanges[nameof(TileControlViewModel.IsHighlighted)]);
         }
-
-        [TestMethod]
-        public void CanMoveAndMove_WorkTogether()
-        {
-            // Arrange
-            BoardTile boardTile = new BoardTile {Value = 5, Row = 0, Column = 0};
-            Mock<IMainViewModel> mainViewModelMock = new();
-            mainViewModelMock.Setup(m => m.CanMove(It.IsAny<ITileControlViewModel>())).Returns(AllowedMove.Up);
-            Mock<IOptions> optionsMock = CreateOptionsMock();
-            TileControlViewModel viewModel = new(boardTile, mainViewModelMock.Object, optionsMock.Object);
-
-            // Act
-            AllowedMove canMove = viewModel.CanMove();
-            viewModel.Move();
-
-            // Assert
-            Assert.AreEqual(AllowedMove.Up, canMove);
-            mainViewModelMock.Verify(m => m.CanMove(viewModel), Times.Once);
-            mainViewModelMock.Verify(m => m.MoveTile(viewModel), Times.Once);
-        }
-
         #endregion
     }
 }

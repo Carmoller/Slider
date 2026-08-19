@@ -401,7 +401,7 @@ namespace UnitTest
             var mockTile = new Mock<ITileControlViewModel>();
 
             // Act
-            AllowedMove result = viewModel.CanMove(mockTile.Object);
+            AllowedMove result = viewModel.GetAllowedMoves(mockTile.Object);
 
             // Assert
             Assert.AreEqual(AllowedMove.Up, result);

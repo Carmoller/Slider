@@ -13,6 +13,7 @@ namespace Slider.Interfaces
         int TileSize { get; set; }
         bool IsEmpty { get; }
         bool CanSelect { get; set; }
+        bool CanMove { get; set; }
         bool IsSelected { get; set; }
         bool IsBorderHighlighted { get; set; }
         bool IsHighlighted { get; set; }
@@ -22,7 +23,9 @@ namespace Slider.Interfaces
         int Y { get; set; }
         int Row { get; set; }
         int Column { get; set; }
+        int AnimationDelay { get; set; }
 
         ITileControlViewModel DeepClone();
+        bool Move(AllowedMove direction);
     }
 }

@@ -7,7 +7,7 @@ namespace Slider.Interfaces
 {
     public interface IMainViewModel
     {
-        public AllowedMove CanMove(ITileControlViewModel tile);
+        public AllowedMove GetAllowedMoves(ITileControlViewModel tile);
         public void MoveTile(ITileControlViewModel tile);
     }
 }

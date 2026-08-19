@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Options;
 using Slider.Common;
 using Slider.Common.Interfaces;
 using Slider.Interfaces;
@@ -11,17 +12,14 @@ using System.Text;
 
 namespace Slider
 {
-    public class Options : IOptions, INotifyPropertyChanged
+    public partial class Options : ObservableObject, IOptions
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        private int _gridSize = 4;
-        private int _animationDelay = 200;
-        private string _pdbLocation = @"E:\src\net\Slider";
-        private TimeSpan _solveTimeout = TimeSpan.MinValue;
-        public int GridSize { get => _gridSize; set { if (_gridSize != value) { _gridSize = value; OnPropertyChanged(); } } }
-        public int AnimationDelay { get => _animationDelay; set { if (_animationDelay != value) { _animationDelay = value; OnPropertyChanged(); } } }
-        public string PdbLocation { get => _pdbLocation; set { if (_pdbLocation != value) { _pdbLocation = value; OnPropertyChanged(); } } }
-        public TimeSpan SolveTimeout { get => _solveTimeout; set { if (_solveTimeout != value) { _solveTimeout = value; OnPropertyChanged(); } } }
+        [ObservableProperty]
+        public partial int GridSize { get; set; } = 3;
+        [ObservableProperty]
+        public partial int AnimationDelay { get; set; } = 200;
+        [ObservableProperty]
+        public partial TimeSpan SolveTimeout { get; set; } = TimeSpan.MinValue;
 
         public ISolverOptions SolverOptions { get; set; } = new SolverOptions { UseManhattanDistance = true, UseLinearConflict = true, UseEdgePattern = true, UseCornerPattern = true, UseSprintFinish = true };
         public List<SolverDescriptor> SolverSelector { get; } = new();
@@ -35,10 +33,6 @@ namespace Slider
                 new SolverDescriptor{LowHeuristic = 80, HighHeuristic = 100, Solver = new DynamicWeightAStarSolver(this, stateInfoFactory),  SolverParameters=[3] },
                 new SolverDescriptor{LowHeuristic = 100, HighHeuristic = int.MaxValue, Solver = new DynamicWeightAStarSolver(this, stateInfoFactory), SolverParameters=[3.5] },
                 ];
-        }
-        private void OnPropertyChanged([CallerMemberName] string? name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

@@ -7,15 +7,11 @@ using System.Text;
 
 namespace Slider
 {
-    public class TileControlViewModelFactory(IOptions options) : ITileControlViewModelFactory
+    public class TileControlViewModelFactory : ITileControlViewModelFactory
     {
         public ITileControlViewModel CreateViewModel(BoardTile boardTile)
         {
-            return new TileControlViewModel(boardTile, null, options);
-        }
-        public ITileControlViewModel CreateViewModel(BoardTile boardTile, IMainViewModel mainViewModel)
-        {
-            return new TileControlViewModel(boardTile, mainViewModel, options);
+            return new TileControlViewModel(boardTile);
         }
     }
 }

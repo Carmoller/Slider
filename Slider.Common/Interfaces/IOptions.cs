@@ -10,7 +10,6 @@ namespace Slider.Common.Interfaces
         ISolverOptions SolverOptions { get; set; }
         int GridSize { get; set; }
         int AnimationDelay { get; set; }
-        string PdbLocation { get; set; }
         TimeSpan SolveTimeout { get; set; }
         List<SolverDescriptor> SolverSelector{ get; }
     }

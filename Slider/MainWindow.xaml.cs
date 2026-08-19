@@ -1,4 +1,6 @@
-﻿using Slider.Interfaces;
+﻿using Slider.Common.Interfaces;
+using Slider.Interfaces;
+using Slider.SliderEventArgs;
 using Slider.ViewModels;
 using System.Text;
 using System.Windows;
@@ -32,6 +34,33 @@ namespace Slider
         public MessageBoxResult Alert(string message, string caption)
         {
             return MessageBox.Show(this, message, caption, MessageBoxButton.OK, MessageBoxImage.Exclamation);
+        }
+
+        private void MoveNext_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MyBoard.ExecuteMoveNext();
+        }
+        private void MovePrevious_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MyBoard.ExecuteMovePrevious();
+        }
+        private void MoveUp_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MyBoard.ExecuteMoveUp();
+        }
+        private void MoveDown_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MyBoard.ExecuteMoveDown();
+        }
+
+        private void KeyboardSelect_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+            MyBoard.KeyBoardSelect();
+        }
+
+        private void MyBoard_SelectionChanged(object sender, BoardSelectionChangedEventArgs e)
+        {
+            bool handled = Vm.TileSelected(e.Tile, e.SelectionMethod);
         }
     }
 }

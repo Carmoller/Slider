@@ -6,9 +6,9 @@
              xmlns:conv="clr-namespace:Slider.Converters"
              xmlns:local="clr-namespace:Slider.UserControls"
              mc:Ignorable="d" 
-             d:DesignHeight="150" d:DesignWidth="150" MouseDown="TileBorder_MouseDown"
+             d:DesignHeight="150" d:DesignWidth="150"
              HorizontalAlignment="Stretch"
-             VerticalAlignment="Stretch">
+             VerticalAlignment="Stretch" DataContextChanged="UserControl_DataContextChanged">
     <UserControl.Resources>
         <conv:EmptyToVisibilityConverter x:Key="EmptyToVisibilityConverter" />
         <ImageBrush x:Key="TileImageBrush" ImageSource="pack://application:,,,/Slider;component/Images/tile.png" Stretch="Fill" />
