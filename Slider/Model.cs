@@ -41,6 +41,7 @@ namespace Slider
             _heuristicCalculatorFactory = heuristicCalculatorFactory;
             _options.PropertyChanged += Options_PropertyChanged;
             Board = new();
+            GenerateEmptyBoard(_options.GridSize);
         }
 
         private int CalculateHeuristics(byte[] board)
@@ -54,11 +55,27 @@ namespace Slider
             return heuristicCalculator.GetHeuristic(board, _options.GridSize);
         }
 
+        private void GenerateEmptyBoard(int gridSize)
+        {
+            for (int i = 0; i < gridSize * gridSize; i++)
+            {
+                (int row, int col) = Math.DivRem(i, gridSize);
+                BoardTile tile = new BoardTile()
+                {
+                    Value = 0, // Create board with all blanks
+                    Row = row,
+                    Column = col,
+                };
+                Board.Add(tile);
+            }
+        }
+
         private void Options_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(IOptions.GridSize))
             {
                 Board = new();
+                GenerateEmptyBoard(_options.GridSize);
                 MoveHistory.Clear();
                 NumberOfMoves = 0;
                 BoardLayoutChanged?.Invoke(this, new EventArgs());
@@ -83,7 +100,7 @@ namespace Slider
             _emptyTile!.Column = tempColumn;
             _emptyTile.Row = tempRow;
             NumberOfMoves--;
-            Heuristic = CalculateHeuristics(Board.ToByteArray());
+            Heuristic = CalculateHeuristics(Board.OrderBy(p=>p.Row).ThenBy(p=>p.Column).Select(p=>p.Value).ToArray());
         }
 
         private static int[] GetGoalBoard(int gridSize)
@@ -150,20 +167,45 @@ namespace Slider
             return AllowedMove.None;
         }
 
-        public void MoveTile(BoardTile tile)
+        public AllowedMove MoveTile(BoardTile tile)
         {
             if (CanMove(tile) == AllowedMove.None)
-                return;
+                return AllowedMove.None;
+            AllowedMove moveDirection = GetMoveDirection(tile.Row, tile.Column, _emptyTile!.Row, _emptyTile.Column);
             int tempColumn = tile.Column;
             int tempRow = tile.Row;
-            tile.Column = _emptyTile!.Column;
-            tile.Row = _emptyTile.Row;
-            _emptyTile.Column = tempColumn;
-            _emptyTile.Row = tempRow;
+            tile.MoveTo(_emptyTile.Row, _emptyTile.Column);
+            _emptyTile.MoveTo(tempRow, tempColumn);
+            //tile.Column = _emptyTile!.Column;
+            //tile.Row = _emptyTile.Row;
+            //_emptyTile.Column = tempColumn;
+            //_emptyTile.Row = tempRow;
             NumberOfMoves++;
             MoveHistory.AddLast(new Move { FromColumn = tempColumn, FromRow = tempRow, ToColumn = tile.Column, ToRow = tile.Row });
-            Heuristic = CalculateHeuristics(Board.ToByteArray());
+            Heuristic = CalculateHeuristics(Board.OrderBy(p => p.Row).ThenBy(p => p.Column).Select(p => p.Value).ToArray());
             IsSolved();
+            return moveDirection;
+        }
+
+        private AllowedMove GetMoveDirection(int fromRow, int fromColumn, int toRow, int toColumn)
+        {
+            int rowChange = fromRow - toRow;
+            int columnChange = fromColumn - toColumn;
+
+            if (rowChange < 0)
+                return AllowedMove.Down;
+            if (rowChange > 0)
+                return AllowedMove.Up;
+            if (columnChange < 0)
+                return AllowedMove.Right;
+            if (columnChange > 0)
+                return AllowedMove.Left;
+            return AllowedMove.None;
+        }
+
+        public void EditFinished()
+        {
+            _emptyTile = Board.FirstOrDefault(p => p.Value == 0);
         }
 
         public bool IsSolved()

@@ -1,13 +1,15 @@
-﻿using System;
+﻿using Slider.SliderEventArgs;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace Slider.Common.Interfaces
+namespace Slider.Interfaces
 {
     [DebuggerDisplay("{Value} @ ({Row}, {Column})")]
     public class BoardTile
     {
+        public event EventHandler<TilePositionChangedEventArgs>? TilePositionChanged;
         public byte Value { get; set; }
         public int Row { get; set; }
         public int Column { get; set; }
@@ -35,6 +37,15 @@ namespace Slider.Common.Interfaces
                 IsHighlighted = IsHighlighted,
             };
             return newTile;
+        }
+
+        public void MoveTo(int row, int column)
+        {
+            int oldRow = Row;
+            int oldColumn = Column;
+            Row = row;
+            Column = column;
+            TilePositionChanged?.Invoke(this, new TilePositionChangedEventArgs { OldRow = oldRow, OldColumn = oldColumn, NewRow = row, NewColumn = column });
         }
     }
 }

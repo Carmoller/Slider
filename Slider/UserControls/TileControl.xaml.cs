@@ -4,7 +4,9 @@ using Slider.SliderEventArgs;
 using Slider.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,11 +55,11 @@ namespace Slider.UserControls
             if (e.NewValue is TileControlViewModel newVm)
             {
                 // No unsubscription logic needed with a WeakEventManager
-                WeakEventManager<TileControlViewModel, TileMoveEventArgs>.AddHandler(newVm, nameof(newVm.TileMove), OnTileMove);
+                WeakEventManager<TileControlViewModel, TilePositionChangedEventArgs>.AddHandler(newVm, nameof(newVm.TilePositionChanged), OnTileMove);
             }
         }
 
-        private void OnTileMove(object? sender, SliderEventArgs.TileMoveEventArgs e)
+        private void OnTileMove(object? sender, TilePositionChangedEventArgs e)
         {
             if (!Vm.CanMove)
                 return;
@@ -69,25 +71,30 @@ namespace Slider.UserControls
             string propertyName = string.Empty;
             double startPos = 0;
             double endPos = 0;
-            if (e.Direction == AllowedMove.Left || e.Direction == AllowedMove.Right)
+
+            if (e.NewRow != e.OldRow)
             {
-                startPos = Canvas.GetLeft(presenter);
-                propertyName = "(Canvas.Left)";
-                endPos = startPos + (e.Direction == AllowedMove.Left ? -Vm.TileSize : Vm.TileSize);
-                Vm.X = (int)endPos;
-            }
-            else if (e.Direction == AllowedMove.Up || e.Direction == AllowedMove.Down)
-            {
-                startPos = Canvas.GetTop(presenter);
                 propertyName = "(Canvas.Top)";
-                endPos = startPos + (e.Direction == AllowedMove.Up ? -Vm.TileSize : Vm.TileSize);
+                startPos = e.OldRow * Vm.TileSize;
+                endPos = e.NewRow * Vm.TileSize;
                 Vm.Y = (int)endPos;
             }
+            else
+            {
+#if DEBUG
+                if (e.NewColumn == e.OldColumn) throw new InvalidOperationException("Moving a tile where nothing has changed!!");
+#endif
+                propertyName = "(Canvas.Left)";
+                startPos = e.OldColumn * Vm.TileSize;
+                endPos = e.NewColumn * Vm.TileSize;
+                Vm.X = (int)endPos;
+            }
 
-            double currentLeft = Canvas.GetLeft(presenter);
-            double currentTop = Canvas.GetTop(presenter);
-            if (double.IsNaN(currentLeft)) currentLeft = 0;
-
+            if (Vm.Value == 0)
+            {
+                // We do not animate the blank, so since will have set X and Y, our job is done
+                return;
+            }
             // Stop any existing animation to prevent accumulation
             if (_currentStoryboard != null)
             {
@@ -95,13 +102,14 @@ namespace Slider.UserControls
                 _currentStoryboard = null;
             }
 
+
             Storyboard storyboard = new();
             DoubleAnimation animation = new()
             {
                 From = startPos,
                 To = endPos,
                 Duration = new Duration(TimeSpan.FromMilliseconds(Vm.AnimationDelay)),
-                FillBehavior = FillBehavior.Stop
+                FillBehavior = FillBehavior.HoldEnd
             };
             Storyboard.SetTarget(animation, presenter);
             Storyboard.SetTargetProperty(animation, new PropertyPath(propertyName));
@@ -109,18 +117,19 @@ namespace Slider.UserControls
             storyboard.Completed += (s, args) =>
             {
                 storyboard.Stop();
-                //storyboard = null;
+                // Need to clear the animation local values to allow binding to retake control,
+                // otherwise we would get tiles stacked on top of each other, but only if you 
+                // hit "Generate", then clicked a few tiles, then hit "Solve" then "Autoplay" where it would fail after ~10 moves
+                // While stil work perfecly if you just clicked through the same list of moves
+                // or just did Generate -> Solve -> Autplay
+                // Thanks a lot, WPF!! That didn't take forever to find :S
+                if (e.NewRow != e.OldRow)
+                    presenter.BeginAnimation(Canvas.TopProperty, null);
+                else
+                    presenter.BeginAnimation(Canvas.LeftProperty, null);
             };
             _currentStoryboard = storyboard;
             storyboard.Begin();
-        }
-
-        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            if (DataContext != null)
-            {
-                int a = 1;
-            }
         }
     }
 }

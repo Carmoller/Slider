@@ -1,4 +1,5 @@
-﻿using Slider.Common.Interfaces;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Slider.Common.Interfaces;
 using Slider.Interfaces;
 using Slider.SliderEventArgs;
 using Slider.ViewModels;
@@ -24,11 +25,24 @@ namespace Slider
         public MainWindow()
         {
             InitializeComponent();
+            RegisterShowSelectTileWindowMessage();
         }
 
-        private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void RegisterShowSelectTileWindowMessage()
         {
-            Vm.CanvasSizeChanged(e);
+            // Register to handle showing the Select Tile window
+            WeakReferenceMessenger.Default.Register<MainWindow, ShowSelectTileWindowMessage>(this, (recipient, message) =>
+            {
+                SelectTileWindow window = new SelectTileWindow(message.ViewModel)
+                {
+                    Owner = recipient,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                };
+
+                // Display the window and pass the result back to the sender
+                bool? result = window.ShowDialog();
+                message.Reply(result);
+            });
         }
 
         public MessageBoxResult Alert(string message, string caption)

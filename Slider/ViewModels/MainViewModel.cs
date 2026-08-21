@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using Prism.Commands;
 using Slider.Common.Interfaces;
 using Slider.Interfaces;
@@ -22,7 +23,6 @@ namespace Slider.ViewModels
 {
     public partial class MainViewModel : ObservableObject, IMainViewModel
     {
-        private double _canvasWidth;
         private DateTime _startTime;
 
         public int GridSize { get => _options.GridSize; set { _options.GridSize = value; OnPropertyChanged(); } } 
@@ -37,6 +37,8 @@ namespace Slider.ViewModels
         public partial ITileControlViewModel? SelectedItem { get; set; }
         [ObservableProperty]
         public partial string TimeElapsed { get; set; } = string.Empty;
+        [ObservableProperty]
+        public partial SolvableStatus SolvableStatus { get; set; }
         [ObservableProperty]
         public partial bool IsSolveDataAvailable { get; set; }
         [ObservableProperty]
@@ -71,8 +73,7 @@ namespace Slider.ViewModels
         public partial ObservableCollection<ITileControlViewModel> Tiles { get; private set; } = new();
         [ObservableProperty]
         public partial ObservableCollection<Move> SolveMoves { get; private set; } = new();
-
-        public DelegateCommand NewGameCommand { get; private set; }
+        public DelegateCommand GenerateCommand { get; private set; }
         public DelegateCommand EditCommand { get; private set; }
         public DelegateCommand UndoCommand { get; private set; }
         public DelegateCommand SolveCommand { get; private set; }
@@ -94,13 +95,14 @@ namespace Slider.ViewModels
             _userAlert = userAlert;
             _model.BoardLayoutChanged += Model_BoardLayoutChanged;
             _model.BoardSolved += Model_BoardSolved;
-            NewGameCommand = new (NewGameCommand_Executed);
+            GenerateCommand = new (GenerateCommand_Executed);
             EditCommand = new(EditCommand_Executed);
             UndoCommand = new(UndoCommand_Executed, UndoCommand_CanExecute);
             SolveCommand = new(SolveCommand_Executed, SolveCommand_CanExecute);
             AutoPlayCommand = new(AutoPlayCommand_Executed, AutoPlayCommand_CanExecute);
             _gameTimer.Interval = TimeSpan.FromMilliseconds(500);
             _gameTimer.Tick += GameTimer_Tick;
+            Model_BoardLayoutChanged(null, new EventArgs());
         }
 
         private void Options_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -118,7 +120,6 @@ namespace Slider.ViewModels
             _model.Undo();
             OnPropertyChanged(nameof(NumberOfMoves));
             OnPropertyChanged(nameof(Heuristic));
-            RecalculateTilePositions();
             UndoCommand.RaiseCanExecuteChanged();
         }
         public bool AutoPlayCommand_CanExecute()
@@ -128,17 +129,23 @@ namespace Slider.ViewModels
 
         public void AutoPlayCommand_Executed()
         {
-            foreach (Move move in SolveMoves.ToList())
+            State = GameState.Playing;
+            while (SolveMoves.Count > 0)
             {
+                Move move = SolveMoves[0];
                 ITileControlViewModel tile = Tiles.First(p => p.Row == move.FromRow && p.Column == move.FromColumn);
                 MoveTile(tile);
-                RecalculateTilePositions();
                 OnPropertyChanged(nameof(Heuristic));
+            }
+            foreach (ITileControlViewModel vm in Tiles)
+            {
+                Debug.WriteLine($"Tile with Value={vm.Value}: TileSize = {vm.TileSize},  Row, column = ({vm.Row}, {vm.Column}), X/Y = ({vm.X}, {vm.Y})");
             }
         }
 
-        public void NewGameCommand_Executed()
+        public void GenerateCommand_Executed()
         {
+            State = GameState.Playing;
             IsSolveDataAvailable = false;
             SolveMoves.Clear();
             _model.New();
@@ -157,6 +164,7 @@ namespace Slider.ViewModels
 
         public void SolveCommand_Executed()
         {
+            State = GameState.Playing;
             IsSolveDataAvailable = false;
             SolveMoves.Clear();
             SolveResult result = _model.Solve();
@@ -193,6 +201,10 @@ namespace Slider.ViewModels
         {
             OnPropertyChanged(nameof(CanSelect));
             OnPropertyChanged(nameof(CanMove));
+            if (oldValue == GameState.Editing)
+            {
+                _model.EditFinished();
+            }
         }
 
         private void GameTimer_Tick(object? sender, EventArgs e)
@@ -226,6 +238,7 @@ namespace Slider.ViewModels
 
         private void Model_BoardLayoutChanged(object? sender, EventArgs e)
         {
+            State = GameState.Playing;
             TimeElapsed = "00:00:00";
             SolveMoves.Clear();
             _gameTimer.Stop();
@@ -240,37 +253,8 @@ namespace Slider.ViewModels
                 tileVm.AnimationDelay = AnimationDelay;
                 Tiles.Add(tileVm);
             }
-            RecalculateTilePositions();
         }
 
-        public void CanvasSizeChanged(SizeChangedEventArgs e)
-        {
-            _canvasWidth = e.NewSize.Width;
-
-            int tileSize = GetTileSize();
-            RecalculateTilePositions();
-        }
-
-        public int GetTileSize()
-        {
-            return (int)(_canvasWidth / _options.GridSize);
-        }
-
-        private void RecalculateTilePosition(ITileControlViewModel tile)
-        {
-            tile.X = tile.Column * tile.TileSize;
-            tile.Y = tile.Row * tile.TileSize;
-            tile.TileSize = tile.TileSize;
-        }
-        private void RecalculateTilePositions()
-        {
-            int tileSize = GetTileSize();
-            for (int i = 0; i < Tiles.Count; i++)
-            {
-                Tiles[i].TileSize = tileSize;
-                RecalculateTilePosition(Tiles[i]);
-            }
-        }
         public AllowedMove GetAllowedMoves(ITileControlViewModel tile)
         {
             return _model.CanMove(tile.BoardTile);
@@ -288,15 +272,51 @@ namespace Slider.ViewModels
                 else
                     ClearHighligths();  
             }
-
             _model.MoveTile(tile.BoardTile);
-            ITileControlViewModel emptyTile = Tiles.First(t => t.IsEmpty);
-            RecalculateTilePosition(emptyTile);
+#if DEBUG
+            Dictionary<(int row, int col), ITileControlViewModel> tilePositions = new();
+            foreach (ITileControlViewModel vmTile in Tiles)
+            {
+                if (!tilePositions.TryGetValue((vmTile.X, vmTile.Y), out ITileControlViewModel? oldVm))
+                {
+                    tilePositions[(vmTile.X, vmTile.Y)] =  vmTile; // If this fires, we have two tiles on the same position
+                }
+                else
+                {
+                    Debug.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    Debug.WriteLine($"Tiles {vmTile.Value} and {oldVm.Value} both occupy ({vmTile.Y}, {vmTile.X})");
+                    Debug.WriteLine($"Tile {vmTile.Value} is on ({vmTile.Row}, {vmTile.Column})");
+                    Debug.WriteLine($"Tile {oldVm.Value} is on ({oldVm.Row}, {oldVm.Column})");
+                }
+            }
+#endif
+            //AllowedMove moveDirection = _model.MoveTile(tile.BoardTile);
+            //tile.Move(moveDirection);
+            //ITileControlViewModel emptyTile = Tiles.First(t => t.IsEmpty);
+            //AllowedMove oppositeMove = AllowedMove.None;
+            //switch (moveDirection)
+            //{
+            //    case AllowedMove.Up:
+            //        oppositeMove = AllowedMove.Down;
+            //        break;
+            //    case AllowedMove.Down:
+            //        oppositeMove = AllowedMove.Up;
+            //        break;
+            //    case AllowedMove.Left:
+            //        oppositeMove = AllowedMove.Right;
+            //        break;
+            //    case AllowedMove.Right:
+            //        oppositeMove = AllowedMove.Left;
+            //        break;
+            //}
+            //emptyTile.Move(oppositeMove);
+            //RecalculateTilePosition(emptyTile);
             OnPropertyChanged(nameof(NumberOfMoves));
             OnPropertyChanged(nameof(Heuristic));
             UndoCommand.RaiseCanExecuteChanged();
         }
 
+        
         private bool TileMove(ITileControlViewModel tile)
         {
             if (!CanMove)
@@ -305,14 +325,39 @@ namespace Slider.ViewModels
             if (allowedMove == AllowedMove.None)
                 return false;
             MoveTile(tile);
-            return tile.Move(allowedMove);
+            return true;
         }
+        private bool LaunchSelectTileWindow(ITileControlViewModel clickedTile)
+        {
+            List<ITileControlViewModel> alreadyPickedNumbers = Tiles.Where(p => p.Value != 0).ToList();
+            SelectTileViewModel selectTileVm = new(GridSize, alreadyPickedNumbers);
+            bool? result = WeakReferenceMessenger.Default.Send(new ShowSelectTileWindowMessage { ViewModel = selectTileVm });
+            if (result == true)
+            {
+                if (selectTileVm.SelectedValue != 0)
+                {
+                    ITileControlViewModel? previouslyPicked = alreadyPickedNumbers.FirstOrDefault(p => p.Value == selectTileVm.SelectedValue);
+                    if (previouslyPicked != null)
+                    {
+                        // Picked a tile which is already placed - remove it from its previous location
+                        previouslyPicked.Value = 0;
+                    }
+                }
+                clickedTile.Value = selectTileVm.SelectedValue;
+                SolvableStatus = PuzzleChecker.IsSolvable(Tiles, GridSize);
+
+            }
+            return true;
+        }
+
         public bool TileSelected(ITileControlViewModel tile, BoardSelectionMethod selectionMethod)
         {
             switch (State)
             {
                 case GameState.Playing:
                     return TileMove(tile);
+                case GameState.Editing:
+                    return LaunchSelectTileWindow(tile);
             }
             return false;
         }

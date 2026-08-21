@@ -39,6 +39,17 @@ namespace Slider.ViewModels
             ItemsSource = [];
             TileSize = 20;
         }
+
+        partial void OnItemsSourceChanged(ObservableCollection<ITileControlViewModel> oldValue, ObservableCollection<ITileControlViewModel> newValue)
+        {
+            oldValue?.CollectionChanged -= ItemsSource_CollectionChanged;
+            newValue.CollectionChanged += ItemsSource_CollectionChanged;
+        }
+        private void ItemsSource_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            CalculateTilesLayout(_availableTilesWidth);
+        }
+
         private void SetInitialState()
         {
             if (ItemsSource.Count > 0)
@@ -61,8 +72,10 @@ namespace Slider.ViewModels
                 ITileControlViewModel tileControlViewModel = ItemsSource[i];
 
                 tileControlViewModel.TileSize = TileSize;
-                tileControlViewModel.X = (i % GridSize) * tileControlViewModel.TileSize;
-                tileControlViewModel.Y = (i / GridSize) * tileControlViewModel.TileSize;
+                //tileControlViewModel.X = (i % GridSize) * tileControlViewModel.TileSize;
+                //tileControlViewModel.Y = (i / GridSize) * tileControlViewModel.TileSize;
+                tileControlViewModel.X = tileControlViewModel.Column * tileControlViewModel.TileSize;
+                tileControlViewModel.Y = tileControlViewModel.Row * tileControlViewModel.TileSize;
             }
         }
         partial void OnItemsSourceChanged(ObservableCollection<ITileControlViewModel> value)

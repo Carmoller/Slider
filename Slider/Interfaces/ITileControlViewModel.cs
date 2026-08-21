@@ -25,7 +25,6 @@ namespace Slider.Interfaces
         int Column { get; set; }
         int AnimationDelay { get; set; }
 
-        ITileControlViewModel DeepClone();
         bool Move(AllowedMove direction);
     }
 }

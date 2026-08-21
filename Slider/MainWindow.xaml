@@ -61,8 +61,11 @@
                 <Border.Background>
                     <ImageBrush ImageSource="/Images/box.png" Stretch="Fill"/>
                 </Border.Background>
-                <Canvas Margin="25,20,25,20" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" SizeChanged="Canvas_SizeChanged">
-                    <usercontrols:BoardControl x:Name="MyBoard" GridSize="{Binding GridSize}" 
+                <Canvas Margin="25,20,25,20" Grid.Row="1" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                    <usercontrols:BoardControl x:Name="MyBoard" 
+                                               Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Canvas}}"
+                                               Height="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Canvas}}"
+                                               GridSize="{Binding GridSize}" 
                                                CanSelect="{Binding CanSelect}" 
                                                CanMove="{Binding CanMove}" 
                                                CanGray="False" 
@@ -80,7 +83,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0">
-                <Button Content="New" Command="{Binding NewGameCommand}" Width="45" Height="23" Margin="3"/>
+                <Button Content="Generate" Command="{Binding GenerateCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Edit" Command="{Binding EditCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Undo" Command="{Binding UndoCommand}" Width="45" Height="23" Margin="3"/>
                 <Button Content="Solve" Command="{Binding SolveCommand}" Width="45" Height="23" Margin="3"/>
@@ -88,6 +91,10 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <TextBlock Text="Heuristic:" Margin="3,0,0,0"/>
                     <TextBlock Text="{Binding Heuristic, Mode=OneWay}" Margin="3,0,0,0"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <TextBlock Text="Solvable:" Margin="3,0,0,0"/>
+                    <TextBlock Text="{Binding SolvableStatus, Mode=OneWay}" Margin="3,0,0,0"/>
                 </StackPanel>
             </StackPanel>
             <DockPanel Grid.Row="1">

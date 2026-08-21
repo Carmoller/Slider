@@ -34,16 +34,6 @@ namespace Slider
             return sb.ToString();
         }
 
-        public static byte[] ToByteArray(this List<BoardTile> board)
-        {
-            int gridSize = (int)Math.Sqrt(board.Count);
-            byte[] boardArray = new byte[board.Count];
-            foreach (BoardTile tile in board)
-            {
-                boardArray[tile.Row * gridSize + tile.Column] = tile.Value;
-            }
-            return boardArray;
-        }
         extension(byte b)
         {
             public byte DontCare => 255;

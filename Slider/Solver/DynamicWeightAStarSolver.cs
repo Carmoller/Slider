@@ -34,7 +34,7 @@ namespace Slider.Solver
         private RefAction<StateInfo, SolverContext>? _cachedProcessNewStateHandler;
         private double[] w_cache;
         private const int MaxSupportedHeuristic = 1000;
-        private const double MinWeight = 1.2;
+        private const double MinWeight = 1;
         private const double MaxWeight = 3.2;
         private Func<Span<byte>, bool>? IsSolved;
         public BfsMode BfsMode { get; set; } = BfsMode.Greedy;
@@ -60,8 +60,11 @@ namespace Slider.Solver
                 }
                 else
                 {
+                    double factor = (MaxWeight - MinWeight) / Math.Log(MaxSupportedHeuristic - 9);
                     // Precalculate the logarithmic curve
-                    w_cache[h] = MinWeight + Math.Max(MaxWeight, (Math.Log(h - 9.0) * 0.8443));
+                    w_cache[h] = MinWeight + Math.Log(h - 9.0) * factor;
+                    if (w_cache[h] > MaxWeight)
+                        w_cache[h] = MaxWeight; 
                 }
             }
         }
@@ -119,7 +122,7 @@ namespace Slider.Solver
                     {
                         if (closedState.BestG <= currentState.CurrentG)
                         {
-                            closed.AddState(currentState.Hash, ref currentState); // No reason to continue down this road, just mark it as closed
+                            // Already visited this state with a lower g, so no reason to look further at it now
                             continue;
                         }
                     }

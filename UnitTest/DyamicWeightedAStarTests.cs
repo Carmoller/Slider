@@ -19,10 +19,11 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
+            // Set up worst-case board for 3x3 - requires 31 moves to solve
             byte[] board = [
-                            6, 3, 8,
-                            0, 7, 1,
-                            2, 4, 5];
+                            8, 6, 7,
+                            2, 5, 4,
+                            3, 0, 1];
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
             DynamicWeightAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
@@ -239,14 +240,17 @@ namespace UnitTest
             Mock<IOptions> optionsMock = new();
             optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
 
+            // Set up worst-case board for 3x3 - requires 31 moves to solve
             byte[] board = [
-                            6, 3, 8,
-                            0, 7, 1,
-                            2, 4, 5];
+                            8, 6, 7,
+                            2, 5, 4,
+                            3, 0, 1]; 
             Assert.IsTrue(BoardHelper.IsSolvable(board));
 
-            DynamicWeightAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
-            solver.BfsMode = BfsMode.Standard;
+            DynamicWeightAStarSolver solver = new(optionsMock.Object, new StateInfoFactory())
+            {
+                BfsMode = BfsMode.Standard
+            };
 
             SolveResult result = solver.Solve(board, [],
                 new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
@@ -294,5 +298,24 @@ namespace UnitTest
             BoardHelper.VerifyMoves(board, result);
             BoardHelper.VerifySolvedBoard(board, targetBoard);
         }
+
+        [TestMethod]
+        public void GodsNumber_3x3()
+        {
+            Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
+            byte[] board = [
+                01, 02, 03,
+                04, 05, 06,
+                07, 08, 00];
+            DynamicWeightAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+            solver.BfsMode = BfsMode.Standard;
+
+            SolveResult result = solver.Solve(board, [],
+                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
+                new HeuristicElementFactory());
+            Console.WriteLine($"\tStates visited: {result.TotalStatesConsidered}");
+        }
+
     }
 }

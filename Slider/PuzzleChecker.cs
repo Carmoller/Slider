@@ -39,9 +39,8 @@ namespace Slider
         // The IEnumerable<ITileControlViewModel> is used throughout the GUI
         public static SolvableStatus IsSolvable(IEnumerable<ITileControlViewModel> vmList, int gridSize)
         {
-            return IsSolvable(vmList.Select(p => (byte)p.Value).ToArray(), gridSize);
+            return IsSolvable((vmList.OrderBy(p=>p.Row).ThenBy(p=>p.Column).Select(p=>(byte)p.Value)).ToArray(), gridSize);
         }
-
 
         public static SolvableStatus IsSolvable(byte[] board, int gridSize)
         {

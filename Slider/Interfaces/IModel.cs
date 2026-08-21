@@ -18,7 +18,8 @@ namespace Slider.Interfaces
         void New();
         void Undo();
         AllowedMove CanMove(BoardTile tile);
-        void MoveTile(BoardTile tile);
+        AllowedMove MoveTile(BoardTile tile);
         SolveResult Solve();
+        void EditFinished();
     }
 }

@@ -175,7 +175,7 @@ namespace UnitTest
         #region Command Tests
 
         [TestMethod]
-        public void NewGameCommand_Executed_Calls_Model_New()
+        public void GenerateCommand_Executed_Calls_Model_New()
         {
             // Arrange
             Mock<IModel> modelMock = new();
@@ -189,7 +189,7 @@ namespace UnitTest
             // Act
             try
             {
-                viewModel.NewGameCommand.Execute();
+                viewModel.GenerateCommand.Execute();
             }
             catch (System.InvalidOperationException)
             {
@@ -201,7 +201,7 @@ namespace UnitTest
         }
 
         [TestMethod]
-        public void NewGameCommand_Executed_Clears_SolveMoves()
+        public void GenerateCommand_Executed_Clears_SolveMoves()
         {
             // Arrange
             Mock<IModel> modelMock = new();
@@ -216,7 +216,7 @@ namespace UnitTest
             // Act
             try
             {
-                viewModel.NewGameCommand.Execute();
+                viewModel.GenerateCommand.Execute();
             }
             catch (System.InvalidOperationException)
             {
@@ -332,29 +332,6 @@ namespace UnitTest
         #endregion
 
         #region Method Tests
-
-        [TestMethod]
-        public void GetTileSize_Returns_CanvasWidthDividedByGridSize()
-        {
-            // Arrange
-            Mock<IOptions> optionsMock = new();
-            optionsMock.Setup(o => o.GridSize).Returns(4);
-            Mock<IModel> modelMock = new();
-            Mock<ITileControlViewModelFactory> tileControlVmFactoryMock = new();
-            Mock<IUserAlert> userAlertMock = new();
-
-            MainViewModel viewModel = new(modelMock.Object, tileControlVmFactoryMock.Object, optionsMock.Object, userAlertMock.Object);
-
-            var canvasWidthField = typeof(MainViewModel).GetField("_canvasWidth", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            canvasWidthField?.SetValue(viewModel, 400.0);
-
-            // Act
-            int result = viewModel.GetTileSize();
-
-            // Assert
-            Assert.AreEqual(100, result);
-        }
 
         [TestMethod]
         public void CanvasSizeChanged_Updates_TilePositions()
