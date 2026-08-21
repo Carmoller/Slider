@@ -263,34 +263,11 @@ namespace Slider.UserControls
                 return;
             if (tile.DataContext is ITileControlViewModel tileVm)
             {
-                Debug.WriteLine($"Clicked {tileVm.Value} at ({tileVm.Row}, {tileVm.Column})");
                 if (CanSelect)
                     Vm.SetSelection(tileVm);
                 RaiseEvent(new BoardSelectionChangedEventArgs(SelectionChangedEvent, this) { SelectionMethod = BoardSelectionMethod.Mouse, Tile = tileVm});
                 e.Handled = true;
             }
-#if DEBUG
-            Dictionary<(int row, int col), ITileControlViewModel> tilePositions = new();
-            foreach (ITileControlViewModel vmTile in Vm.ItemsSource)
-            {
-                if (!tilePositions.TryGetValue((vmTile.X, vmTile.Y), out ITileControlViewModel? oldVm))
-                {
-                    tilePositions.Add((vmTile.X, vmTile.Y), (tile.DataContext as ITileControlViewModel)!); // If this fires, we have two tiles on the same position
-                }
-                else
-                {
-                    Debug.WriteLine($"Tiles {vmTile.Value} and {oldVm.Value} both occupy ({vmTile.X}, {vmTile.Y}");
-                }
-            }
-            foreach (ITileControlViewModel vm in ItemsSource)
-            {
-                if (vm.Value == 0)
-                {
-                    Debug.WriteLine($"Blank is at ({vm.Row}, {vm.Column})");
-                }
-            }
-
-#endif
         }
 
         private void Root_MouseMove(object sender, MouseEventArgs e)

@@ -137,10 +137,6 @@ namespace Slider.ViewModels
                 MoveTile(tile);
                 OnPropertyChanged(nameof(Heuristic));
             }
-            foreach (ITileControlViewModel vm in Tiles)
-            {
-                Debug.WriteLine($"Tile with Value={vm.Value}: TileSize = {vm.TileSize},  Row, column = ({vm.Row}, {vm.Column}), X/Y = ({vm.X}, {vm.Y})");
-            }
         }
 
         public void GenerateCommand_Executed()
@@ -270,47 +266,9 @@ namespace Slider.ViewModels
                 if (SolveMoves.Count > 0)
                     SetHighlightedTile(SolveMoves[0].FromRow, SolveMoves[0].FromColumn);
                 else
-                    ClearHighligths();  
+                    ClearHighligths();
             }
             _model.MoveTile(tile.BoardTile);
-#if DEBUG
-            Dictionary<(int row, int col), ITileControlViewModel> tilePositions = new();
-            foreach (ITileControlViewModel vmTile in Tiles)
-            {
-                if (!tilePositions.TryGetValue((vmTile.X, vmTile.Y), out ITileControlViewModel? oldVm))
-                {
-                    tilePositions[(vmTile.X, vmTile.Y)] =  vmTile; // If this fires, we have two tiles on the same position
-                }
-                else
-                {
-                    Debug.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    Debug.WriteLine($"Tiles {vmTile.Value} and {oldVm.Value} both occupy ({vmTile.Y}, {vmTile.X})");
-                    Debug.WriteLine($"Tile {vmTile.Value} is on ({vmTile.Row}, {vmTile.Column})");
-                    Debug.WriteLine($"Tile {oldVm.Value} is on ({oldVm.Row}, {oldVm.Column})");
-                }
-            }
-#endif
-            //AllowedMove moveDirection = _model.MoveTile(tile.BoardTile);
-            //tile.Move(moveDirection);
-            //ITileControlViewModel emptyTile = Tiles.First(t => t.IsEmpty);
-            //AllowedMove oppositeMove = AllowedMove.None;
-            //switch (moveDirection)
-            //{
-            //    case AllowedMove.Up:
-            //        oppositeMove = AllowedMove.Down;
-            //        break;
-            //    case AllowedMove.Down:
-            //        oppositeMove = AllowedMove.Up;
-            //        break;
-            //    case AllowedMove.Left:
-            //        oppositeMove = AllowedMove.Right;
-            //        break;
-            //    case AllowedMove.Right:
-            //        oppositeMove = AllowedMove.Left;
-            //        break;
-            //}
-            //emptyTile.Move(oppositeMove);
-            //RecalculateTilePosition(emptyTile);
             OnPropertyChanged(nameof(NumberOfMoves));
             OnPropertyChanged(nameof(Heuristic));
             UndoCommand.RaiseCanExecuteChanged();

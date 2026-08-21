@@ -95,10 +95,8 @@ namespace Slider
             BoardTile tileToMoveBack = Board.Find(t => t.Row == lastMove.ToRow && t.Column == lastMove.ToColumn)!;
             int tempColumn = tileToMoveBack.Column;
             int tempRow = tileToMoveBack.Row;
-            tileToMoveBack.Column = lastMove.FromColumn;
-            tileToMoveBack.Row = lastMove.FromRow;
-            _emptyTile!.Column = tempColumn;
-            _emptyTile.Row = tempRow;
+            tileToMoveBack.MoveTo(lastMove.FromRow, lastMove.FromColumn);
+            _emptyTile?.MoveTo(tempRow, tempColumn);
             NumberOfMoves--;
             Heuristic = CalculateHeuristics(Board.OrderBy(p=>p.Row).ThenBy(p=>p.Column).Select(p=>p.Value).ToArray());
         }

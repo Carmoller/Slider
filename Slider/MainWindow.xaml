@@ -83,11 +83,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0">
-                <Button Content="Generate" Command="{Binding GenerateCommand}" Width="45" Height="23" Margin="3"/>
-                <Button Content="Edit" Command="{Binding EditCommand}" Width="45" Height="23" Margin="3"/>
-                <Button Content="Undo" Command="{Binding UndoCommand}" Width="45" Height="23" Margin="3"/>
-                <Button Content="Solve" Command="{Binding SolveCommand}" Width="45" Height="23" Margin="3"/>
-                <Button Content=">>" Command="{Binding AutoPlayCommand}" Width="45" Height="23" Margin="3"/>
+                <Button Content="Generate" Command="{Binding GenerateCommand}" Width="55" Height="23" Margin="3"/>
+                <Button Content="Edit" Command="{Binding EditCommand}" Width="55" Height="23" Margin="3"/>
+                <Button Content="Undo" Command="{Binding UndoCommand}" Width="55" Height="23" Margin="3"/>
+                <Button Content="Solve" Command="{Binding SolveCommand}" Width="55" Height="23" Margin="3"/>
+                <Button Content=">>" Command="{Binding AutoPlayCommand}" Width="55" Height="23" Margin="3"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <TextBlock Text="Heuristic:" Margin="3,0,0,0"/>
                     <TextBlock Text="{Binding Heuristic, Mode=OneWay}" Margin="3,0,0,0"/>

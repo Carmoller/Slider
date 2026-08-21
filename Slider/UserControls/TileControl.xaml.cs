@@ -81,9 +81,6 @@ namespace Slider.UserControls
             }
             else
             {
-#if DEBUG
-                if (e.NewColumn == e.OldColumn) throw new InvalidOperationException("Moving a tile where nothing has changed!!");
-#endif
                 propertyName = "(Canvas.Left)";
                 startPos = e.OldColumn * Vm.TileSize;
                 endPos = e.NewColumn * Vm.TileSize;
