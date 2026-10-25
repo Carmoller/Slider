@@ -15,6 +15,7 @@ namespace Slider.Interfaces
         public int Column { get; set; }
         public bool IsEmpty { get { return Value == 0; } }
         public bool IsHighlighted { get; set; }
+        public bool IsLocked { get; set; }
         public int CompareTo(BoardTile? other)
         {
             if (other == null)

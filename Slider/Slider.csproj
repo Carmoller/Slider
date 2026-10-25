@@ -13,6 +13,10 @@
   <ItemGroup>
     <Compile Remove="Solver\WeightedMmSolver.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Images\padlock.png" />
+  </ItemGroup>
   
   <ItemGroup>
     <InternalsVisibleTo Include="UnitTest" />
@@ -37,6 +41,7 @@
 
   <ItemGroup>
     <Resource Include="Images\box.png" />
+    <Resource Include="Images\padlock.png" />
     <Resource Include="Images\tile.png" />
     <Resource Include="Images\tile_highlight.png" />
   </ItemGroup>

@@ -317,5 +317,49 @@ namespace UnitTest
             Console.WriteLine($"\tStates visited: {result.TotalStatesConsidered}");
         }
 
+        [TestMethod]
+        public void LockedTile()
+        {
+            Mock<IOptions> optionsMock = new();
+            optionsMock.Setup(p => p.SolveTimeout).Returns(TimeSpan.FromSeconds(40));
+            byte[] board = [
+                13, 08, 14, 12,
+                09, 06, 07, 15,
+                01, 02, 00, 04,
+                03, 05, 10, 11];
+
+            byte[] lockMask = [
+                00, 00, 00, 00,
+                00, 01, 01, 00,
+                00, 00, 00, 00,
+                00, 00, 00, 00];
+
+            Assert.IsTrue(BoardHelper.IsSolvable(board));
+
+            DynamicWeightAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
+            solver.BfsMode = BfsMode.Greedy;
+            solver.LockMap = lockMask;
+
+            SolveResult result = solver.Solve(board, [],
+                new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
+                new HeuristicElementFactory());
+            Console.WriteLine($"Moves: {result.MoveCount}");
+            Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
+            Console.WriteLine($"Min h: {result.MinimumH}");
+            Console.WriteLine($"Min h time: {result.MinimumHTime}");
+            Console.WriteLine();
+            Console.WriteLine($"{result.TotalStatesConsidered / result.TimeSpent.TotalMilliseconds} States / ms");
+            Console.WriteLine();
+
+            BoardHelper.VerifyMoves(board, result);
+            Console.WriteLine(board.ToPrettyPrintedBoardString());
+            Assert.AreEqual(SolveResultType.Solved, result.Result);
+            foreach (Move move in result.Moves)
+            {
+                Assert.AreEqual(0, lockMask[move.FromRow * 4 + move.FromColumn], "Moving a locked column");
+                Assert.AreEqual(0, lockMask[move.ToRow * 4 + move.ToColumn], "Moving a locked column");
+            }
+            BoardHelper.VerifySolvedBoard(board, Span<byte>.Empty);
+        }
     }
 }

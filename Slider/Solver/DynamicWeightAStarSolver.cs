@@ -27,6 +27,7 @@ namespace Slider.Solver
         }
 
         public double W { get; set; } = 3;
+        public byte[] LockMap { get; set; }
         private int _gridSize;
         private int _min_h;
         private readonly IOptions _options;
@@ -203,6 +204,8 @@ namespace Slider.Solver
         private void ProcessNewState(ref StateInfo newState, ref SolverContext context)
         {
             ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
+            if (LockMap != null && LockMap[csRef.BlankPos] == 1)
+                return;
             int tentative_g = csRef.CurrentG + 1;
             newState.Hash = SolverHelper.GetHashCode(newState);
             StateInfo closedNeighbor = StateInfo.Empty;

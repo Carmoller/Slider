@@ -19,6 +19,7 @@ namespace Slider.ViewModels
         public int Value { get { return BoardTile.Value; } set { if (value != BoardTile.Value) { BoardTile.Value = (byte)value; OnPropertyChanged(); OnPropertyChanged(nameof(IsEmpty)); } } }
         public bool IsEmpty{ get { return BoardTile.IsEmpty; } }
         public bool IsHighlighted { get { return BoardTile.IsHighlighted; } set { if (value != BoardTile.IsHighlighted) { BoardTile.IsHighlighted = value; OnPropertyChanged(); } } }
+        public bool IsLocked { get { return BoardTile.IsLocked; } set { if (value != BoardTile.IsLocked) { BoardTile.IsLocked = value; OnPropertyChanged(); } } }
         [ObservableProperty]
         public partial bool CanSelect { get; set; }
         [ObservableProperty]

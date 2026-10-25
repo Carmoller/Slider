@@ -17,6 +17,7 @@ namespace Slider.Interfaces
         bool IsSelected { get; set; }
         bool IsBorderHighlighted { get; set; }
         bool IsHighlighted { get; set; }
+        bool IsLocked { get; set; }
         bool CanGray { get; set; }
         bool IsGray { get; set; }
         int X { get; set; }
