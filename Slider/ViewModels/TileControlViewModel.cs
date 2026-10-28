@@ -66,18 +66,9 @@ namespace Slider.ViewModels
             return AllowedMove.None;
         }
 
-        private void SetXAndY()
-        {
-            int newX = Column * TileSize;
-            int newY = Row * TileSize;
-            X = newX;
-            Y = newY;
-        }
-        
-
         private void BoardTile_TilePositionChanged(object? sender, TilePositionChangedEventArgs e)
         {
-            Debug.WriteLine($"Moving tile {(Value == 0 ? "<Blank>" : Value)} from ({e.OldRow}, {e.OldColumn}) to ({e.NewRow}, {e.NewColumn})");
+//            Debug.WriteLine($"Moving tile {(Value == 0 ? "<Blank>" : Value)} from ({e.OldRow}, {e.OldColumn}) to ({e.NewRow}, {e.NewColumn})");
             AllowedMove direction = GetMoveDirection(e.OldRow, e.OldColumn, e.NewRow, e.NewColumn);
             TilePositionChanged?.Invoke(this, e);
             //SetXAndY();

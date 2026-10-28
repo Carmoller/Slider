@@ -15,21 +15,21 @@ namespace UnitTest
         #region FakeSolvers
         private class FakeSolver1 : ISolver
         {
-            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory, Span<byte> lockMap = default)
             {
                 throw new NotImplementedException();
             }
         }
         private class FakeSolver2 : ISolver
         {
-            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory, Span<byte> lockMap = default)
             {
                 throw new NotImplementedException();
             }
         }
         private class FakeSolver3 : ISolver
         {
-            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory, Span<byte> lockMap = default)
             {
                 throw new NotImplementedException();
             }

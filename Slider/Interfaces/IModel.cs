@@ -15,7 +15,7 @@ namespace Slider.Interfaces
         public bool CanUndo { get; }
         public int Heuristic { get; }
         int NumberOfMoves { get; }
-        void New();
+        void NewBoard(int numberOfLockedTiles);
         void Undo();
         AllowedMove CanMove(BoardTile tile);
         AllowedMove MoveTile(BoardTile tile);

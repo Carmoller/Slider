@@ -36,8 +36,8 @@ namespace Slider
 
         extension(byte b)
         {
-            public byte DontCare => 255;
-            public byte Locked => 255;
+            public static byte DontCare => 255;
+            public static byte Locked => 255;
         }
     }
 }

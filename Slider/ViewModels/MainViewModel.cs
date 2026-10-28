@@ -32,6 +32,8 @@ namespace Slider.ViewModels
         public bool CanSelect { get { return State == GameState.Editing; } }
         public bool CanMove { get { return State != GameState.Editing; } }
         [ObservableProperty]
+        public partial int LockedTilesCount { get; set; }
+        [ObservableProperty]
         public partial GameState State { get; set; } = GameState.Playing;
         [ObservableProperty]
         public partial ITileControlViewModel? SelectedItem { get; set; }
@@ -144,7 +146,7 @@ namespace Slider.ViewModels
             State = GameState.Playing;
             IsSolveDataAvailable = false;
             SolveMoves.Clear();
-            _model.New();
+            _model.NewBoard(LockedTilesCount);
             OnPropertyChanged(nameof(Heuristic));
             _startTime = DateTime.Now;
             _gameTimer.Start();
@@ -245,7 +247,7 @@ namespace Slider.ViewModels
             for (int i = 0; i < _model.Board.Count; i++)
             {
                 ITileControlViewModel tileVm = _viewModelFactory.CreateViewModel(_model.Board[i]);
-                tileVm.CanMove = true;
+                tileVm.CanMove = !_model.Board[i].IsLocked;
                 tileVm.AnimationDelay = AnimationDelay;
                 Tiles.Add(tileVm);
             }

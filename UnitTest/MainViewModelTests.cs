@@ -197,7 +197,7 @@ namespace UnitTest
             }
 
             // Assert
-            modelMock.Verify(m => m.New(), Times.Once);
+            modelMock.Verify(m => m.NewBoard(0), Times.Once);
         }
 
         [TestMethod]

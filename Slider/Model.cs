@@ -82,9 +82,9 @@ namespace Slider
             }
         }
 
-        public void New()
+        public void NewBoard(int numberOfLockedTiles)
         {
-            GenerateBoard();
+            GenerateBoard(numberOfLockedTiles);
         }
         public void Undo()
         {
@@ -116,20 +116,21 @@ namespace Slider
             return goalPositions;
         }
 
-        private void GenerateBoard()
+        private void GenerateBoard(int numberOfLockedTiles)
         {
             Board = new();
             _goalPositions = [];
             MoveHistory.Clear();
             _emptyTile = null;
             NumberOfMoves = 0;
-            byte[] newBoard = _generator.Generate(_options.GridSize);
+            GeneratedTile[] newBoard = _generator.Generate(_options.GridSize, numberOfLockedTiles);
             for (int i = 0; i < newBoard.Length; i++)
             {
                 (int row, int col) = Math.DivRem(i, _options.GridSize);
                 BoardTile tile = new BoardTile()
                 {
-                    Value = newBoard[i],
+                    Value = newBoard[i].TileValue,
+                    IsLocked = newBoard[i].IsLocked,
                     Row = row,
                     Column = col,
                 };
@@ -145,12 +146,12 @@ namespace Slider
             }
             BoardLayoutChanged?.Invoke(this, EventArgs.Empty);
             int[] goalPositions = GetGoalBoard(_options.GridSize);
-            Heuristic = CalculateHeuristics(newBoard.ToArray());
+            Heuristic = CalculateHeuristics(newBoard.Select(p=>p.TileValue).ToArray());
         }
 
         public AllowedMove CanMove(BoardTile tile)
         {
-            if (_emptyTile == null || _emptyTile == tile)
+            if (_emptyTile == null || _emptyTile == tile || tile.IsLocked)
             {
                 return AllowedMove.None;
             }
@@ -241,11 +242,26 @@ namespace Slider
             }
             return array;
         }
+        private byte[] LockMapFromBoard(List<BoardTile> board)
+        {
+            int gridSize = (int)Math.Sqrt(board.Count);
+            byte[] array = new byte[board.Count];
+            foreach (BoardTile tile in board)
+            {
+                array[tile.Row * gridSize + tile.Column] = tile.IsLocked ? byte.Locked : (byte)0;
+            }
+            return array;
+        }
+
         public SolveResult Solve()
         {
             Debug.WriteLine($"{DateTime.Now}: Starting Solve()");
             ISolver solver = _solverFactory.Create(_options.GridSize, Heuristic);
-            SolveResult result = solver.Solve(ByteArrayFromBoard(Board), [], _options.SolverOptions, _heuristicElementFactory);
+            SolveResult result = solver.Solve(
+                    ByteArrayFromBoard(Board), [], 
+                    _options.SolverOptions, 
+                    _heuristicElementFactory,
+                    LockMapFromBoard(Board));
             if ((result.Result == SolveResultType.Solved) || (result.Result == SolveResultType.Timeout))
                 Debug.WriteLine($"{DateTime.Now}: Finished Solve() in {result.TimeSpent.ToString()}, Using {result.Moves!.Count} moves");
             else 

@@ -6,6 +6,6 @@ namespace Slider.Common.Interfaces
 {
     public interface IGenerator
     {
-        byte[] Generate(int gridSize);
+        GeneratedTile[] Generate(int gridSize, int tilesToLock);
     }
 }

@@ -119,7 +119,11 @@ namespace Slider.Solver
                 new RowColHeuristicFactory(GetHeuristics));
         }
 
-        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, 
+                                 Span<byte> targetBoard, 
+                                 ISolverOptions solverOptions, 
+                                 IHeuristicElementFactory heuristicElementFactory, 
+                                 Span<byte> lockMap = default)
         {
             _gridSize = (int)Math.Sqrt(board.Length);
             ChunkedStructPool<StateInfo> stateInfoPool = new(1000000);

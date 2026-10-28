@@ -17,8 +17,13 @@ namespace UnitTest
             }
             return boardPositions;
         }
-        public static bool IsSolvable(byte[] board)
+        public static bool IsSolvable(GeneratedTile[] board)
         {
+            return IsSolvable(board.Select(p => p.TileValue).ToArray());
+        }
+
+        public static bool IsSolvable(byte[] board)
+        { 
             bool valid = true;
             foreach (IGrouping<byte, byte> value in board.GroupBy(p => p))
             {

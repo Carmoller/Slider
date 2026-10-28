@@ -27,7 +27,7 @@ namespace Slider.Solver
         }
 
         public double W { get; set; } = 3;
-        public byte[] LockMap { get; set; }
+        private byte[]? LockMap { get; set; }
         private int _gridSize;
         private int _min_h;
         private readonly IOptions _options;
@@ -70,8 +70,16 @@ namespace Slider.Solver
             }
         }
 
-        public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+        public SolveResult Solve(Span<byte> board, 
+                                 Span<byte> targetBoard, 
+                                 ISolverOptions solverOptions, 
+                                 IHeuristicElementFactory heuristicElementFactory,
+                                 Span<byte> lockMap = default)
         {
+            if (!lockMap.IsEmpty)
+            {
+                LockMap = lockMap.ToArray();
+            }
             _gridSize = (int)Math.Sqrt(board.Length);
             if (targetBoard.Length == 0)
                 targetBoard = SolverHelper.CreateGoalBoard(_gridSize);
@@ -204,7 +212,7 @@ namespace Slider.Solver
         private void ProcessNewState(ref StateInfo newState, ref SolverContext context)
         {
             ref StateInfo csRef = ref context.ObjectPool.GetRef(context.CurrentStepIndex);
-            if (LockMap != null && LockMap[csRef.BlankPos] == 1)
+            if (LockMap != null && LockMap[csRef.BlankPos] == byte.Locked)
                 return;
             int tentative_g = csRef.CurrentG + 1;
             newState.Hash = SolverHelper.GetHashCode(newState);

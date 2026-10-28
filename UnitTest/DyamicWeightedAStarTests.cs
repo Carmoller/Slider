@@ -330,7 +330,7 @@ namespace UnitTest
 
             byte[] lockMask = [
                 00, 00, 00, 00,
-                00, 01, 01, 00,
+                00, byte.Locked, byte.Locked, 00,
                 00, 00, 00, 00,
                 00, 00, 00, 00];
 
@@ -338,11 +338,10 @@ namespace UnitTest
 
             DynamicWeightAStarSolver solver = new(optionsMock.Object, new StateInfoFactory());
             solver.BfsMode = BfsMode.Greedy;
-            solver.LockMap = lockMask;
 
             SolveResult result = solver.Solve(board, [],
                 new SolverOptions { UseCornerPattern = true, UseEdgePattern = true, UseLinearConflict = true, UseManhattanDistance = true, UseSprintFinish = false },
-                new HeuristicElementFactory());
+                new HeuristicElementFactory(), lockMask);
             Console.WriteLine($"Moves: {result.MoveCount}");
             Console.WriteLine($"States visited: {result.TotalStatesConsidered}");
             Console.WriteLine($"Min h: {result.MinimumH}");

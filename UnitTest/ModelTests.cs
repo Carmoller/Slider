@@ -49,7 +49,7 @@ namespace UnitTest
         private class FakeSolver : ISolver
         {
             public static int SolveInvocations { get; private set; } = 0;
-            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory)
+            public SolveResult Solve(Span<byte> board, Span<byte> targetBoard, ISolverOptions solverOptions, IHeuristicElementFactory heuristicElementFactory, Span<byte> lockMap = default)
             {
                 SolveInvocations++;
                 return new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.FromSeconds(1), Moves = new() };
@@ -69,8 +69,19 @@ namespace UnitTest
             _mockOptions.Setup(o => o.SolverOptions).Returns(new SolverOptions());
 
             // Setup generator to return solved 3x3 board: 1 2 3 / 4 5 6 / 7 8 0
-            byte[] solvedBoard = [1, 2, 3, 4, 5, 6, 7, 8, 0];
-            _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(solvedBoard);
+            GeneratedTile[] solvedBoard = [
+                    new GeneratedTile { TileValue = 1, IsLocked = false},
+                    new GeneratedTile { TileValue = 2, IsLocked = false},
+                    new GeneratedTile { TileValue = 3, IsLocked = false},
+                    new GeneratedTile { TileValue = 4, IsLocked = false},
+                    new GeneratedTile { TileValue = 5, IsLocked = false},
+                    new GeneratedTile { TileValue = 6, IsLocked = false},
+                    new GeneratedTile { TileValue = 7, IsLocked = false},
+                    new GeneratedTile { TileValue = 8, IsLocked = false},
+                    new GeneratedTile { TileValue = 0, IsLocked = false},
+                ];
+
+            _mockGenerator.Setup(g => g.Generate(It.IsAny<int>(), 0)).Returns(solvedBoard);
 
             // Setup solver
             _mockSolverFactory.Setup(p => p.Create(It.IsAny<int>(), It.IsAny<int>())).Returns(new FakeSolver());
@@ -93,22 +104,22 @@ namespace UnitTest
         public void New_GeneratesBoard()
         {
             // Act
-            _model.New();
+            _model.NewBoard(0);
 
             // Assert
             Assert.HasCount(9, _model.Board);
-            _mockGenerator.Verify(g => g.Generate(3), Times.Once);
+            _mockGenerator.Verify(g => g.Generate(3, 0), Times.Once);
         }
 
         [TestMethod]
         public void New_ClearsMovementHistory()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             _model.MoveTile(_model.Board[1]); // Move a tile
 
             // Act
-            _model.New();
+            _model.NewBoard(0);
 
             // Assert
             Assert.AreEqual(0, _model.NumberOfMoves);
@@ -123,7 +134,7 @@ namespace UnitTest
             _model.BoardLayoutChanged += (s, e) => eventRaised = true;
 
             // Act
-            _model.New();
+            _model.NewBoard(0);
 
             // Assert
             Assert.IsTrue(eventRaised);
@@ -133,7 +144,7 @@ namespace UnitTest
         public void CanMove_WithEmptyTile_ReturnNone()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
 
             // Act
@@ -160,7 +171,7 @@ namespace UnitTest
         public void CanMove_HorizontalAdjacent_ReturnsLeftOrRight()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             // Empty is at (2, 2). Tile at (2, 1) can move right
             BoardTile tileToLeft = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
@@ -176,7 +187,7 @@ namespace UnitTest
         public void CanMove_VerticalAdjacent_ReturnsUpOrDown()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             // Empty is at (2, 2). Tile at (1, 2) can move down
             BoardTile tileAbove = _model.Board.First(t => t.Row == emptyTile.Row - 1 && t.Column == emptyTile.Column);
@@ -192,7 +203,7 @@ namespace UnitTest
         public void CanMove_NonAdjacentTile_ReturnsNone()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile tileAtCorner = _model.Board.First(t => t.Row == 0 && t.Column == 0);
 
             // Act
@@ -206,7 +217,7 @@ namespace UnitTest
         public void MoveTile_WithValidMove_UpdatesBoardState()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
             int emptyOriginalColumn = emptyTile.Column;
@@ -226,7 +237,7 @@ namespace UnitTest
         public void MoveTile_WithInvalidMove_DoesNothing()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile nonAdjacentTile = _model.Board.First(t => t.Row == 0 && t.Column == 0);
             int movesBefore = _model.NumberOfMoves;
 
@@ -241,7 +252,7 @@ namespace UnitTest
         public void MoveTile_RecordsMoveInHistory()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
 
@@ -259,7 +270,7 @@ namespace UnitTest
         public void MoveTile_RaisesBoardChangedEvent()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
 
@@ -272,7 +283,7 @@ namespace UnitTest
         public void Undo_WithMovementHistory_RestoresBoard()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
             int emptyOriginalColumn = emptyTile.Column;
@@ -293,7 +304,7 @@ namespace UnitTest
         public void Undo_WithNoHistory_DoesNothing()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             int movesBefore = _model.NumberOfMoves;
 
             // Act
@@ -307,7 +318,7 @@ namespace UnitTest
         public void Undo_RemovesMoveFromHistory()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
             _model.MoveTile(tileToMove);
@@ -324,7 +335,7 @@ namespace UnitTest
         public void CanUndo_WithHistory_ReturnsTrue()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
             _model.MoveTile(tileToMove);
@@ -340,7 +351,7 @@ namespace UnitTest
         public void CanUndo_WithoutHistory_ReturnsFalse()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
 
             // Act
             bool canUndo = _model.CanUndo;
@@ -353,7 +364,7 @@ namespace UnitTest
         public void IsSolved_WithSolvedBoard_ReturnsTrue()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             // Board is already in solved state (1 2 3 / 4 5 6 / 7 8 0)
 
             // Act
@@ -367,7 +378,7 @@ namespace UnitTest
         public void IsSolved_WithSolvedBoard_RaisesBoardSolvedEvent()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             bool eventRaised = false;
             _model.BoardSolved += (s, e) => eventRaised = true;
 
@@ -382,9 +393,19 @@ namespace UnitTest
         public void IsSolved_WithUnsolvedBoard_ReturnsFalse()
         {
             // Arrange
-            byte[] unsolvedBoard = [1, 2, 3, 4, 5, 6, 7, 0, 8]; // 0 and 8 swapped
-            _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(unsolvedBoard);
-            _model.New();
+            GeneratedTile[] unsolvedBoard = [
+                    new GeneratedTile { TileValue = 1, IsLocked = false},
+                    new GeneratedTile { TileValue = 2, IsLocked = false},
+                    new GeneratedTile { TileValue = 3, IsLocked = false},
+                    new GeneratedTile { TileValue = 4, IsLocked = false},
+                    new GeneratedTile { TileValue = 5, IsLocked = false},
+                    new GeneratedTile { TileValue = 6, IsLocked = false},
+                    new GeneratedTile { TileValue = 7, IsLocked = false},
+                    new GeneratedTile { TileValue = 0, IsLocked = false},
+                    new GeneratedTile { TileValue = 8, IsLocked = false},
+                ];
+            _mockGenerator.Setup(g => g.Generate(It.IsAny<int>(), 0)).Returns(unsolvedBoard);
+            _model.NewBoard(0);
 
             // Act
             bool isSolved = _model.IsSolved();
@@ -397,9 +418,19 @@ namespace UnitTest
         public void IsSolved_WithEmptyNotInCorner_ReturnsFalse()
         {
             // Arrange
-            byte[] unsolvedBoard = [1, 2, 3, 4, 5, 6, 7, 0, 8]; // Empty not at (2, 2)
-            _mockGenerator.Setup(g => g.Generate(It.IsAny<int>())).Returns(unsolvedBoard);
-            _model.New();
+            GeneratedTile[] unsolvedBoard = [
+                    new GeneratedTile { TileValue = 1, IsLocked = false},
+                    new GeneratedTile { TileValue = 2, IsLocked = false},
+                    new GeneratedTile { TileValue = 3, IsLocked = false},
+                    new GeneratedTile { TileValue = 4, IsLocked = false},
+                    new GeneratedTile { TileValue = 5, IsLocked = false},
+                    new GeneratedTile { TileValue = 6, IsLocked = false},
+                    new GeneratedTile { TileValue = 7, IsLocked = false},
+                    new GeneratedTile { TileValue = 0, IsLocked = false},
+                    new GeneratedTile { TileValue = 8, IsLocked = false},
+                ];
+            _mockGenerator.Setup(g => g.Generate(It.IsAny<int>(), 0)).Returns(unsolvedBoard);
+            _model.NewBoard(0);
 
             // Act
             bool isSolved = _model.IsSolved();
@@ -412,7 +443,7 @@ namespace UnitTest
         public void Solve_CallsSolver()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             SolveResult solveResult = new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.Zero, Moves = new() };
 
             // Act
@@ -427,7 +458,7 @@ namespace UnitTest
         public void Solve_ReturnsSolveResult()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             SolveResult solveResult = new() { Result = SolveResultType.Solved, TimeSpent = TimeSpan.FromSeconds(1), Moves = new() };
 
             // Act
@@ -442,7 +473,7 @@ namespace UnitTest
         public void GridSizeChange_ClearsBoard()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             Assert.HasCount(9, _model.Board);
 
             // Act - Simulate PropertyChanged event for GridSize
@@ -457,7 +488,7 @@ namespace UnitTest
         public void GridSizeChange_ClearsMoveHistory()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
             _model.MoveTile(tileToMove);
@@ -476,7 +507,7 @@ namespace UnitTest
         public void GridSizeChange_RaisesBoardChangedEvent()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             bool eventRaised = false;
             _model.BoardLayoutChanged += (s, e) => eventRaised = true;
 
@@ -492,7 +523,7 @@ namespace UnitTest
         public void NumberOfMoves_TracksCorrectly()
         {
             // Arrange
-            _model.New();
+            _model.NewBoard(0);
             BoardTile emptyTile = _model.Board.First(t => t.IsEmpty);
             BoardTile tileToMove1 = _model.Board.First(t => t.Row == emptyTile.Row && t.Column == emptyTile.Column - 1);
 
