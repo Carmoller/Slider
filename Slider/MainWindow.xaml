@@ -86,7 +86,7 @@
                 <StackPanel Orientation="Vertical">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                          <TextBlock Text="Locked tiles:"/>
-                        <TextBox Text="{Binding LockedTilesCount}" Width="20"/>
+                        <TextBox Text="{Binding LockedTilesCount}" Width="40"/>
                     </StackPanel>
                     <Button Content="Generate" Command="{Binding GenerateCommand}" Width="54" Height="23" Margin="3"/>
                 </StackPanel>
